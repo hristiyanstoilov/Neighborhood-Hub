@@ -1,0 +1,17 @@
+{
+  "name": "neighborhood-hub",
+  "version": "1.0.0",
+  "description": "A multi-platform full-stack app for Bulgarian neighborhoods that enables skill sharing, time swapping, tool lending, food sharing, and community events.",
+  "main": "index.js",
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
