@@ -24,6 +24,8 @@ web-build/
 
 # Secrets & private keys
 secrets/
+.mcp.json
+.claude/
 *.pem
 *.key
 *.p12

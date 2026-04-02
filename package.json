@@ -2,16 +2,18 @@
   "name": "neighborhood-hub",
   "version": "1.0.0",
   "description": "A multi-platform full-stack app for Bulgarian neighborhoods that enables skill sharing, time swapping, tool lending, food sharing, and community events.",
-  "main": "index.js",
-  "devDependencies": {
-    "typescript": "^6.0.2",
-    "vite": "^8.0.3"
-  },
+  "private": true,
+  "workspaces": [
+    "packages/nextjs",
+    "packages/expo"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:web": "npm run dev --workspace=packages/nextjs",
+    "dev:mobile": "npm run start --workspace=packages/expo",
+    "build:web": "npm run build --workspace=packages/nextjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "license": "ISC"
 }

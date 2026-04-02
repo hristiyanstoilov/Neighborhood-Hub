@@ -227,11 +227,12 @@ Rules:
 - Schema lives in `packages/nextjs/src/db/schema.ts`
 - After schema changes: `npx drizzle-kit generate` → `npx drizzle-kit migrate` → commit SQL files
 - **Never** use `drizzle-kit push` in production – migrations only
-- Use `pgEnum` for status fields
+- Use `pgEnum` ONLY for stable binary fields: `users.role` ('user'|'admin'), `ai_messages.role` ('user'|'assistant')
+- Use `VARCHAR + CHECK constraint` for all status/type fields that may evolve (skill_requests.status, skills.status, locations.type, meeting_type) – `ALTER TYPE` doesn't work in transactions in Neon
 - Use `.references()` with `onDelete: 'cascade'` for foreign keys
 - Soft delete on `skills` and `users` – add `deleted_at` column, never hard DELETE
-- Use `@neondatabase/serverless` driver – required for Neon serverless connection pooling
-- Auth data (`email`, `password_hash`) lives in `users`; profile data (`name`, `bio`, `avatar_url`, `city`) lives in `profiles`
+- Use `@neondatabase/serverless` driver with `drizzle-orm/neon-http` – HTTP transport for all queries including transactions (pipeline)
+- Auth data (`email`, `password_hash`) lives in `users`; profile data (`name`, `bio`, `avatar_url`) lives in `profiles` – NO city/neighborhood in profiles, derive via `location_id FK → locations`
 - Store `refresh_tokens` in DB to enable logout invalidation
 - Log admin actions to `audit_log` table
 - Location data is neighborhood-level only – no exact coordinates (GDPR)
@@ -274,7 +275,10 @@ Rules:
 
 ---
 
-## 10. How Claude Should Help
+## 10. How AI Agents Should Help
+
+### General Rule
+Do not make any changes until you have 95% confidence in what you need to build. Ask follow-up questions until you reach that confidence.
 
 ### Code generation
 - Generate Drizzle schema and migrations
