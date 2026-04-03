@@ -60,7 +60,7 @@ neighborhood-hub/
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth only (email, password_hash, role, failed_login_attempts, locked_until, deleted_at) |
-| `profiles` | Profile data (user_id FK, name, bio, avatar_url, city, neighborhood, location_id FK, is_public) |
+| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public) |
 | `refresh_tokens` | JWT refresh tokens (user_id FK, token, is_revoked, expires_at, ip_address) |
 | `audit_log` | Admin action log (user_id FK, action, entity, entity_id, metadata jsonb, ip_address) |
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
