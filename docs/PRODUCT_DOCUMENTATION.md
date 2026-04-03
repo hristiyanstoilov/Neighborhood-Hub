@@ -760,14 +760,14 @@ Unlike points-based platforms, Neighborhood Hub uses **time as currency** — th
 |---------|---------|---------------|
 | Skills offered | Hidden in list | Show count prominently on profile: "12 skills shared" |
 | Completed sessions | Not tracked in UI | "8 sessions completed" badge on profile |
-| Community activity | Not visible | "23 skills available in Лозенец" on radar |
+| Community activity | Not visible | "23 skills available in Lozenets" on radar |
 | Skill request feedback | Status only | After completion: optional 1-line thank-you note |
 
 **Top 3 gamification improvements:**
 
 1. **Profile completion indicator** — "Your profile is 60% complete. Add a skill to reach 80%." Drives supply-side onboarding.
 
-2. **Neighborhood leaderboard** — "Top skill sharers in Студентски Град this month." Simple SELECT with count(*) of completed requests per user.
+2. **Neighborhood leaderboard** — "Top skill sharers in Studentski Grad this month." Simple SELECT with count(*) of completed requests per user.
 
 3. **Session completion acknowledgment** — When requester marks `completed`, show a thank-you animation and prompt: "Leave a note for [name]?" (optional 140-char text, stored on the request). No ratings — just human acknowledgment.
 
