@@ -91,10 +91,10 @@ Platform is free for all residents. No payment processing. No revenue.
 | **Micro-credentialing** | 2027 | LinkedIn verifiable skill certificates, printed impact certificates | Professionals |
 
 ### Revenue Trajectory
-- 0 BGN (2026 Q1 — MVP launch)
-- ~15,000 BGN (2026 Q4 — first B2B sponsorships)
-- ~60,000 BGN ARR (2027 — institutional + AI premium)
-- ~150,000+ BGN ARR (2028 — municipal API contracts + multi-city)
+- 0 EUR (2026 Q1 — MVP launch)
+- ~15,000 EUR (2026 Q4 — first B2B sponsorships)
+- ~60,000 EUR ARR (2027 — institutional + AI premium)
+- ~150,000+ EUR ARR (2028 — municipal API contracts + multi-city)
 
 ---
 
