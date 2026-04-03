@@ -1,3 +1,7 @@
+# Stray project folders
+neighborhood-hub/
+packages/vite-test/
+
 # Dependencies
 node_modules/
 .pnp
@@ -21,6 +25,8 @@ web-build/
 .env.test
 .env.production
 .env.staging
+# Allow the example file (no secrets, safe to commit)
+!.env.example
 
 # Secrets & private keys
 secrets/

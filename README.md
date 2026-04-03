@@ -1,11 +1,17 @@
 # Neighborhood Hub
 
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
+![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-green)
+![Neon](https://img.shields.io/badge/Neon-PostgreSQL-brightgreen?logo=postgresql)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 A multi-platform full-stack app for Bulgarian neighborhoods that enables skill sharing, time swapping, tool lending, food sharing, and community events.
 
-**Live demo:** _coming soon_
-**Demo credentials:** `demo@neighborhood.hub` / `demo123`
+**Live demo:** _coming soon_ · **Demo credentials:** `demo@neighborhood.hub` / `demo123`
 
-📄 [Product Documentation](docs/PRODUCT_DOCUMENTATION.md) · 🗺️ [Roadmap](docs/ROADMAP.md)
+📄 [Product Documentation](docs/PRODUCT_DOCUMENTATION.md) · 🗺️ [Roadmap](docs/ROADMAP.md) · 🤝 [Contributing](CONTRIBUTING.md)
 
 ---
 
