@@ -5,6 +5,8 @@ A multi-platform full-stack app for Bulgarian neighborhoods that enables skill s
 **Live demo:** _coming soon_
 **Demo credentials:** `demo@neighborhood.hub` / `demo123`
 
+📄 [Product Documentation](docs/PRODUCT_DOCUMENTATION.md) · 🗺️ [Roadmap](docs/ROADMAP.md)
+
 ---
 
 ## What It Does
@@ -81,8 +83,6 @@ Neighbors can:
 | name | varchar(100) | CHECK length >= 2 |
 | bio | text | |
 | avatar_url | varchar(2048) | |
-| city | varchar(100) | |
-| neighborhood | varchar(100) | |
 | location_id | uuid | FK → locations SET NULL |
 | is_public | bool | default true |
 | updated_at | timestamptz | default now() |
@@ -158,7 +158,7 @@ Neighbors can:
 | scheduled_end | timestamptz | NOT NULL |
 | meeting_type | 'in_person' \| 'online' \| 'hybrid' | |
 | meeting_url | varchar(2048) | nullable, for online/hybrid |
-| status | 'pending' \| 'accepted' \| 'rejected' \| 'completed' | default 'pending' |
+| status | 'pending' \| 'accepted' \| 'rejected' \| 'completed' \| 'cancelled' | default 'pending' |
 | notes | text | |
 | cancellation_reason | text | |
 | cancelled_by_id | uuid | FK → users SET NULL |
@@ -310,8 +310,10 @@ neighborhood-hub/
 │       │   ├── components/       # RN components
 │       │   └── api/              # API client
 │       └── package.json
+├── docs/
+│   ├── PRODUCT_DOCUMENTATION.md  # Full product documentation
+│   └── ROADMAP.md                # Product roadmap
 ├── AGENTS.md                     # AI agent instructions
-├── ROADMAP.md                    # Product roadmap
 └── README.md
 ```
 
