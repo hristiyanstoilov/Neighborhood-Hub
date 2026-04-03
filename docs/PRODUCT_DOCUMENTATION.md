@@ -24,7 +24,7 @@
 ## 1. Executive Summary
 
 ### Product Overview
-**Neighborhood Hub** (Квартален Хъб) is a multi-platform full-stack application for Bulgarian neighborhoods that enables neighbors to share skills, time, tools, food, and organize community events through an interactive radar map.
+**Neighborhood Hub** is a multi-platform full-stack application for Bulgarian neighborhoods that enables neighbors to share skills, time, tools, food, and organize community events through an interactive radar map.
 
 **Live demo:** *coming soon* | **Demo credentials:** `demo@neighborhood.hub` / `demo123`
 
@@ -59,7 +59,7 @@ The platform converts individual skills and time into a structured, discoverable
 ## 2. Product Vision & Strategy
 
 ### Vision Statement
-*Квартал, в който всеки може да даде и получи помощ — структурирано, удобно и безопасно.*
+*A neighborhood where everyone can give and receive help — structured, convenient, and safe.*
 
 A Bulgaria where every neighborhood has an active skill-sharing community, where time and expertise are accessible to everyone, and where community ties grow stronger through mutual help.
 
@@ -91,10 +91,10 @@ Platform is free for all residents. No payment processing. No revenue.
 | **Micro-credentialing** | 2027 | LinkedIn verifiable skill certificates, printed impact certificates | Professionals |
 
 ### Revenue Trajectory
-- 0 лв (2026 Q1 — MVP launch)
-- ~15,000 лв (2026 Q4 — first B2B sponsorships)
-- ~60,000 лв ARR (2027 — institutional + AI premium)
-- ~150,000+ лв ARR (2028 — municipal API contracts + multi-city)
+- 0 BGN (2026 Q1 — MVP launch)
+- ~15,000 BGN (2026 Q4 — first B2B sponsorships)
+- ~60,000 BGN ARR (2027 — institutional + AI premium)
+- ~150,000+ BGN ARR (2028 — municipal API contracts + multi-city)
 
 ---
 
