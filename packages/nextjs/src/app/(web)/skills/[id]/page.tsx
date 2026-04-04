@@ -19,15 +19,24 @@ interface SkillDetail {
   locationNeighborhood: string | null
 }
 
-async function getSkill(id: string): Promise<SkillDetail | null> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL}/api/skills/${id}`,
-    { cache: 'no-store' }
-  )
-  if (res.status === 404) return null
-  if (!res.ok) return null
-  const json = await res.json()
-  return json.data ?? null
+type SkillResult =
+  | { ok: true; data: SkillDetail }
+  | { ok: false; notFound: true }
+  | { ok: false; notFound: false }
+
+async function getSkill(id: string): Promise<SkillResult> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL}/api/skills/${id}`,
+      { cache: 'no-store' }
+    )
+    if (res.status === 404) return { ok: false, notFound: true }
+    if (!res.ok) return { ok: false, notFound: false }
+    const json = await res.json()
+    return { ok: true, data: json.data }
+  } catch {
+    return { ok: false, notFound: false }
+  }
 }
 
 export default async function SkillDetailPage({
@@ -36,9 +45,25 @@ export default async function SkillDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const skill = await getSkill(id)
+  const result = await getSkill(id)
 
-  if (!skill) notFound()
+  if (!result.ok && result.notFound) notFound()
+
+  if (!result.ok) {
+    return (
+      <div className="max-w-2xl">
+        <Link href="/skills" className="text-sm text-gray-500 hover:text-blue-600 mb-6 inline-block">
+          ← Back to Skills
+        </Link>
+        <div className="text-center py-24 text-gray-500">
+          <p className="text-lg mb-2">Could not load this skill.</p>
+          <p className="text-sm">Please try refreshing the page.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const skill = result.data
 
   return (
     <div className="max-w-2xl">

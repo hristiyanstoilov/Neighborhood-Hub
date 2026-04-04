@@ -24,9 +24,9 @@ export default function VerifyEmailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.data) {
+      .then(async (res) => {
+        const json = await res.json()
+        if (res.ok) {
           setStatus('success')
           setMessage(json.data.message)
         } else {

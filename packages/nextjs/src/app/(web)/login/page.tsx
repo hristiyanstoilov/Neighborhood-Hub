@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -41,7 +42,8 @@ export default function LoginPage() {
     }
 
     login(json.data.accessToken, json.data.user)
-    router.push('/skills')
+    const next = searchParams.get('next') ?? '/skills'
+    router.push(next)
   }
 
   return (
