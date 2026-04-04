@@ -6,33 +6,33 @@ export default function Home() {
     <main className="flex flex-col">
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        {/* Background decoration */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-green-800 via-green-700 to-green-900 text-white">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-0 right-20 w-80 h-80 rounded-full bg-indigo-300 blur-3xl" />
+          <div className="absolute bottom-0 right-20 w-80 h-80 rounded-full bg-green-300 blur-3xl" />
         </div>
 
         <div className="relative max-w-5xl mx-auto px-4 py-24 text-center">
           <div className="flex justify-center mb-8">
-            <Logo size={64} withText={false} className="opacity-90" />
+            <Logo variant="icon-round" height={96} />
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 tracking-tight">
             Share skills.<br className="hidden sm:block" /> Build community.
           </h1>
-          <p className="text-lg text-blue-100 max-w-xl mx-auto mb-10">
+          <p className="text-lg text-green-100 max-w-xl mx-auto mb-2">
             Neighborhood Hub connects neighbors in Sofia — offer your skills, find help nearby, and strengthen your community one swap at a time.
           </p>
+          <p className="text-sm text-green-300 italic mb-10">Digital Connections, Real Action.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/skills"
-              className="bg-white text-blue-700 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors shadow-md"
+              className="bg-white text-green-800 font-semibold px-6 py-3 rounded-lg hover:bg-green-50 transition-colors shadow-md"
             >
               Browse skills
             </Link>
             <Link
               href="/register"
-              className="bg-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-400 border border-blue-400 transition-colors"
+              className="bg-green-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-500 border border-green-500 transition-colors"
             >
               Join the community
             </Link>
@@ -77,10 +77,10 @@ export default function Home() {
             },
           ].map(({ step, title, description, icon }) => (
             <div key={step} className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
                 {icon}
               </div>
-              <span className="text-xs font-bold text-blue-400 tracking-widest uppercase">{step}</span>
+              <span className="text-xs font-bold text-green-500 tracking-widest uppercase">{step}</span>
               <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
             </div>
@@ -89,7 +89,7 @@ export default function Home() {
       </section>
 
       {/* CTA banner */}
-      <section className="bg-gray-50 border-t border-gray-200">
+      <section className="bg-green-50 border-t border-green-100">
         <div className="max-w-5xl mx-auto px-4 py-16 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Ready to get started?</h2>
@@ -97,7 +97,7 @@ export default function Home() {
           </div>
           <Link
             href="/register"
-            className="shrink-0 bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            className="shrink-0 bg-green-700 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-800 transition-colors shadow-sm"
           >
             Create free account
           </Link>

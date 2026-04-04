@@ -18,11 +18,11 @@ export default function Nav() {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/">
-          <Logo size={30} withText />
+          <Logo variant="light" height={32} />
         </Link>
 
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/skills" className="text-gray-600 hover:text-blue-600 transition-colors">
+          <Link href="/skills" className="text-gray-600 hover:text-green-700 transition-colors">
             Skills
           </Link>
 
@@ -31,11 +31,11 @@ export default function Nav() {
               {user ? (
                 <>
                   {user.role === 'admin' && (
-                    <Link href="/admin" className="text-gray-600 hover:text-blue-600 transition-colors">
+                    <Link href="/admin" className="text-gray-600 hover:text-green-700 transition-colors">
                       Admin
                     </Link>
                   )}
-                  <Link href="/profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  <Link href="/profile" className="text-gray-600 hover:text-green-700 transition-colors">
                     {user.profile?.name ?? user.email}
                   </Link>
                   <button
@@ -47,12 +47,12 @@ export default function Nav() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  <Link href="/login" className="text-gray-600 hover:text-green-700 transition-colors">
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors"
+                    className="bg-green-700 text-white px-3 py-1.5 rounded-md hover:bg-green-800 transition-colors"
                   >
                     Register
                   </Link>
