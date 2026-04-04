@@ -42,8 +42,10 @@ export default function LoginPage() {
     }
 
     login(json.data.accessToken, json.data.user)
-    const next = searchParams.get('next') ?? '/skills'
-    router.push(next)
+    const next = searchParams.get('next') ?? ''
+    // Only allow relative paths to prevent open redirect attacks
+    const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/skills'
+    router.push(safePath)
   }
 
   return (
