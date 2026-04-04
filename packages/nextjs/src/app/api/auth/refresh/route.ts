@@ -8,9 +8,16 @@ import {
   refreshTokenExpiresAt,
 } from '@/lib/auth'
 import { getClientIp } from '@/lib/middleware'
+import { loginRatelimit } from '@/lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await loginRatelimit.limit(ip)
+    if (!success) {
+      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
+
     const rawRefreshToken = req.cookies.get('refresh_token')?.value
 
     if (!rawRefreshToken) {
@@ -34,7 +41,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 401 })
     }
 
-    const ip = getClientIp(req)
     const newRawToken = generateSecureToken()
     const expiresAt = refreshTokenExpiresAt()
 

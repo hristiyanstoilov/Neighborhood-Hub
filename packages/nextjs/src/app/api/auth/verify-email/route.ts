@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { loginRatelimit } from '@/lib/ratelimit'
+import { getClientIp } from '@/lib/middleware'
 
 const schema = z.object({
   token: z.string().length(64),
@@ -10,6 +12,11 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const { success } = await loginRatelimit.limit(getClientIp(req))
+    if (!success) {
+      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
+
     const body = await req.json().catch(() => null)
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
