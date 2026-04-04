@@ -35,10 +35,20 @@ export function requireAdmin(
   })
 }
 
+const IPV4 = /^(\d{1,3}\.){3}\d{1,3}$/
+const IPV6 = /^[0-9a-f:]+$/i
+
+function isValidIp(ip: string): boolean {
+  return IPV4.test(ip) || IPV6.test(ip)
+}
+
 export function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    req.headers.get('x-real-ip') ??
-    '127.0.0.1'
-  )
+  // x-forwarded-for may contain a comma-separated list; take the first entry
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+  if (forwarded && isValidIp(forwarded)) return forwarded
+
+  const realIp = req.headers.get('x-real-ip')?.trim()
+  if (realIp && isValidIp(realIp)) return realIp
+
+  return '127.0.0.1'
 }

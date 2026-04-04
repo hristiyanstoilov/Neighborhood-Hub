@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { db } from '@/db'
-import { users, refreshTokens } from '@/db/schema'
+import { users, refreshTokens, profiles } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import {
   signAccessToken,
@@ -92,10 +92,26 @@ export async function POST(req: NextRequest) {
       ipAddress: ip,
     })
 
+    const profile = await db.query.profiles.findFirst({ where: eq(profiles.userId, user.id) })
+
     const response = NextResponse.json({
       data: {
         accessToken,
-        user: { id: user.id, email: user.email, role: user.role, emailVerifiedAt: user.emailVerifiedAt },
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          emailVerifiedAt: user.emailVerifiedAt,
+          profile: profile
+            ? {
+                name: profile.name,
+                bio: profile.bio,
+                avatarUrl: profile.avatarUrl,
+                isPublic: profile.isPublic,
+                locationId: profile.locationId,
+              }
+            : null,
+        },
       },
     })
 
