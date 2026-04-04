@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       data: {
         accessToken,
+        refreshToken: rawRefreshToken,
         user: {
           id: user.id,
           email: user.email,

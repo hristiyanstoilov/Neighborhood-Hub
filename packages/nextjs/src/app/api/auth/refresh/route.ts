@@ -18,7 +18,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     }
 
-    const rawRefreshToken = req.cookies.get('refresh_token')?.value
+    const cookieToken = req.cookies.get('refresh_token')?.value
+
+    // Mobile clients send the token in the request body (can't use httpOnly cookies)
+    let bodyToken: string | undefined
+    const contentType = req.headers.get('content-type') ?? ''
+    if (!cookieToken && contentType.includes('application/json')) {
+      const body = await req.json().catch(() => ({}))
+      bodyToken = typeof body?.refreshToken === 'string' ? body.refreshToken : undefined
+    }
+
+    const rawRefreshToken = cookieToken ?? bodyToken
+    const isMobileRequest = !cookieToken && !!bodyToken
 
     if (!rawRefreshToken) {
       return NextResponse.json({ error: 'MISSING_REFRESH_TOKEN' }, { status: 401 })
@@ -62,7 +73,12 @@ export async function POST(req: NextRequest) {
 
     const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role })
 
-    const response = NextResponse.json({ data: { accessToken } })
+    // Mobile: return new refresh token in body; Web: set httpOnly cookie
+    const response = NextResponse.json({
+      data: isMobileRequest
+        ? { accessToken, refreshToken: newRawToken }
+        : { accessToken },
+    })
 
     response.cookies.set('refresh_token', newRawToken, {
       httpOnly: true,
