@@ -39,7 +39,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     const [updated] = await db
       .update(skills)
       .set({ status: parsed.data.status, updatedAt: new Date() })
-      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub)))
+      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub), isNull(skills.deletedAt)))
       .returning()
 
     await writeAuditLog({

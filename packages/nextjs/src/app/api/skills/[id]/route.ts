@@ -99,7 +99,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
     const [updated] = await db
       .update(skills)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub)))
+      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub), isNull(skills.deletedAt)))
       .returning()
 
     await writeAuditLog({
@@ -144,7 +144,7 @@ export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
     await db
       .update(skills)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub)))
+      .where(and(eq(skills.id, id), eq(skills.ownerId, user.sub), isNull(skills.deletedAt)))
 
     await writeAuditLog({
       userId: user.sub,

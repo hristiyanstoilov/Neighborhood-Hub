@@ -6,33 +6,38 @@ import { requireAuth, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
-  const rawRefreshToken = req.cookies.get('refresh_token')?.value
+  try {
+    const rawRefreshToken = req.cookies.get('refresh_token')?.value
 
-  if (rawRefreshToken) {
-    await db
-      .update(refreshTokens)
-      .set({ isRevoked: true })
-      .where(eq(refreshTokens.token, rawRefreshToken))
+    if (rawRefreshToken) {
+      await db
+        .update(refreshTokens)
+        .set({ isRevoked: true })
+        .where(eq(refreshTokens.token, rawRefreshToken))
+    }
+
+    await writeAuditLog({
+      userId: user.sub,
+      userEmail: user.email,
+      action: 'logout',
+      entity: 'users',
+      entityId: user.sub,
+      ipAddress: getClientIp(req),
+    })
+
+    const response = NextResponse.json({ data: { message: 'Logged out.' } })
+
+    response.cookies.set('refresh_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/api/auth',
+      maxAge: 0,
+    })
+
+    return response
+  } catch (err) {
+    console.error('[logout]', err)
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
-
-  await writeAuditLog({
-    userId: user.sub,
-    userEmail: user.email,
-    action: 'logout',
-    entity: 'users',
-    entityId: user.sub,
-    ipAddress: getClientIp(req),
-  })
-
-  const response = NextResponse.json({ data: { message: 'Logged out.' } })
-
-  response.cookies.set('refresh_token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/api/auth',
-    maxAge: 0,
-  })
-
-  return response
 })
