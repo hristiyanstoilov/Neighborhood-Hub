@@ -56,7 +56,9 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
 
   if (res.status === 401) {
     const newToken = await refreshAccessToken()
-    res = await doFetch(newToken)
+    if (newToken) {
+      res = await doFetch(newToken)
+    }
   }
 
   return res
