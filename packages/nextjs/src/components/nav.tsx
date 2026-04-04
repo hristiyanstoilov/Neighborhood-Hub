@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
+import Logo from '@/components/logo'
 
 export default function Nav() {
   const { user, loading, logout } = useAuth()
@@ -16,8 +17,8 @@ export default function Nav() {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-blue-600 text-lg">
-          Neighborhood Hub
+        <Link href="/">
+          <Logo size={30} withText />
         </Link>
 
         <nav className="flex items-center gap-4 text-sm">
