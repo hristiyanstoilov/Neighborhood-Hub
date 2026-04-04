@@ -1,33 +1,18 @@
 import Link from 'next/link'
+import { querySkills } from '@/lib/queries/skills'
 
-type FetchResult = { ok: true; data: Skill[] } | { ok: false }
+export const dynamic = 'force-dynamic'
 
 interface Skill {
   id: string
   title: string
   description: string | null
   status: string
-  availableHours: number
+  availableHours: number | null
   ownerName: string | null
   categoryLabel: string | null
   locationNeighborhood: string | null
   locationCity: string | null
-}
-
-async function getSkills(status?: string): Promise<FetchResult> {
-  try {
-    const params = new URLSearchParams({ limit: '20' })
-    if (status) params.set('status', status)
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/skills?${params}`,
-      { cache: 'no-store' }
-    )
-    if (!res.ok) return { ok: false }
-    const json = await res.json()
-    return { ok: true, data: json.data ?? [] }
-  } catch {
-    return { ok: false }
-  }
 }
 
 export default async function SkillsPage({
@@ -36,7 +21,15 @@ export default async function SkillsPage({
   searchParams: Promise<{ status?: string }>
 }) {
   const { status } = await searchParams
-  const result = await getSkills(status)
+
+  let skills: Skill[] = []
+  let fetchError = false
+
+  try {
+    skills = await querySkills({ status, limit: 20 })
+  } catch {
+    fetchError = true
+  }
 
   return (
     <div>
@@ -71,19 +64,19 @@ export default async function SkillsPage({
         ))}
       </div>
 
-      {!result.ok ? (
+      {fetchError ? (
         <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-2">Could not load skills.</p>
           <p className="text-sm">Please try refreshing the page.</p>
         </div>
-      ) : result.data.length === 0 ? (
+      ) : skills.length === 0 ? (
         <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-2">No skills found.</p>
           <p className="text-sm">Be the first to offer a skill in your neighborhood.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {result.data.map((skill) => (
+          {skills.map((skill) => (
             <Link
               key={skill.id}
               href={`/skills/${skill.id}`}
@@ -113,7 +106,7 @@ export default async function SkillsPage({
                 {skill.locationNeighborhood && (
                   <span>{skill.locationNeighborhood}, {skill.locationCity}</span>
                 )}
-                <span>{skill.availableHours}h/week</span>
+                {skill.availableHours != null && <span>{skill.availableHours}h/week</span>}
               </div>
 
               {skill.ownerName && (
