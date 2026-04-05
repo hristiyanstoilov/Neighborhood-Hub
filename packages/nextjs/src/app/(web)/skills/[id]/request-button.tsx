@@ -16,7 +16,7 @@ export default function RequestButton({ skill }: Props) {
     return (
       <Link
         href={`/login?next=/skills/${skill.id}`}
-        className="block w-full text-center bg-blue-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors"
+        className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
       >
         Log in to request this skill
       </Link>
@@ -41,7 +41,7 @@ export default function RequestButton({ skill }: Props) {
     <button
       disabled
       title="Skill requests coming soon"
-      className="w-full bg-blue-600 text-white rounded-md py-2.5 text-sm font-medium opacity-60 cursor-not-allowed"
+      className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium opacity-60 cursor-not-allowed"
     >
       Request this skill
     </button>

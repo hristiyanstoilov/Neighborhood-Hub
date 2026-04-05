@@ -108,7 +108,7 @@ export default function SkillDetailScreen() {
   if (state.type === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#15803d" />
       </View>
     )
   }
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   categoryBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#f0fdf4',
     borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
   categoryText: {
     fontSize: 12,
-    color: '#1d4ed8',
+    color: '#15803d',
     fontWeight: '500',
   },
   statusBadge: {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   requestButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#15803d',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   backButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#15803d',
     borderRadius: 8,
   },
   backButtonText: {

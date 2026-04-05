@@ -57,14 +57,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   categoryBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#f0fdf4',
     borderRadius: 99,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   categoryText: {
     fontSize: 11,
-    color: '#1d4ed8',
+    color: '#15803d',
     fontWeight: '500',
   },
   statusBadge: {

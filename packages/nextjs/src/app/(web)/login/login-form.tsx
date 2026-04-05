@@ -60,7 +60,7 @@ export default function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="you@example.com"
           />
         </div>
@@ -72,7 +72,7 @@ export default function LoginForm() {
             type="password"
             required
             autoComplete="current-password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -85,7 +85,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="w-full bg-green-700 text-white rounded-md py-2 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Logging in…' : 'Log in'}
         </button>
@@ -93,7 +93,7 @@ export default function LoginForm() {
 
       <p className="text-center text-sm text-gray-600 mt-6">
         No account yet?{' '}
-        <Link href="/register" className="text-blue-600 hover:underline">
+        <Link href="/register" className="text-green-700 hover:underline">
           Register
         </Link>
       </p>

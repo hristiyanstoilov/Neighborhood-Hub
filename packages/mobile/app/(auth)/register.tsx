@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   emailHighlight: {
     fontWeight: '600',
-    color: '#2563eb',
+    color: '#15803d',
   },
   errorBox: {
     backgroundColor: '#fef2f2',
@@ -219,14 +219,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#15803d',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 20,
   },
   buttonDisabled: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: '#86efac',
   },
   buttonText: {
     color: '#fff',
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   link: {
-    color: '#2563eb',
+    color: '#15803d',
     fontWeight: '500',
   },
 })

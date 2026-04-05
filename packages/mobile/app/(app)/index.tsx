@@ -91,7 +91,7 @@ export default function SkillListScreen() {
     return (
       <View style={styles.center}>
         {renderHeader()}
-        <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#15803d" style={{ marginTop: 40 }} />
       </View>
     )
   }
@@ -129,7 +129,7 @@ export default function SkillListScreen() {
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#2563eb" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#15803d" />
         }
         contentContainerStyle={styles.list}
       />
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: '#2563eb',
+    color: '#15803d',
     fontWeight: '500',
   },
   errorText: {
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#15803d',
     borderRadius: 8,
   },
   retryText: {

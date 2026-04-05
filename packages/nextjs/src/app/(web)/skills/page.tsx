@@ -37,7 +37,7 @@ export default async function SkillsPage({
         <h1 className="text-2xl font-bold">Skills</h1>
         <Link
           href="/skills/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
         >
           + Offer a skill
         </Link>
@@ -55,8 +55,8 @@ export default async function SkillsPage({
             href={value ? `/skills?status=${value}` : '/skills'}
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               status === value
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                ? 'bg-green-700 text-white border-green-700'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
             }`}
           >
             {label}
@@ -80,7 +80,7 @@ export default async function SkillsPage({
             <Link
               key={skill.id}
               href={`/skills/${skill.id}`}
-              className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-400 hover:shadow-sm transition-all"
+              className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-green-400 hover:shadow-sm transition-all"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h2 className="font-semibold text-gray-900 line-clamp-2">{skill.title}</h2>

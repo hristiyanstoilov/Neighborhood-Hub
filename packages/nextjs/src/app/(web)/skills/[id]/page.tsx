@@ -29,7 +29,7 @@ export default async function SkillDetailPage({
   if (fetchError) {
     return (
       <div className="max-w-2xl">
-        <Link href="/skills" className="text-sm text-gray-500 hover:text-blue-600 mb-6 inline-block">
+        <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
           ← Back to Skills
         </Link>
         <div className="text-center py-24 text-gray-500">
@@ -42,7 +42,7 @@ export default async function SkillDetailPage({
 
   return (
     <div className="max-w-2xl">
-      <Link href="/skills" className="text-sm text-gray-500 hover:text-blue-600 mb-6 inline-block">
+      <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
         ← Back to Skills
       </Link>
 

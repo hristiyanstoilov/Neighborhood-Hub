@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -51,7 +49,7 @@ export default function RegisterPage() {
         <p className="text-gray-600 mb-6">
           We sent a verification link to your email address. Click it to activate your account.
         </p>
-        <Link href="/login" className="text-blue-600 hover:underline text-sm">
+        <Link href="/login" className="text-green-700 hover:underline text-sm">
           Go to login →
         </Link>
       </div>
@@ -68,8 +66,9 @@ export default function RegisterPage() {
           <input
             name="name"
             type="text"
+            required
             autoComplete="name"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="Your name"
           />
         </div>
@@ -81,7 +80,7 @@ export default function RegisterPage() {
             type="email"
             required
             autoComplete="email"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="you@example.com"
           />
         </div>
@@ -94,7 +93,7 @@ export default function RegisterPage() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="At least 8 characters"
           />
         </div>
@@ -108,7 +107,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="w-full bg-green-700 text-white rounded-md py-2 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Creating account…' : 'Create account'}
         </button>
@@ -116,7 +115,7 @@ export default function RegisterPage() {
 
       <p className="text-center text-sm text-gray-600 mt-6">
         Already have an account?{' '}
-        <Link href="/login" className="text-blue-600 hover:underline">
+        <Link href="/login" className="text-green-700 hover:underline">
           Log in
         </Link>
       </p>

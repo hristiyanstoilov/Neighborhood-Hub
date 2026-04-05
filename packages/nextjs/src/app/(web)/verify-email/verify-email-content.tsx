@@ -54,7 +54,7 @@ export default function VerifyEmailContent() {
         <>
           <h1 className="text-2xl font-bold mb-3 text-green-600">Email verified!</h1>
           <p className="text-gray-600 mb-6">{message}</p>
-          <Link href="/login" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+          <Link href="/login" className="bg-green-700 text-white px-4 py-2 rounded-md text-sm hover:bg-green-800 transition-colors">
             Log in
           </Link>
         </>
@@ -64,7 +64,7 @@ export default function VerifyEmailContent() {
         <>
           <h1 className="text-2xl font-bold mb-3 text-red-600">Verification failed</h1>
           <p className="text-gray-600 mb-6">{message}</p>
-          <Link href="/login" className="text-blue-600 hover:underline text-sm">
+          <Link href="/login" className="text-green-700 hover:underline text-sm">
             Back to login
           </Link>
         </>
