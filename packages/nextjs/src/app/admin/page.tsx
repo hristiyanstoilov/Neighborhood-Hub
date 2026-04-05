@@ -1,80 +1,22 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { queryAdminUsers, queryAuditLog, queryUserByRefreshToken } from '@/lib/queries/admin'
 
-interface AdminUser {
-  id: string
-  email: string
-  role: string
-  emailVerifiedAt: string | null
-  failedLoginAttempts: number
-  lockedUntil: string | null
-  deletedAt: string | null
-  createdAt: string
-  name: string | null
-}
-
-interface AuditEntry {
-  id: string
-  userId: string | null
-  userEmail: string | null
-  action: string
-  entity: string | null
-  entityId: string | null
-  metadata: Record<string, unknown> | null
-  createdAt: string
-}
-
-async function getAdminData(accessToken: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL
-
-  const [usersRes, auditRes] = await Promise.all([
-    fetch(`${base}/api/admin/users?limit=50`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: 'no-store',
-    }),
-    fetch(`${base}/api/admin/audit?limit=30`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: 'no-store',
-    }),
-  ])
-
-  if (usersRes.status === 401 || usersRes.status === 403) return null
-  if (!usersRes.ok || !auditRes.ok) return null
-
-  const [usersJson, auditJson] = await Promise.all([usersRes.json(), auditRes.json()])
-
-  return {
-    users: (usersJson.data ?? []) as AdminUser[],
-    audit: (auditJson.data ?? []) as AuditEntry[],
-  }
-}
-
-async function getAccessToken(): Promise<string | null> {
-  // In server components we can't access the in-memory token,
-  // so we call /api/auth/refresh using the httpOnly cookie
-  const cookieStore = await cookies()
-  const refreshToken = cookieStore.get('refresh_token')?.value
-  if (!refreshToken) return null
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/refresh`, {
-    method: 'POST',
-    headers: { Cookie: `refresh_token=${refreshToken}` },
-    cache: 'no-store',
-  })
-  if (!res.ok) return null
-  const json = await res.json()
-  return json.data?.accessToken ?? null
-}
+export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
-  const accessToken = await getAccessToken()
-  if (!accessToken) redirect('/login')
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+  if (!refreshToken) redirect('/login')
 
-  const data = await getAdminData(accessToken)
-  if (!data) redirect('/login')
+  const user = await queryUserByRefreshToken(refreshToken)
+  if (!user || user.role !== 'admin') redirect('/login')
 
-  const { users, audit } = data
+  const [users, audit] = await Promise.all([
+    queryAdminUsers(50),
+    queryAuditLog(30),
+  ])
 
   return (
     <div className="space-y-10">
@@ -157,7 +99,7 @@ export default async function AdminPage() {
                         ? 'bg-red-100 text-red-700'
                         : entry.action === 'create'
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
+                        : 'bg-gray-100 text-gray-600'
                     }`}>
                       {entry.action}
                     </span>
@@ -177,7 +119,7 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <Link href="/" className="text-sm text-gray-400 hover:text-blue-600">← Back to site</Link>
+      <Link href="/" className="text-sm text-gray-400 hover:text-green-700">← Back to site</Link>
     </div>
   )
 }
