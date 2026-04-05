@@ -52,14 +52,22 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
       },
     })
 
-  let res = await doFetch(_accessToken)
+  try {
+    let res = await doFetch(_accessToken)
 
-  if (res.status === 401) {
-    const newToken = await refreshAccessToken()
-    if (newToken) {
-      res = await doFetch(newToken)
+    if (res.status === 401) {
+      const newToken = await refreshAccessToken()
+      if (newToken) {
+        res = await doFetch(newToken)
+      }
     }
-  }
 
-  return res
+    return res
+  } catch {
+    // Network error — return a synthetic offline response
+    return new Response(JSON.stringify({ error: 'NETWORK_ERROR' }), {
+      status: 0,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 }

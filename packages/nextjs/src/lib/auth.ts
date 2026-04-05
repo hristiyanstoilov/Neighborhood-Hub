@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
-const ACCESS_SECRET = process.env.JWT_SECRET!
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET env var must be at least 32 characters')
+}
+const ACCESS_SECRET = process.env.JWT_SECRET
 
 export interface JwtPayload {
   sub: string   // user id
@@ -30,5 +33,11 @@ export function refreshTokenExpiresAt(): Date {
 export function verificationTokenExpiresAt(): Date {
   const d = new Date()
   d.setHours(d.getHours() + 24)
+  return d
+}
+
+export function passwordResetTokenExpiresAt(): Date {
+  const d = new Date()
+  d.setHours(d.getHours() + 1)
   return d
 }

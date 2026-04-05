@@ -21,6 +21,10 @@ const schema = z.object({
 const LOCK_DURATION_MS = 15 * 60 * 1000
 const MAX_ATTEMPTS = 5
 
+// Dummy hash used when user is not found — ensures timing is identical
+// to a real failed login, preventing user enumeration via response time.
+const DUMMY_HASH = '$2b$12$dummyhashfortimingpurposesXXXXXXXXXXXXXXXXXXX..'
+
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
@@ -39,30 +43,31 @@ export async function POST(req: NextRequest) {
 
     const user = await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase()) })
 
-    if (!user || user.deletedAt) {
+    // Always run bcrypt regardless of whether the user exists.
+    // This prevents timing-based user enumeration attacks.
+    const passwordMatch = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH)
+
+    if (!user || user.deletedAt || !passwordMatch) {
+      // Increment failed attempts only if user exists and password was wrong
+      if (user && !user.deletedAt && !passwordMatch) {
+        const newAttempts = (user.failedLoginAttempts ?? 0) + 1
+        const shouldLock = newAttempts >= MAX_ATTEMPTS
+
+        await db
+          .update(users)
+          .set({
+            failedLoginAttempts: newAttempts,
+            lockedUntil: shouldLock ? new Date(Date.now() + LOCK_DURATION_MS) : null,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, user.id))
+      }
+
       return NextResponse.json({ error: 'INVALID_CREDENTIALS' }, { status: 401 })
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       return NextResponse.json({ error: 'ACCOUNT_LOCKED', lockedUntil: user.lockedUntil }, { status: 423 })
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.passwordHash)
-
-    if (!passwordMatch) {
-      const newAttempts = (user.failedLoginAttempts ?? 0) + 1
-      const shouldLock = newAttempts >= MAX_ATTEMPTS
-
-      await db
-        .update(users)
-        .set({
-          failedLoginAttempts: newAttempts,
-          lockedUntil: shouldLock ? new Date(Date.now() + LOCK_DURATION_MS) : null,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, user.id))
-
-      return NextResponse.json({ error: 'INVALID_CREDENTIALS' }, { status: 401 })
     }
 
     await db

@@ -5,6 +5,7 @@ import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { loginRatelimit } from '@/lib/ratelimit'
 import { getClientIp } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 
 const schema = z.object({
   token: z.string().length(64),
@@ -12,7 +13,8 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { success } = await loginRatelimit.limit(getClientIp(req))
+    const ip = getClientIp(req)
+    const { success } = await loginRatelimit.limit(ip)
     if (!success) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     }
@@ -50,6 +52,15 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id))
+
+    await writeAuditLog({
+      userId: user.id,
+      userEmail: user.email,
+      action: 'verify_email',
+      entity: 'users',
+      entityId: user.id,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: { message: 'Email verified successfully.' } })
   } catch (err) {

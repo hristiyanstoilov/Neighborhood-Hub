@@ -11,6 +11,12 @@ import { listSkillsSchema, createSkillSchema } from '@/lib/schemas/skill'
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const { success: rateLimitOk } = await apiRatelimit.limit(ip)
+    if (!rateLimitOk) {
+      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
+
     const { searchParams } = new URL(req.url)
     const parsed = listSkillsSchema.safeParse(Object.fromEntries(searchParams))
     if (!parsed.success) {
