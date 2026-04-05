@@ -48,8 +48,15 @@ export async function POST(req: NextRequest) {
     // This prevents timing-based user enumeration attacks.
     const passwordMatch = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH)
 
+    // Check lock BEFORE evaluating password result — a locked account must
+    // never log in regardless of password correctness, and we must not keep
+    // incrementing failedLoginAttempts while the account is already locked.
+    if (user && !user.deletedAt && user.lockedUntil && user.lockedUntil > new Date()) {
+      return NextResponse.json({ error: 'ACCOUNT_LOCKED', lockedUntil: user.lockedUntil }, { status: 423 })
+    }
+
     if (!user || user.deletedAt || !passwordMatch) {
-      // Increment failed attempts only if user exists and password was wrong
+      // Increment failed attempts only if user exists, not deleted, and password was wrong
       if (user && !user.deletedAt && !passwordMatch) {
         const newAttempts = (user.failedLoginAttempts ?? 0) + 1
         const shouldLock = newAttempts >= MAX_ATTEMPTS
@@ -65,10 +72,6 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ error: 'INVALID_CREDENTIALS' }, { status: 401 })
-    }
-
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      return NextResponse.json({ error: 'ACCOUNT_LOCKED', lockedUntil: user.lockedUntil }, { status: 423 })
     }
 
     await db

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/api'
 
 interface Category { id: string; slug: string; label: string }
 interface Location { id: string; city: string; neighborhood: string }
@@ -31,9 +32,8 @@ export default function NewSkillForm({ categories, locations }: Props) {
       availableHours: availableHoursRaw ? parseInt(availableHoursRaw, 10) : undefined,
     }
 
-    const res = await fetch('/api/skills', {
+    const res = await apiFetch('/api/skills', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
 
