@@ -1,0 +1,155 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Category { id: string; slug: string; label: string }
+interface Location { id: string; city: string; neighborhood: string }
+
+interface Props {
+  userId: string
+  categories: Category[]
+  locations: Location[]
+}
+
+export default function NewSkillForm({ categories, locations }: Props) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const form = new FormData(e.currentTarget)
+    const availableHoursRaw = form.get('availableHours') as string
+    const body = {
+      title: form.get('title') as string,
+      description: (form.get('description') as string) || undefined,
+      categoryId: (form.get('categoryId') as string) || undefined,
+      locationId: (form.get('locationId') as string) || undefined,
+      availableHours: availableHoursRaw ? parseInt(availableHoursRaw, 10) : undefined,
+    }
+
+    const res = await fetch('/api/skills', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    const json = await res.json()
+    setLoading(false)
+
+    if (!res.ok) {
+      const msg: Record<string, string> = {
+        UNVERIFIED_EMAIL: 'Please verify your email before offering a skill.',
+        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+        VALIDATION_ERROR: 'Please check your inputs.',
+        UNAUTHORIZED: 'You must be logged in to offer a skill.',
+      }
+      setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+      return
+    }
+
+    router.push(`/skills/${json.data.id}`)
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            name="title"
+            type="text"
+            required
+            minLength={3}
+            maxLength={200}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="e.g. Guitar lessons, Python tutoring, Home repairs…"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            name="description"
+            rows={4}
+            maxLength={2000}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+            placeholder="Describe what you offer, your experience, and any requirements…"
+          />
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              name="categoryId"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            >
+              <option value="">— Select category —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <select
+              name="locationId"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            >
+              <option value="">— Select location —</option>
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="w-40">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Hours available / week
+          </label>
+          <input
+            name="availableHours"
+            type="number"
+            min={0}
+            max={168}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="e.g. 5"
+          />
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Publishing…' : 'Publish skill'}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/skills')}
+            className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
