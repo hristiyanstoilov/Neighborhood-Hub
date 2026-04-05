@@ -46,8 +46,8 @@ export default function ResetPasswordForm() {
     setError(null)
 
     const form = new FormData(e.currentTarget)
-    const password = form.get('password') as string
-    const confirm = form.get('confirm') as string
+    const password = (form.get('password') as string).trim()
+    const confirm = (form.get('confirm') as string).trim()
 
     if (password !== confirm) {
       setError('Passwords do not match.')

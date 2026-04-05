@@ -8,7 +8,7 @@ import { getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 
 const schema = z.object({
-  token: z.string().length(64),
+  token: z.string().length(64, 'Invalid verification token format'),
 })
 
 export async function POST(req: NextRequest) {
