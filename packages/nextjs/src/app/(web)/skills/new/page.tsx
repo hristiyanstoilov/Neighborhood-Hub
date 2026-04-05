@@ -23,7 +23,7 @@ export default async function NewSkillPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Offer a skill</h1>
-      <NewSkillForm userId={user.id} categories={cats} locations={locs} />
+      <NewSkillForm categories={cats} locations={locs} />
     </div>
   )
 }

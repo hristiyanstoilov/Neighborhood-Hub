@@ -23,7 +23,8 @@ const MAX_ATTEMPTS = 5
 
 // Dummy hash used when user is not found — ensures timing is identical
 // to a real failed login, preventing user enumeration via response time.
-const DUMMY_HASH = '$2b$12$dummyhashfortimingpurposesXXXXXXXXXXXXXXXXXXX..'
+// hashSync runs once at module load (cold start), never per-request.
+const DUMMY_HASH = bcrypt.hashSync('neighborhood-hub-timing-dummy', 12)
 
 export async function POST(req: NextRequest) {
   try {

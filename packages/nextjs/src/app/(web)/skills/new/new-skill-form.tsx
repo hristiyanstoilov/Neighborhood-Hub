@@ -7,7 +7,6 @@ interface Category { id: string; slug: string; label: string }
 interface Location { id: string; city: string; neighborhood: string }
 
 interface Props {
-  userId: string
   categories: Category[]
   locations: Location[]
 }
