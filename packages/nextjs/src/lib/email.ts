@@ -1,8 +1,12 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
-const FROM = process.env.RESEND_FROM!
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL!
+if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY env var is required')
+if (!process.env.RESEND_FROM) throw new Error('RESEND_FROM env var is required')
+if (!process.env.NEXT_PUBLIC_APP_URL) throw new Error('NEXT_PUBLIC_APP_URL env var is required')
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+const FROM = process.env.RESEND_FROM
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL
 
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
   const link = `${APP_URL}/verify-email?token=${token}`

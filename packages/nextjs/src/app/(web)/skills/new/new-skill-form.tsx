@@ -22,36 +22,41 @@ export default function NewSkillForm({ categories, locations }: Props) {
     setError(null)
     setLoading(true)
 
-    const form = new FormData(e.currentTarget)
-    const availableHoursRaw = form.get('availableHours') as string
-    const body = {
-      title: form.get('title') as string,
-      description: (form.get('description') as string) || undefined,
-      categoryId: (form.get('categoryId') as string) || undefined,
-      locationId: (form.get('locationId') as string) || undefined,
-      availableHours: availableHoursRaw ? parseInt(availableHoursRaw, 10) : undefined,
-    }
-
-    const res = await apiFetch('/api/skills', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-
-    const json = await res.json()
-    setLoading(false)
-
-    if (!res.ok) {
-      const msg: Record<string, string> = {
-        UNVERIFIED_EMAIL: 'Please verify your email before offering a skill.',
-        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-        VALIDATION_ERROR: 'Please check your inputs.',
-        UNAUTHORIZED: 'You must be logged in to offer a skill.',
+    try {
+      const form = new FormData(e.currentTarget)
+      const availableHoursRaw = form.get('availableHours') as string
+      const body = {
+        title: form.get('title') as string,
+        description: (form.get('description') as string) || undefined,
+        categoryId: (form.get('categoryId') as string) || undefined,
+        locationId: (form.get('locationId') as string) || undefined,
+        availableHours: availableHoursRaw ? parseInt(availableHoursRaw, 10) : undefined,
       }
-      setError(msg[json.error] ?? 'Something went wrong. Please try again.')
-      return
-    }
 
-    router.push(`/skills/${json.data.id}`)
+      const res = await apiFetch('/api/skills', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        const msg: Record<string, string> = {
+          UNVERIFIED_EMAIL: 'Please verify your email before offering a skill.',
+          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+          VALIDATION_ERROR: 'Please check your inputs.',
+          UNAUTHORIZED: 'You must be logged in to offer a skill.',
+        }
+        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        return
+      }
+
+      router.push(`/skills/${json.data.id}`)
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

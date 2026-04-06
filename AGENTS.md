@@ -166,22 +166,34 @@ Rules:
 
 | Screen | Route | Status |
 |--------|-------|--------|
-| Register | `/register` | planned |
-| Login | `/login` | planned |
-| Neighborhood Radar (home) | `/` | planned |
-| Skill List | `/skills` | planned |
-| Skill Detail + Request | `/skills/[id]` | planned |
-| My Requests | `/requests` | planned |
-| Profile | `/profile` | planned |
-| Admin Panel | `/admin` | planned |
+| Home / Dashboard | `/` | ✅ done |
+| Register | `/register` | ✅ done |
+| Login | `/login` | ✅ done |
+| Forgot Password | `/forgot-password` | ✅ done |
+| Reset Password | `/reset-password` | ✅ done |
+| Verify Email | `/verify-email` | ✅ done |
+| Skill List + Search + Filters | `/skills` | ✅ done |
+| Skill Detail + Request modal | `/skills/[id]` | ✅ done |
+| Create Skill | `/skills/new` | ✅ done |
+| Edit Skill | `/skills/[id]/edit` | ✅ done |
+| My Requests | `/my-requests` | ✅ done |
+| Profile View | `/profile` | ✅ done |
+| Profile Edit | `/profile/edit` | ✅ done |
+| Admin — Users | `/admin/users` | ✅ done |
+| Admin — Audit Log | `/admin/audit` | ✅ done |
+| AI Chat | `/chat` | ❌ todo |
+| Public Profiles | `/users/[id]` | ❌ todo |
 
 ### Mobile screens (Expo)
 
 | Screen | Status |
 |--------|--------|
-| Login / Register | planned |
-| Skill List | planned |
-| Skill Detail + Request | planned |
+| Login | ✅ done |
+| Register | ✅ done |
+| Skill List | ✅ done |
+| Skill Detail + Request | ✅ done |
+| My Requests (Sent / Received) | ✅ done |
+| Profile | ❌ todo |
 
 > **Map on mobile:** `react-native-maps` requires separate setup – allocate extra time. The map is the central UI feature; if it breaks on mobile, the MVP impression suffers.
 

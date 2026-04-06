@@ -13,25 +13,29 @@ export default function ForgotPasswordPage() {
     setError(null)
     setLoading(true)
 
-    const form = new FormData(e.currentTarget)
-    const res = await fetch('/api/auth/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email') as string }),
-    })
+    try {
+      const form = new FormData(e.currentTarget)
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.get('email') as string }),
+      })
 
-    setLoading(false)
-
-    if (!res.ok) {
-      const json = await res.json()
-      if (json.error === 'TOO_MANY_REQUESTS') {
-        setError('Too many attempts. Please wait and try again.')
-        return
+      if (!res.ok) {
+        const json = await res.json()
+        if (json.error === 'TOO_MANY_REQUESTS') {
+          setError('Too many attempts. Please wait and try again.')
+          return
+        }
       }
-    }
 
-    // Always show success — never reveal whether the email exists
-    setSubmitted(true)
+      // Always show success — never reveal whether the email exists
+      setSubmitted(true)
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (submitted) {

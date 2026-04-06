@@ -17,35 +17,40 @@ export default function LoginForm() {
     setError(null)
     setLoading(true)
 
-    const form = new FormData(e.currentTarget)
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        email: form.get('email') as string,
-        password: form.get('password') as string,
-      }),
-    })
+    try {
+      const form = new FormData(e.currentTarget)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: form.get('email') as string,
+          password: form.get('password') as string,
+        }),
+      })
 
-    const json = await res.json()
-    setLoading(false)
+      const json = await res.json()
 
-    if (!res.ok) {
-      const msg: Record<string, string> = {
-        INVALID_CREDENTIALS: 'Invalid email or password.',
-        ACCOUNT_LOCKED: 'Account temporarily locked. Please try again later.',
-        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+      if (!res.ok) {
+        const msg: Record<string, string> = {
+          INVALID_CREDENTIALS: 'Invalid email or password.',
+          ACCOUNT_LOCKED: 'Account temporarily locked. Please try again later.',
+          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+        }
+        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        return
       }
-      setError(msg[json.error] ?? 'Something went wrong. Please try again.')
-      return
-    }
 
-    login(json.data.accessToken, json.data.user)
-    const next = searchParams.get('next') ?? ''
-    // Only allow relative paths to prevent open redirect attacks
-    const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/skills'
-    router.push(safePath)
+      login(json.data.accessToken, json.data.user)
+      const next = searchParams.get('next') ?? ''
+      // Only allow relative paths to prevent open redirect attacks
+      const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/skills'
+      router.push(safePath)
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
