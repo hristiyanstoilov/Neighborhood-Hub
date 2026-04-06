@@ -9,6 +9,7 @@
 
 A multi-platform full-stack app for Bulgarian neighborhoods — skill sharing, time swapping, and community connection.
 
+- **Live demo:** [neighborhood-hub.netlify.app](https://neighborhood-hub.netlify.app)
 - **Course:** Full Stack Apps with AI – SoftUni
 - **Type:** Capstone project (Phase 1 — active)
 
