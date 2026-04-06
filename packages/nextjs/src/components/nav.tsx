@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import Logo from '@/components/logo'
+import NotificationsBell from '@/components/notifications-bell'
 
 export default function Nav() {
   const { user, loading, logout } = useAuth()
@@ -35,6 +36,10 @@ export default function Nav() {
                       Admin
                     </Link>
                   )}
+                  <Link href="/my-requests" className="text-gray-600 hover:text-green-700 transition-colors">
+                    My Requests
+                  </Link>
+                  <NotificationsBell />
                   <Link href="/profile" className="text-gray-600 hover:text-green-700 transition-colors">
                     {user.profile?.name ?? user.email}
                   </Link>

@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { querySkillById } from '@/lib/queries/skills'
+import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RequestButton from './request-button'
+import SkillOwnerActions from './skill-owner-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +20,17 @@ export default async function SkillDetailPage({
 
   let skill = null
   let fetchError = false
+  let currentUserId: string | null = null
 
   try {
-    skill = await querySkillById(id)
+    const cookieStore = await cookies()
+    const refreshToken = cookieStore.get('refresh_token')?.value
+    const [skillResult, user] = await Promise.all([
+      querySkillById(id),
+      refreshToken ? queryUserByRefreshToken(refreshToken) : Promise.resolve(null),
+    ])
+    skill = skillResult
+    currentUserId = user?.id ?? null
   } catch {
     fetchError = true
   }
@@ -89,6 +100,9 @@ export default async function SkillDetailPage({
           </div>
         </dl>
 
+        {currentUserId && currentUserId === skill!.ownerId && (
+          <SkillOwnerActions skillId={skill!.id} />
+        )}
         <RequestButton skill={skill!} />
       </div>
     </div>
