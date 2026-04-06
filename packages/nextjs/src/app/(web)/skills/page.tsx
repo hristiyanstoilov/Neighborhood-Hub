@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { querySkills } from '@/lib/queries/skills'
+import { queryCategories } from '@/lib/queries/categories'
+import { queryLocations } from '@/lib/queries/locations'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,20 +17,41 @@ interface Skill {
   locationCity: string | null
 }
 
+const PAGE_SIZE = 20
+
 export default async function SkillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; search?: string; categoryId?: string; locationId?: string; page?: string }>
 }) {
-  const { status } = await searchParams
+  const { status, search, categoryId, locationId, page: rawPage } = await searchParams
+  const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
 
   let skills: Skill[] = []
   let fetchError = false
+  let categories: { id: string; slug: string; label: string }[] = []
+  let locations: { id: string; city: string; neighborhood: string }[] = []
 
   try {
-    skills = await querySkills({ status, limit: 20 })
+    ;[skills, categories, locations] = await Promise.all([
+      querySkills({ status, search, categoryId, locationId, limit: PAGE_SIZE, page }),
+      queryCategories(),
+      queryLocations(),
+    ])
   } catch {
     fetchError = true
+  }
+
+  // Build query string helper preserving other params.
+  // page is always reset to 1 unless explicitly passed in overrides.
+  function buildHref(overrides: Record<string, string | undefined>) {
+    const params = new URLSearchParams()
+    const merged = { status, search, categoryId, locationId, page: undefined, ...overrides }
+    for (const [k, v] of Object.entries(merged)) {
+      if (v) params.set(k, v)
+    }
+    const qs = params.toString()
+    return qs ? `/skills?${qs}` : '/skills'
   }
 
   return (
@@ -43,6 +66,93 @@ export default async function SkillsPage({
         </Link>
       </div>
 
+      {/* Search + filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        {/* Text search */}
+        <form method="GET" action="/skills" className="flex-1 min-w-48">
+          <div className="relative">
+            <input
+              name="search"
+              type="text"
+              defaultValue={search ?? ''}
+              placeholder="Search skills…"
+              maxLength={100}
+              className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            {/* Preserve other params */}
+            {status && <input type="hidden" name="status" value={status} />}
+            {categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
+            {locationId && <input type="hidden" name="locationId" value={locationId} />}
+          </div>
+        </form>
+
+        {/* Category filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Link
+            href={buildHref({ categoryId: undefined })}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              !categoryId
+                ? 'bg-green-700 text-white border-green-700'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
+            }`}
+          >
+            All categories
+          </Link>
+          {categories.map((c) => (
+            <Link
+              key={c.id}
+              href={buildHref({ categoryId: c.id })}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                categoryId === c.id
+                  ? 'bg-green-700 text-white border-green-700'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
+              }`}
+            >
+              {c.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Location filter */}
+      {locations.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Link
+            href={buildHref({ locationId: undefined })}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              !locationId
+                ? 'bg-green-700 text-white border-green-700'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
+            }`}
+          >
+            All locations
+          </Link>
+          {locations.map((l) => (
+            <Link
+              key={l.id}
+              href={buildHref({ locationId: l.id })}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                locationId === l.id
+                  ? 'bg-green-700 text-white border-green-700'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
+              }`}
+            >
+              {l.neighborhood}, {l.city}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Status filter */}
       <div className="flex gap-2 mb-6">
         {[
@@ -52,7 +162,7 @@ export default async function SkillsPage({
         ].map(({ label, value }) => (
           <Link
             key={label}
-            href={value ? `/skills?status=${value}` : '/skills'}
+            href={buildHref({ status: value })}
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               status === value
                 ? 'bg-green-700 text-white border-green-700'
@@ -72,7 +182,13 @@ export default async function SkillsPage({
       ) : skills.length === 0 ? (
         <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-2">No skills found.</p>
-          <p className="text-sm">Be the first to offer a skill in your neighborhood.</p>
+          {search || categoryId || locationId || status ? (
+            <Link href="/skills" className="text-sm text-green-700 hover:underline">
+              Clear filters
+            </Link>
+          ) : (
+            <p className="text-sm">Be the first to offer a skill in your neighborhood.</p>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -114,6 +230,18 @@ export default async function SkillsPage({
               )}
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!fetchError && (skills.length === PAGE_SIZE || page > 1) && (
+        <div className="flex justify-between mt-6 text-sm">
+          {page > 1
+            ? <Link href={buildHref({ page: String(page - 1) })} className="text-green-700 hover:underline">← Previous</Link>
+            : <span />}
+          {skills.length === PAGE_SIZE
+            ? <Link href={buildHref({ page: String(page + 1) })} className="text-green-700 hover:underline">Next →</Link>
+            : <span />}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, profiles, categories, locations, users } from '@/db/schema'
-import { eq, and, isNull, desc } from 'drizzle-orm'
+import { eq, and, isNull, desc, ilike } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -23,12 +23,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { categoryId, locationId, status, page, limit } = parsed.data
+    const { categoryId, locationId, status, search, page, limit } = parsed.data
 
     const conditions = [isNull(skills.deletedAt)]
     if (categoryId) conditions.push(eq(skills.categoryId, categoryId))
     if (locationId) conditions.push(eq(skills.locationId, locationId))
     if (status) conditions.push(eq(skills.status, status))
+    if (search) conditions.push(ilike(skills.title, `%${search}%`))
 
     const rows = await db
       .select({

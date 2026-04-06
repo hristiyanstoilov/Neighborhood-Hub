@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
-import { eq, and, isNull, desc } from 'drizzle-orm'
+import { eq, and, isNull, desc, ilike } from 'drizzle-orm'
 
 const skillSelect = {
   id: skills.id,
@@ -22,10 +22,20 @@ const skillSelect = {
   locationNeighborhood: locations.neighborhood,
 } as const
 
-export async function querySkills(opts: { status?: string; limit?: number; page?: number }) {
-  const { status, limit = 20, page = 1 } = opts
+export async function querySkills(opts: {
+  status?: string
+  search?: string
+  categoryId?: string
+  locationId?: string
+  limit?: number
+  page?: number
+}) {
+  const { status, search, categoryId, locationId, limit = 20, page = 1 } = opts
   const conditions = [isNull(skills.deletedAt)]
   if (status) conditions.push(eq(skills.status, status))
+  if (categoryId) conditions.push(eq(skills.categoryId, categoryId))
+  if (locationId) conditions.push(eq(skills.locationId, locationId))
+  if (search) conditions.push(ilike(skills.title, `%${search}%`))
 
   return db
     .select(skillSelect)
