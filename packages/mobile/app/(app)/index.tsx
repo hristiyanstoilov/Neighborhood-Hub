@@ -72,17 +72,26 @@ export default function SkillListScreen() {
 
   function renderHeader() {
     return (
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Skills</Text>
-        {user ? (
-          <TouchableOpacity onPress={logout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text style={styles.loginText}>Login</Text>
-          </TouchableOpacity>
-        )}
+      <View>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Skills</Text>
+          <View style={styles.headerActions}>
+            {user ? (
+              <>
+                <TouchableOpacity onPress={() => router.push('/(app)/my-requests')}>
+                  <Text style={styles.myRequestsText}>My Requests</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={logout}>
+                  <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                <Text style={styles.loginText}>Login</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
     )
   }
@@ -157,10 +166,20 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
+  },
+  myRequestsText: {
+    fontSize: 14,
+    color: '#15803d',
+    fontWeight: '500',
   },
   logoutText: {
     fontSize: 14,

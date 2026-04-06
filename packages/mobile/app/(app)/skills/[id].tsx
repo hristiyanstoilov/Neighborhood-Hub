@@ -41,6 +41,7 @@ export default function SkillDetailScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const [state, setState] = useState<FetchState>({ type: 'loading' })
+  const [requesting, setRequesting] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -80,7 +81,7 @@ export default function SkillDetailScreen() {
     fetchSkill()
   }, [id])
 
-  function handleRequest() {
+  async function handleRequest() {
     if (!user) {
       Alert.alert('Login required', 'Please login to request this skill.', [
         { text: 'Cancel', style: 'cancel' },
@@ -99,9 +100,60 @@ export default function SkillDetailScreen() {
     }
 
     Alert.alert(
-      'Request skill',
-      'Skill requests are coming soon.',
-      [{ text: 'OK' }]
+      'Request this skill',
+      'Send a request to the skill owner?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send request',
+          onPress: async () => {
+            setRequesting(true)
+            try {
+              // Schedule for tomorrow, 1-hour session, in person
+              const start = new Date()
+              start.setDate(start.getDate() + 1)
+              start.setHours(10, 0, 0, 0)
+              const end = new Date(start.getTime() + 60 * 60 * 1000)
+
+              const res = await apiFetch('/api/skill-requests', {
+                method: 'POST',
+                body: JSON.stringify({
+                  skillId: skill.id,
+                  scheduledStart: start.toISOString(),
+                  scheduledEnd: end.toISOString(),
+                  meetingType: 'in_person',
+                }),
+              })
+
+              const json = await res.json()
+
+              if (!res.ok) {
+                const msgs: Record<string, string> = {
+                  UNVERIFIED_EMAIL:       'Please verify your email first.',
+                  SKILL_NOT_AVAILABLE:    'This skill is no longer available.',
+                  REQUEST_ALREADY_EXISTS: 'You already have an active request for this skill.',
+                  TOO_MANY_REQUESTS:      'Too many attempts. Please wait.',
+                }
+                Alert.alert('Could not send request', msgs[json.error] ?? 'Something went wrong.')
+                return
+              }
+
+              Alert.alert(
+                'Request sent!',
+                'The skill owner will be notified. Track your request in My Requests.',
+                [
+                  { text: 'OK' },
+                  { text: 'View My Requests', onPress: () => router.push('/(app)/my-requests') },
+                ]
+              )
+            } catch {
+              Alert.alert('Error', 'Network error. Please try again.')
+            } finally {
+              setRequesting(false)
+            }
+          },
+        },
+      ]
     )
   }
 
@@ -187,9 +239,13 @@ export default function SkillDetailScreen() {
           <Text style={styles.ownerNoticeText}>This is your skill listing.</Text>
         </View>
       ) : canRequest ? (
-        <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>
+        <TouchableOpacity
+          style={[styles.requestButton, requesting && { opacity: 0.6 }]}
+          onPress={handleRequest}
+          disabled={requesting}
+        >
           <Text style={styles.requestButtonText}>
-            {user ? 'Request this skill' : 'Login to request'}
+            {requesting ? 'Sending…' : user ? 'Request this skill' : 'Login to request'}
           </Text>
         </TouchableOpacity>
       ) : (
