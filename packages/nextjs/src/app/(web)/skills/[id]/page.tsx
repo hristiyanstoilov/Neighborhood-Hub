@@ -96,7 +96,11 @@ export default async function SkillDetailPage({
           </div>
           <div>
             <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Offered by</dt>
-            <dd className="font-medium">{skill!.ownerName ?? 'Anonymous'}</dd>
+            <dd className="font-medium">
+              <Link href={`/users/${skill!.ownerId}`} className="hover:text-green-700 hover:underline">
+                {skill!.ownerName ?? 'Anonymous'}
+              </Link>
+            </dd>
           </div>
         </dl>
 

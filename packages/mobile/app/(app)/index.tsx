@@ -81,6 +81,9 @@ export default function SkillListScreen() {
                 <TouchableOpacity onPress={() => router.push('/(app)/my-requests')}>
                   <Text style={styles.myRequestsText}>My Requests</Text>
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
+                  <Text style={styles.myRequestsText}>Profile</Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={logout}>
                   <Text style={styles.logoutText}>Logout</Text>
                 </TouchableOpacity>

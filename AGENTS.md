@@ -182,7 +182,7 @@ Rules:
 | Admin — Users | `/admin/users` | ✅ done |
 | Admin — Audit Log | `/admin/audit` | ✅ done |
 | AI Chat | `/chat` | ✅ done |
-| Public Profiles | `/users/[id]` | ❌ todo |
+| Public Profiles | `/users/[id]` | ✅ done |
 
 ### Mobile screens (Expo)
 
@@ -193,7 +193,7 @@ Rules:
 | Skill List | ✅ done |
 | Skill Detail + Request | ✅ done |
 | My Requests (Sent / Received) | ✅ done |
-| Profile | ❌ todo |
+| Profile | ✅ done |
 
 > **Map on mobile:** `react-native-maps` requires separate setup – allocate extra time. The map is the central UI feature; if it breaks on mobile, the MVP impression suffers.
 
