@@ -22,7 +22,7 @@ Users can register, browse and offer skills/tools/food in their neighborhood, re
 | Web Frontend | React + TypeScript + Tailwind CSS |
 | Mobile | React Native + Expo |
 | Storage | Cloudflare R2 (photos/files) |
-| Deployment | Netlify / Vercel (serverless) |
+| Deployment | Netlify (serverless) |
 
 ---
 
@@ -282,7 +282,7 @@ Rules:
 | Web screens | 5+ screens | See screen list above |
 | Admin panel | /admin route | Only for admin role |
 | Mobile screens | 3+ screens | Login, Skill List, Skill Detail |
-| Deployment | Live on Netlify/Vercel | With Neon DB |
+| Deployment | Live on Netlify | With Neon DB |
 | Documentation | README.md in GitHub | Schema, setup, API docs |
 
 ---

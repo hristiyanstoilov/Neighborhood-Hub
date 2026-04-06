@@ -39,7 +39,7 @@ Neighbors can:
 | Email | Resend |
 | Rate Limiting | Upstash Redis + @upstash/ratelimit |
 | Storage | Cloudflare R2 (photos/files) |
-| Deployment | Vercel (serverless) |
+| Deployment | Netlify (serverless) |
 
 ---
 
@@ -306,14 +306,16 @@ CLOUDFLARE_R2_PUBLIC_URL=...
 
 ---
 
-## Deployment (Vercel)
+## Deployment (Netlify)
 
-1. Import the repo in [vercel.com](https://vercel.com)
-2. Set **Root Directory** to `packages/nextjs`
-3. Add all environment variables from `.env.example`
-4. Deploy — Vercel auto-detects Next.js
+1. Go to [netlify.com](https://netlify.com) → Add new site → Import from GitHub
+2. Set **Base directory** to `packages/nextjs`
+3. Set **Build command** to `npm run build`
+4. Set **Publish directory** to `packages/nextjs/.next`
+5. Add all environment variables from `.env.example`
+6. Deploy
 
-The `vercel.json` at the repo root is pre-configured for the monorepo layout.
+The `netlify.toml` at the repo root is pre-configured for the monorepo layout.
 
 ---
 

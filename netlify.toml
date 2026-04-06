@@ -3,9 +3,5 @@
   command = "npm run build"
   publish = ".next"
 
-[build.environment]
-  # NEXT_PUBLIC_* vars are intentionally inlined into the client bundle by Next.js
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_APP_URL"
-
 [[plugins]]
   package = "@netlify/plugin-nextjs"
