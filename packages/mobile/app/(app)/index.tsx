@@ -78,6 +78,9 @@ export default function SkillListScreen() {
           <View style={styles.headerActions}>
             {user ? (
               <>
+                <TouchableOpacity onPress={() => router.push('/(app)/radar')}>
+                  <Text style={styles.myRequestsText}>Radar</Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push('/(app)/my-requests')}>
                   <Text style={styles.myRequestsText}>My Requests</Text>
                 </TouchableOpacity>

@@ -7,6 +7,7 @@ export default function AppLayout() {
       <Stack.Screen name="skills/[id]" options={{ title: 'Skill Detail' }} />
       <Stack.Screen name="my-requests" options={{ title: 'My Requests' }} />
       <Stack.Screen name="profile" options={{ title: 'Profile' }} />
+      <Stack.Screen name="radar" options={{ title: 'Neighborhood Radar' }} />
     </Stack>
   )
 }

@@ -135,9 +135,9 @@ export default async function HomePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         {[
           { href: '/skills', label: 'Browse Skills', icon: '🔍' },
+          { href: '/radar', label: 'Radar Map', icon: '🗺️' },
           { href: '/my-requests', label: 'My Requests', icon: '📋' },
           { href: '/profile', label: 'Profile', icon: '👤' },
-          { href: '/skills/new', label: 'Offer Skill', icon: '✨' },
         ].map(({ href, label, icon }) => (
           <Link
             key={href}

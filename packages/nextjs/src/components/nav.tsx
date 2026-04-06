@@ -26,6 +26,9 @@ export default function Nav() {
           <Link href="/skills" className="text-gray-600 hover:text-green-700 transition-colors">
             Skills
           </Link>
+          <Link href="/radar" className="text-gray-600 hover:text-green-700 transition-colors">
+            Radar
+          </Link>
 
           {!loading && (
             <>
