@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@neondatabase/serverless": "^1.0.2",
     "@netlify/plugin-nextjs": "^5.15.9",
     "@upstash/ratelimit": "^2.0.8",

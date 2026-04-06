@@ -39,6 +39,9 @@ export default function Nav() {
                   <Link href="/my-requests" className="text-gray-600 hover:text-green-700 transition-colors">
                     My Requests
                   </Link>
+                  <Link href="/chat" className="text-gray-600 hover:text-green-700 transition-colors">
+                    AI Chat
+                  </Link>
                   <NotificationsBell />
                   <Link href="/profile" className="text-gray-600 hover:text-green-700 transition-colors">
                     {user.profile?.name ?? user.email}

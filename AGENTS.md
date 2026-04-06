@@ -181,7 +181,7 @@ Rules:
 | Profile Edit | `/profile/edit` | ✅ done |
 | Admin — Users | `/admin/users` | ✅ done |
 | Admin — Audit Log | `/admin/audit` | ✅ done |
-| AI Chat | `/chat` | ❌ todo |
+| AI Chat | `/chat` | ✅ done |
 | Public Profiles | `/users/[id]` | ❌ todo |
 
 ### Mobile screens (Expo)
