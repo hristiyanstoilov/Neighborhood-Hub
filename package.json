@@ -3,14 +3,10 @@
   "version": "1.0.0",
   "description": "A multi-platform full-stack app for Bulgarian neighborhoods that enables skill sharing, time swapping, tool lending, food sharing, and community events.",
   "private": true,
-  "workspaces": [
-    "packages/nextjs",
-    "packages/expo"
-  ],
   "scripts": {
-    "dev:web": "npm run dev --workspace=packages/nextjs",
-    "dev:mobile": "npm run start --workspace=packages/expo",
-    "build:web": "npm run build --workspace=packages/nextjs"
+    "dev:web": "npm run dev --prefix packages/nextjs",
+    "dev:mobile": "npm run start --prefix packages/mobile",
+    "build:web": "npm run build --prefix packages/nextjs"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
