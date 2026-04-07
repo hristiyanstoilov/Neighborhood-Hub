@@ -2,9 +2,10 @@
 
 ## Prerequisites
 
-- Node.js 18+
-- npm 9+
+- Node.js 20+
+- npm 10+
 - A [Neon](https://neon.tech) PostgreSQL database (free tier works)
+- A [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) bucket (for image uploads)
 - Git
 
 ## Local Setup
@@ -14,19 +15,25 @@
 git clone https://github.com/hristiyanstoilov/Neighborhood-Hub.git
 cd Neighborhood-Hub
 
-# 2. Install all dependencies (monorepo)
+# 2. Install web dependencies
 npm install
 
-# 3. Set up environment variables
+# 3. Install mobile dependencies (requires --legacy-peer-deps due to RN peer constraints)
+cd packages/mobile && npm install --legacy-peer-deps && cd ../..
+
+# 4. Set up environment variables
 cp packages/nextjs/.env.example packages/nextjs/.env.local
-# Fill in your DATABASE_URL, JWT_SECRET, etc.
+# Fill in DATABASE_URL, JWT_SECRET, UPSTASH_*, RESEND_*, CLOUDFLARE_R2_*, etc.
 
-# 4. Run database migrations
-cd packages/nextjs
-npx drizzle-kit migrate
+# 5. Run database migrations
+cd packages/nextjs && npx drizzle-kit migrate && cd ../..
 
-# 5. Start the dev server
-npm run dev
+# 6. (Optional) Seed locations + categories
+cd packages/nextjs && npx tsx src/db/seed.ts && cd ../..
+
+# 7. Start dev servers
+npm run dev:web      # Next.js on http://localhost:3000
+npm run dev:mobile   # Expo — scan QR with Expo Go app
 ```
 
 Web app runs at `http://localhost:3000`.
@@ -36,7 +43,7 @@ Web app runs at `http://localhost:3000`.
 ```
 packages/
   nextjs/    — Next.js backend API + web frontend
-  expo/      — React Native mobile app (coming soon)
+  mobile/    — React Native mobile app (Expo 54)
 docs/        — Product documentation and roadmap
 ```
 

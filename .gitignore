@@ -7,9 +7,10 @@ node_modules/
 .pnp
 .pnp.js
 
-# Mobile lock file is not committed — it confuses Turbopack workspace
-# root detection on Netlify (sees packages/mobile + packages/nextjs lockfiles
-# and picks packages/ as root instead of packages/nextjs)
+# Lock files that must not be committed — extra lockfiles confuse Turbopack
+# workspace root detection on Netlify (it picks packages/ as root instead of
+# packages/nextjs). The Netlify build command removes the root one too.
+package-lock.json
 packages/mobile/package-lock.json
 
 # Next.js

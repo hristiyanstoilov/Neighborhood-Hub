@@ -1,5 +1,5 @@
 # NEIGHBORHOOD HUB — Product Documentation
-**Version:** 1.0 | **Date:** April 2, 2026 | **Status:** MVP Active
+**Version:** 1.1 | **Date:** April 7, 2026 | **Status:** MVP Complete
 
 ---
 
@@ -26,7 +26,7 @@
 ### Product Overview
 **Neighborhood Hub** is a multi-platform full-stack application for Bulgarian neighborhoods that enables neighbors to share skills, time, tools, food, and organize community events through an interactive radar map.
 
-**Live demo:** *coming soon* | **Demo credentials:** `demo@neighborhood.hub` / `demo123`
+**Live demo:** [neighborhood-hub.netlify.app](https://neighborhood-hub.netlify.app)
 
 ### Problem Statement
 Bulgarian neighborhoods suffer from three root problems:
@@ -644,7 +644,7 @@ ai_conversations ───────── 1:N ──→ ai_messages
 | GDPR from day one | Neighborhood centroids only, soft delete, consent tracking | locations table design, user_consents |
 | Fast iteration | VARCHAR + CHECK over pgEnum | Easier status field migrations |
 | Zero infrastructure waste | Neon serverless + Netlify (no always-on servers) | No idle compute cost |
-| Mobile-first | React Native + Expo from the start | packages/expo |
+| Mobile-first | React Native + Expo 54 from the start | packages/mobile |
 
 ### What Was Deliberately Simplified
 

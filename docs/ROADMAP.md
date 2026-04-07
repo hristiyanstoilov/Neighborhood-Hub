@@ -8,16 +8,16 @@ A community platform for neighborhood sharing in Bulgaria.
 
 > **Capstone project (3–4 weeks):** Only v0.1 is implemented. Everything after v0.1 is product vision — do not touch until v0.1 is complete and deployed.
 
-| Week | Focus |
-|------|-------|
-| 1 | Auth + DB schema + Monorepo setup + Deploy skeleton |
-| 2 | Skill Listings (CRUD API + Web screens) |
-| 3 | Skill Requests + Neighborhood Radar (map) + Admin panel |
-| 4 | Mobile screens (3+) + Polish + README + 15 commits |
+| Week | Focus | Status |
+|------|-------|--------|
+| 1 | Auth + DB schema + Monorepo setup + Deploy skeleton | ✅ done |
+| 2 | Skill Listings (CRUD API + Web screens) | ✅ done |
+| 3 | Skill Requests + Neighborhood Radar (map) + Admin panel | ✅ done |
+| 4 | Mobile screens + Image uploads + Polish + README + 15+ commits | ✅ done |
 
 ---
 
-## v0.1 – Module 1: Neighborhood Radar + Time & Skill Swap *(MVP – active)*
+## v0.1 – Module 1: Neighborhood Radar + Time & Skill Swap *(MVP – complete)*
 
 ### Neighborhood Radar (map)
 - Interactive map with markers by type (skills, tools, events)
@@ -39,23 +39,35 @@ A community platform for neighborhood sharing in Bulgaria.
 | `locations` | Geo data for radar (id, lat, lng, type, city, neighborhood) |
 
 ### Web screens (v0.1)
-| Screen | Route |
-|--------|-------|
-| Register | `/register` |
-| Login | `/login` |
-| Neighborhood Radar (home) | `/` |
-| Skill List | `/skills` |
-| Skill Detail + Request form | `/skills/[id]` |
-| My Requests | `/requests` |
-| Profile | `/profile` |
-| Admin Panel | `/admin` |
+| Screen | Route | Status |
+|--------|-------|--------|
+| Home / Dashboard | `/` | ✅ done |
+| Register | `/register` | ✅ done |
+| Login | `/login` | ✅ done |
+| Forgot Password | `/forgot-password` | ✅ done |
+| Reset Password | `/reset-password` | ✅ done |
+| Verify Email | `/verify-email` | ✅ done |
+| Skill List + Search + Filters | `/skills` | ✅ done |
+| Skill Detail + Request form | `/skills/[id]` | ✅ done |
+| Create Skill (with image upload) | `/skills/new` | ✅ done |
+| Edit Skill | `/skills/[id]/edit` | ✅ done |
+| My Requests | `/my-requests` | ✅ done |
+| Profile View | `/profile` | ✅ done |
+| Profile Edit (with avatar upload) | `/profile/edit` | ✅ done |
+| Public User Profiles | `/users/[id]` | ✅ done |
+| Admin — Users | `/admin/users` | ✅ done |
+| Admin — Audit Log | `/admin/audit` | ✅ done |
+| AI Chat | `/chat` | ✅ done |
 
-### Mobile screens (v0.1 – minimum 3)
-| Screen |
-|--------|
-| Login / Register |
-| Skill List |
-| Skill Detail + Request |
+### Mobile screens (v0.1)
+| Screen | Status |
+|--------|--------|
+| Login / Register | ✅ done |
+| Skill List (paginated) | ✅ done |
+| Skill Detail + Request | ✅ done |
+| My Requests (sent/received) | ✅ done |
+| Profile + Avatar Upload | ✅ done |
+| Neighborhood Radar (map) | ✅ done |
 
 ### AI Features (v0.1 – if time allows in Week 3)
 - `/api/ai/chat` – AI chat assistant (required for "Full Stack Apps with AI" course)

@@ -19,3 +19,6 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 
 - Neon MCP requires `start <API_KEY>` as args, not env variable.
 - Use `@filename` to point Claude at specific files instead of letting it explore freely.
+- `apiFetch` must skip `Content-Type` header for `FormData` bodies — fetch sets multipart boundary automatically.
+- Mobile `npm install` requires `--legacy-peer-deps` due to react-native peer constraints.
+- Never hardcode `'image/jpeg'` for mobile image picker — use `asset.mimeType` from expo-image-picker.

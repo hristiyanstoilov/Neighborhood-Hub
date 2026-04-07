@@ -34,20 +34,43 @@ neighborhood-hub/
 │   ├── nextjs/                  # Backend API + Web frontend
 │   │   ├── src/
 │   │   │   ├── app/
-│   │   │   │   ├── api/         # API routes (REST endpoints)
-│   │   │   │   ├── (web)/       # Web pages/screens
-│   │   │   │   └── admin/       # Admin panel
-│   │   │   ├── components/      # React components
-│   │   │   ├── db/              # Drizzle schema + migrations
-│   │   │   ├── lib/             # JWT, middleware, helpers
-│   │   │   └── types/           # TypeScript types
-│   └── expo/                    # React Native mobile app
-│       ├── src/
-│       │   ├── screens/         # Mobile screens
-│       │   ├── components/      # RN components
-│       │   └── api/             # API client calls
+│   │   │   │   ├── api/         # REST API routes
+│   │   │   │   │   ├── auth/    # register, login, logout, refresh, me, verify-email,
+│   │   │   │   │   │            # resend-verification, forgot-password, reset-password
+│   │   │   │   │   ├── skills/  # CRUD skill listings
+│   │   │   │   │   ├── skill-requests/  # booking state machine
+│   │   │   │   │   ├── notifications/   # in-app notifications
+│   │   │   │   │   ├── profile/         # user profile
+│   │   │   │   │   ├── upload/          # Cloudflare R2 image upload
+│   │   │   │   │   ├── admin/           # admin users + audit log
+│   │   │   │   │   └── ai/              # AI chat + conversation history
+│   │   │   │   └── (web)/       # Web pages (server + client components)
+│   │   │   ├── components/      # Shared React components
+│   │   │   ├── contexts/        # Auth context
+│   │   │   ├── db/
+│   │   │   │   ├── schema.ts    # Drizzle schema (12 tables)
+│   │   │   │   ├── index.ts     # DB connection (neon-http)
+│   │   │   │   ├── seed.ts      # Seed locations + categories
+│   │   │   │   └── migrations/  # SQL migration files
+│   │   │   └── lib/
+│   │   │       ├── auth.ts      # JWT sign/verify + token helpers
+│   │   │       ├── middleware.ts # requireAuth / requireAdmin
+│   │   │       ├── ratelimit.ts # Upstash rate limiters
+│   │   │       ├── email.ts     # Resend email templates (green brand)
+│   │   │       ├── audit.ts     # Audit log writer
+│   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
+│   │   │       ├── queries/     # Reusable DB query functions
+│   │   │       └── schemas/     # Zod validation schemas
+│   │   └── package.json
+│   └── mobile/                  # React Native mobile app (Expo 54)
+│       ├── app/
+│       │   ├── (app)/           # Authenticated screens
+│       │   └── (auth)/          # Login / Register screens
+│       ├── components/          # Shared RN components
+│       ├── contexts/            # Auth context (mobile)
+│       └── lib/                 # API client + SecureStore token storage
+├── docs/                        # Product documentation and roadmap
 ├── AGENTS.md
-├── ROADMAP.md
 └── README.md
 ```
 
@@ -184,18 +207,17 @@ Rules:
 | AI Chat | `/chat` | ✅ done |
 | Public Profiles | `/users/[id]` | ✅ done |
 
-### Mobile screens (Expo)
+### Mobile screens (Expo 54)
 
 | Screen | Status |
 |--------|--------|
 | Login | ✅ done |
 | Register | ✅ done |
-| Skill List | ✅ done |
+| Skill List (paginated) | ✅ done |
 | Skill Detail + Request | ✅ done |
 | My Requests (Sent / Received) | ✅ done |
-| Profile | ✅ done |
-
-> **Map on mobile:** `react-native-maps` requires separate setup – allocate extra time. The map is the central UI feature; if it breaks on mobile, the MVP impression suffers.
+| Profile + Avatar Upload | ✅ done |
+| Neighborhood Radar | ✅ done |
 
 ---
 
@@ -232,7 +254,7 @@ Rules:
 - Return consistent JSON: `{ data }` on success, `{ error }` on failure
 - Add security headers in `next.config.ts`: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Content-Security-Policy`
 - CORS: explicit allowed origins only – never `Access-Control-Allow-Origin: *` on authenticated endpoints
-- File uploads (Cloudflare R2): validate MIME type server-side, generate random filename, max 5MB, allow only `image/jpeg`, `image/png`, `image/webp`
+- File uploads (Cloudflare R2): `POST /api/upload` — validate MIME type server-side (`image/jpeg`, `image/png`, `image/webp` only), generate UUID filename, max 5 MB, return `{ data: { url } }`. Use `@aws-sdk/client-s3` with `PutObjectCommand`. Never set `Content-Type: application/json` when sending `FormData` from the client — `apiFetch` handles this automatically.
 - AI routes: system prompt must contain explicit boundaries; never include sensitive DB fields in AI context; rate-limit per `user_id`
 
 ### Database (Drizzle + Neon)
@@ -261,11 +283,13 @@ Rules:
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
 
-### Mobile (Expo)
-- Screens in `packages/expo/src/screens/`
+### Mobile (Expo 54)
+- Screens in `packages/mobile/app/(app)/` (authenticated) and `packages/mobile/app/(auth)/` (login/register)
 - Use Expo Router for navigation
 - API base URL in env variable `EXPO_PUBLIC_API_URL`
-- Use `FlatList` for lists, `ScrollView` for detail pages
+- Use `FlatList` for lists (with pagination), `ScrollView` for detail pages
+- Image picker: `expo-image-picker` — always request permission, use `asset.mimeType` for correct MIME type
+- `apiFetch` skips `Content-Type` header for `FormData` bodies automatically — do not override
 
 ---
 

@@ -6,6 +6,7 @@
 ![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-green)
 ![Neon](https://img.shields.io/badge/Neon-PostgreSQL-brightgreen?logo=postgresql)
 ![Expo](https://img.shields.io/badge/Expo-54-000000?logo=expo)
+![Cloudflare R2](https://img.shields.io/badge/Cloudflare-R2-f6821f?logo=cloudflare)
 
 A multi-platform full-stack app for Bulgarian neighborhoods — skill sharing, time swapping, and community connection.
 
@@ -35,7 +36,7 @@ Neighbors can:
 | Database | Neon PostgreSQL + Drizzle ORM |
 | Auth | JWT (access + refresh tokens, custom middleware) |
 | Web Frontend | React + TypeScript + Tailwind CSS 4 |
-| Mobile | React Native + Expo 52 |
+| Mobile | React Native + Expo 54 |
 | AI | Anthropic claude-haiku-4-5 |
 | Email | Resend |
 | Rate Limiting | Upstash Redis + @upstash/ratelimit |
@@ -72,11 +73,11 @@ neighborhood-hub/
 │   │   │       ├── ratelimit.ts # Upstash rate limiters
 │   │   │       ├── email.ts     # Resend email templates
 │   │   │       ├── audit.ts     # Audit log writer
-│   │   │       ├── api.ts       # Server-side fetch helper
+│   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
 │   │   │       ├── queries/     # Reusable DB query functions
 │   │   │       └── schemas/     # Zod validation schemas
 │   │   └── package.json
-│   └── mobile/                  # React Native mobile app (Expo)
+│   └── mobile/                  # React Native mobile app (Expo 54)
 │       ├── app/
 │       │   ├── (app)/           # Authenticated screens
 │       │   └── (auth)/          # Login / Register screens
@@ -161,13 +162,14 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | POST | `/api/skill-requests` | JWT + verified | Create request |
 | PATCH | `/api/skill-requests/[id]` | JWT | Update status (state machine) |
 
-### Profile & Notifications
+### Profile, Notifications & Uploads
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | GET | `/api/profile` | JWT | Get my profile |
-| PUT | `/api/profile` | JWT | Update my profile |
+| PUT | `/api/profile` | JWT | Update my profile (name, bio, avatar, location, visibility) |
 | GET | `/api/notifications` | JWT | List my notifications |
 | POST | `/api/notifications/read` | JWT | Mark notifications as read |
+| POST | `/api/upload` | JWT | Upload image to Cloudflare R2 (JPEG/PNG/WebP, max 5 MB) |
 
 ### Admin
 | Method | Route | Auth | Description |
@@ -207,16 +209,16 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | Admin — Audit Log | `/admin/audit` |
 | AI Chat | `/chat` |
 
-## Mobile Screens (Expo)
+## Mobile Screens (Expo 54)
 
 | Screen | Route |
 |--------|-------|
 | Login | `/(auth)/login` |
 | Register | `/(auth)/register` |
-| Skill List | `/(app)/index` |
+| Skill List (paginated) | `/(app)/index` |
 | Skill Detail + Request | `/(app)/skills/[id]` |
-| My Requests | `/(app)/my-requests` |
-| Profile | `/(app)/profile` |
+| My Requests (sent/received) | `/(app)/my-requests` |
+| Profile + Avatar Upload | `/(app)/profile` |
 | Neighborhood Radar | `/(app)/radar` |
 
 ---
@@ -250,6 +252,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 - An [Upstash](https://upstash.com) Redis instance
 - A [Resend](https://resend.com) API key (for emails)
 - An [Anthropic](https://console.anthropic.com) API key (for AI chat)
+- A [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) bucket (for image uploads)
 
 ### Setup
 
@@ -266,13 +269,15 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 # Edit .env.local with your credentials
 
 # 4. Run DB migrations
-cd packages/nextjs
-npx drizzle-kit migrate
+cd packages/nextjs && npx drizzle-kit migrate && cd ../..
 
 # 5. (Optional) Seed categories and locations
-npx tsx src/db/seed.ts
+cd packages/nextjs && npx tsx src/db/seed.ts && cd ../..
 
-# 6. Start dev servers
+# 6. Install mobile dependencies
+cd packages/mobile && npm install --legacy-peer-deps && cd ../..
+
+# 7. Start dev servers
 npm run dev:web      # Next.js on http://localhost:3000
 npm run dev:mobile   # Expo — scan QR with Expo Go app
 ```
@@ -300,12 +305,12 @@ ANTHROPIC_API_KEY=sk-ant-...
 # App URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# File Storage (Cloudflare R2) — optional
+# File Storage (Cloudflare R2) — required for avatar and skill image uploads
 CLOUDFLARE_R2_BUCKET=...
 CLOUDFLARE_R2_ACCOUNT_ID=...
 CLOUDFLARE_R2_ACCESS_KEY=...
 CLOUDFLARE_R2_SECRET_KEY=...
-CLOUDFLARE_R2_PUBLIC_URL=...
+CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxx.r2.dev
 ```
 
 ---
