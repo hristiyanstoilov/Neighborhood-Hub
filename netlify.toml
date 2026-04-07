@@ -3,5 +3,10 @@
   command = "rm -rf .next src/app/admin ../../package-lock.json && npm run build"
   publish = ".next"
 
+[build.environment]
+  # NEXT_PUBLIC_* variables are intentionally embedded in client-side bundles
+  # by Next.js — this is expected behaviour, not a secret leak.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_APP_URL"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
