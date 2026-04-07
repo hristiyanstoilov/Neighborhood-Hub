@@ -94,7 +94,27 @@ export default function SkillDetailScreen() {
       Alert.alert(
         'Email not verified',
         'Please verify your email before requesting skills.',
-        [{ text: 'OK' }]
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Resend email',
+            onPress: async () => {
+              try {
+                const res = await apiFetch('/api/auth/resend-verification', { method: 'POST' })
+                const json = await res.json()
+                if (res.ok) {
+                  Alert.alert('Email sent', 'Check your inbox for the verification link.')
+                } else if (json.error === 'EMAIL_ALREADY_VERIFIED') {
+                  Alert.alert('Already verified', 'Your email is already verified. Please reload the app.')
+                } else {
+                  Alert.alert('Error', 'Could not send email. Please try again.')
+                }
+              } catch {
+                Alert.alert('Error', 'Network error. Please try again.')
+              }
+            },
+          },
+        ]
       )
       return
     }

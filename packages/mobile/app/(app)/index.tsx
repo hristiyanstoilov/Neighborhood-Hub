@@ -21,20 +21,24 @@ interface Skill {
   category: string | null
 }
 
+const PAGE_SIZE = 20
+
 type FetchState =
   | { type: 'loading' }
   | { type: 'error'; message: string }
-  | { type: 'ok'; skills: Skill[] }
+  | { type: 'ok'; skills: Skill[]; total: number }
 
 export default function SkillListScreen() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [state, setState] = useState<FetchState>({ type: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
 
-  const fetchSkills = useCallback(async () => {
+  const fetchSkills = useCallback(async (pageNum = 1) => {
     try {
-      const res = await apiFetch('/api/skills?limit=30')
+      const res = await apiFetch(`/api/skills?limit=${PAGE_SIZE}&page=${pageNum}`)
       if (!res.ok) {
         setState({ type: 'error', message: 'Failed to load skills.' })
         return
@@ -47,27 +51,44 @@ export default function SkillListScreen() {
         ownerName: string | null
         categoryLabel: string | null
       }>
-      const skills: Skill[] = rows.map((r) => ({
+      const fetched: Skill[] = rows.map((r) => ({
         id: r.id,
         title: r.title,
         status: r.status,
         ownerName: r.ownerName,
         category: r.categoryLabel,
       }))
-      setState({ type: 'ok', skills })
+      const total: number = json.total ?? fetched.length
+      setState((prev) => {
+        if (pageNum === 1) {
+          return { type: 'ok', skills: fetched, total }
+        }
+        const existing = prev.type === 'ok' ? prev.skills : []
+        return { type: 'ok', skills: [...existing, ...fetched], total }
+      })
     } catch {
       setState({ type: 'error', message: 'Network error. Please try again.' })
     }
   }, [])
 
   useEffect(() => {
-    fetchSkills()
+    fetchSkills(1)
   }, [fetchSkills])
 
   async function handleRefresh() {
     setRefreshing(true)
-    await fetchSkills()
+    setPage(1)
+    await fetchSkills(1)
     setRefreshing(false)
+  }
+
+  async function handleLoadMore() {
+    if (loadingMore) return
+    const nextPage = page + 1
+    setLoadingMore(true)
+    setPage(nextPage)
+    await fetchSkills(nextPage)
+    setLoadingMore(false)
   }
 
   function renderHeader() {
@@ -116,12 +137,14 @@ export default function SkillListScreen() {
       <View style={styles.center}>
         {renderHeader()}
         <Text style={styles.errorText}>{state.message}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchSkills}>
+        <TouchableOpacity style={styles.retryButton} onPress={() => fetchSkills(1)}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
     )
   }
+
+  const hasMore = state.type === 'ok' && state.skills.length < state.total
 
   return (
     <View style={styles.container}>
@@ -142,6 +165,16 @@ export default function SkillListScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyText}>No skills found.</Text>
           </View>
+        }
+        ListFooterComponent={
+          hasMore ? (
+            <TouchableOpacity style={styles.loadMoreButton} onPress={() => handleLoadMore()} disabled={loadingMore}>
+              {loadingMore
+                ? <ActivityIndicator color="#15803d" />
+                : <Text style={styles.loadMoreText}>Load more</Text>
+              }
+            </TouchableOpacity>
+          ) : null
         }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#15803d" />
@@ -220,6 +253,22 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#9ca3af',
+    fontSize: 14,
+  },
+  loadMoreButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  loadMoreText: {
+    color: '#15803d',
+    fontWeight: '500',
     fontSize: 14,
   },
 })
