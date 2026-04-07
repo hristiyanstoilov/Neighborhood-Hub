@@ -25,6 +25,29 @@ export default function EditProfileForm({ profile, locations }: Props) {
   const { refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '')
+  const [uploading, setUploading] = useState(false)
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        return
+      }
+      setAvatarUrl(json.data.url)
+    } catch {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,7 +59,7 @@ export default function EditProfileForm({ profile, locations }: Props) {
       const body = {
         name:       (form.get('name') as string).trim() || undefined,
         bio:        (form.get('bio') as string).trim() || undefined,
-        avatarUrl:  (form.get('avatarUrl') as string).trim() || undefined,
+        avatarUrl:  avatarUrl || undefined,
         locationId: (form.get('locationId') as string) || undefined,
         isPublic:   form.get('isPublic') === 'true',
       }
@@ -98,15 +121,23 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
+          {avatarUrl && (
+            <img
+              src={avatarUrl}
+              alt="Avatar preview"
+              className="w-16 h-16 rounded-full object-cover mb-2 border border-gray-200"
+            />
+          )}
           <input
-            name="avatarUrl"
-            type="url"
-            maxLength={2048}
-            defaultValue={profile?.avatarUrl ?? ''}
-            placeholder="https://example.com/avatar.jpg"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleAvatarChange}
+            disabled={uploading}
+            className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
           />
+          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
+          <p className="text-xs text-gray-400 mt-1">JPEG, PNG or WebP, max 5 MB.</p>
         </div>
 
         <div>

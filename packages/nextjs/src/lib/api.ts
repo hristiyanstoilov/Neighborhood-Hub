@@ -30,7 +30,10 @@ export async function apiFetch(
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
   }
-  headers.set('Content-Type', 'application/json')
+  // Don't set Content-Type for FormData — fetch sets it automatically with the multipart boundary
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json')
+  }
 
   const res = await fetch(`${BASE}${path}`, {
     ...options,

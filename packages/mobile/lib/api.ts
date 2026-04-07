@@ -42,11 +42,13 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
+  const isFormData = options?.body instanceof FormData
   const doFetch = (token: string | null) =>
     fetch(`${BASE}${path}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        // Don't set Content-Type for FormData — fetch sets it automatically with the boundary
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options?.headers ?? {}),
       },

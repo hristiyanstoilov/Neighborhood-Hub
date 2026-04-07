@@ -8,8 +8,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Image,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../../contexts/auth'
 import { apiFetch } from '../../lib/api'
 
@@ -35,6 +37,49 @@ export default function ProfileScreen() {
   const router = useRouter()
   const [state, setState] = useState<FetchState>({ type: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  async function handlePickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Please allow access to your photo library.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+    if (result.canceled) return
+    const asset = result.assets[0]
+    setUploadingAvatar(true)
+    try {
+      const mime = asset.mimeType ?? 'image/jpeg'
+      const ext = mime.split('/')[1] ?? 'jpg'
+      const fd = new FormData()
+      fd.append('file', { uri: asset.uri, name: `avatar.${ext}`, type: mime } as any)
+      const uploadRes = await apiFetch('/api/upload', { method: 'POST', body: fd })
+      const uploadJson = await uploadRes.json()
+      if (!uploadRes.ok) {
+        Alert.alert('Upload failed', uploadJson.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
+        return
+      }
+      const profileRes = await apiFetch('/api/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ avatarUrl: uploadJson.data.url }),
+      })
+      if (!profileRes.ok) {
+        Alert.alert('Error', 'Could not save avatar. Please try again.')
+        return
+      }
+      await fetchProfile()
+    } catch {
+      Alert.alert('Error', 'Upload failed. Please check your connection.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -132,9 +177,24 @@ export default function ProfileScreen() {
     >
       {/* Avatar + name */}
       <View style={styles.avatarSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
+        <TouchableOpacity onPress={handlePickAvatar} disabled={uploadingAvatar} style={styles.avatarWrapper}>
+          {profile.avatarUrl ? (
+            <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+          {uploadingAvatar ? (
+            <View style={styles.avatarOverlay}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          ) : (
+            <View style={styles.avatarOverlay}>
+              <Text style={styles.avatarEditIcon}>✎</Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <Text style={styles.name}>{profile.name ?? 'No name set'}</Text>
         <Text style={styles.email}>{profile.email}</Text>
         {location && <Text style={styles.location}>📍 {location}</Text>}
@@ -204,6 +264,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  avatarWrapper: {
+    width: 72,
+    height: 72,
+    marginBottom: 12,
+  },
   avatar: {
     width: 72,
     height: 72,
@@ -211,7 +276,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#15803d',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarEditIcon: {
+    color: '#fff',
+    fontSize: 12,
+    lineHeight: 14,
   },
   avatarText: {
     fontSize: 28,

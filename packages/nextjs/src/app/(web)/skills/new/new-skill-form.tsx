@@ -16,6 +16,29 @@ export default function NewSkillForm({ categories, locations }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        return
+      }
+      setImageUrl(json.data.url)
+    } catch {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,6 +54,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
         categoryId: (form.get('categoryId') as string) || undefined,
         locationId: (form.get('locationId') as string) || undefined,
         availableHours: availableHoursRaw ? parseInt(availableHoursRaw, 10) : undefined,
+        imageUrl: imageUrl || undefined,
       }
 
       const res = await apiFetch('/api/skills', {
@@ -87,6 +111,26 @@ export default function NewSkillForm({ categories, locations }: Props) {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
             placeholder="Describe what you offer, your experience, and any requirements…"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt="Skill image preview"
+              className="w-full max-h-48 object-cover rounded-md mb-2 border border-gray-200"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleImageChange}
+            disabled={uploading}
+            className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
+          />
+          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
+          <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
