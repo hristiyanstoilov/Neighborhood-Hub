@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const json = await res.json()
         setUser(json.data ?? null)
+      } catch (err) {
+        console.error('[auth] restore failed:', err)
       } finally {
         setLoading(false)
       }

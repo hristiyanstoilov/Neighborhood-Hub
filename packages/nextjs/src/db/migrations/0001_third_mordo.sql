@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "skill_requests_active_request_idx" ON "skill_requests" USING btree ("skill_id","user_from_id") WHERE "skill_requests"."status" IN ('pending', 'accepted');

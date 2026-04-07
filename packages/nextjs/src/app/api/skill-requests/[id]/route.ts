@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, notifications } from '@/db/schema'
+import { skillRequests, notifications, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -32,11 +32,15 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const existing = await db.query.skillRequests.findFirst({
-      where: eq(skillRequests.id, id),
-    })
+    const [existing, dbUser] = await Promise.all([
+      db.query.skillRequests.findFirst({ where: eq(skillRequests.id, id) }),
+      db.query.users.findFirst({ where: eq(users.id, user.sub) }),
+    ])
     if (!existing) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+    }
+    if (!dbUser || dbUser.deletedAt) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
     }
 
     // Access control — caller must be requester or owner

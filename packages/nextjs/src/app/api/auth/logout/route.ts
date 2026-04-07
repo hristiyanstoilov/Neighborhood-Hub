@@ -33,7 +33,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
         eq(refreshTokens.isRevoked, true),
         lt(refreshTokens.expiresAt, cutoff)
       ))
-      .catch(() => {})
+      .catch((err) => console.error('[logout] token cleanup failed:', err))
 
     const response = NextResponse.json({ data: { message: 'Logged out.' } })
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, profiles, categories, locations, users } from '@/db/schema'
-import { eq, and, isNull, desc, ilike } from 'drizzle-orm'
+import { eq, and, isNull, desc, ilike, count } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -31,35 +31,41 @@ export async function GET(req: NextRequest) {
     if (status) conditions.push(eq(skills.status, status))
     if (search) conditions.push(ilike(skills.title, `%${search}%`))
 
-    const rows = await db
-      .select({
-        id: skills.id,
-        title: skills.title,
-        description: skills.description,
-        status: skills.status,
-        availableHours: skills.availableHours,
-        imageUrl: skills.imageUrl,
-        createdAt: skills.createdAt,
-        ownerId: skills.ownerId,
-        ownerName: profiles.name,
-        ownerAvatar: profiles.avatarUrl,
-        categoryId: skills.categoryId,
-        categorySlug: categories.slug,
-        categoryLabel: categories.label,
-        locationId: skills.locationId,
-        locationCity: locations.city,
-        locationNeighborhood: locations.neighborhood,
-      })
-      .from(skills)
-      .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
-      .leftJoin(categories, eq(categories.id, skills.categoryId))
-      .leftJoin(locations, eq(locations.id, skills.locationId))
-      .where(and(...conditions))
-      .limit(limit)
-      .offset((page - 1) * limit)
-      .orderBy(desc(skills.createdAt))
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select({
+          id: skills.id,
+          title: skills.title,
+          description: skills.description,
+          status: skills.status,
+          availableHours: skills.availableHours,
+          imageUrl: skills.imageUrl,
+          createdAt: skills.createdAt,
+          ownerId: skills.ownerId,
+          ownerName: profiles.name,
+          ownerAvatar: profiles.avatarUrl,
+          categoryId: skills.categoryId,
+          categorySlug: categories.slug,
+          categoryLabel: categories.label,
+          locationId: skills.locationId,
+          locationCity: locations.city,
+          locationNeighborhood: locations.neighborhood,
+        })
+        .from(skills)
+        .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
+        .leftJoin(categories, eq(categories.id, skills.categoryId))
+        .leftJoin(locations, eq(locations.id, skills.locationId))
+        .where(and(...conditions))
+        .limit(limit)
+        .offset((page - 1) * limit)
+        .orderBy(desc(skills.createdAt)),
+      db
+        .select({ total: count() })
+        .from(skills)
+        .where(and(...conditions)),
+    ])
 
-    return NextResponse.json({ data: rows, page, limit })
+    return NextResponse.json({ data: rows, page, limit, total })
   } catch (err) {
     console.error('[GET /api/skills]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

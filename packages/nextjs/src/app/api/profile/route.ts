@@ -1,11 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
-import { profiles, locations } from '@/db/schema'
+import { profiles, locations, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+
+// ─── GET /api/profile — get current user's profile with location ──────────────
+
+export const GET = requireAuth(async (_req: NextRequest, { user }) => {
+  const { success } = await apiRatelimit.limit(user.sub)
+  if (!success) {
+    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+  }
+
+  const [dbUser, profile] = await Promise.all([
+    db.query.users.findFirst({ where: eq(users.id, user.sub) }),
+    db.query.profiles.findFirst({ where: eq(profiles.userId, user.sub) }),
+  ])
+
+  if (!dbUser) {
+    return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
+  }
+
+  let locationCity: string | null = null
+  let locationNeighborhood: string | null = null
+
+  if (profile?.locationId) {
+    const loc = await db.query.locations.findFirst({ where: eq(locations.id, profile.locationId) })
+    locationCity = loc?.city ?? null
+    locationNeighborhood = loc?.neighborhood ?? null
+  }
+
+  return NextResponse.json({
+    data: {
+      email: dbUser.email,
+      emailVerifiedAt: dbUser.emailVerifiedAt,
+      name: profile?.name ?? null,
+      bio: profile?.bio ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+      isPublic: profile?.isPublic ?? true,
+      locationId: profile?.locationId ?? null,
+      locationCity,
+      locationNeighborhood,
+    },
+  })
+})
 
 const updateProfileSchema = z.object({
   name:       z.string().min(1).max(100).optional(),

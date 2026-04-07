@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native'
 import MapView, { Circle, Callout, Marker, Region } from 'react-native-maps'
 import { useRouter } from 'expo-router'
@@ -160,9 +159,6 @@ export default function RadarScreen() {
     </View>
   )
 }
-
-// React is needed for React.Fragment
-import React from 'react'
 
 const styles = StyleSheet.create({
   container: {

@@ -265,6 +265,9 @@ export const skillRequests = pgTable(
     index('skill_requests_status_idx').on(t.status),
     index('skill_requests_user_from_status_idx').on(t.userFromId, t.status),
     index('skill_requests_user_to_status_idx').on(t.userToId, t.status),
+    uniqueIndex('skill_requests_active_request_idx')
+      .on(t.skillId, t.userFromId)
+      .where(sql`${t.status} IN ('pending', 'accepted')`),
     check(
       'skill_requests_status_check',
       sql`${t.status} IN ('pending', 'accepted', 'rejected', 'completed', 'cancelled')`

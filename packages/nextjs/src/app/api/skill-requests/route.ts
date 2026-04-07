@@ -113,7 +113,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     })
 
     return NextResponse.json({ data: newRequest }, { status: 201 })
-  } catch (err) {
+  } catch (err: any) {
+    // Unique constraint violation — concurrent duplicate request
+    if (err?.code === '23505') {
+      return NextResponse.json({ error: 'REQUEST_ALREADY_EXISTS' }, { status: 409 })
+    }
     console.error('[POST /api/skill-requests]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
