@@ -5,7 +5,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
 ![Drizzle ORM](https://img.shields.io/badge/Drizzle-ORM-green)
 ![Neon](https://img.shields.io/badge/Neon-PostgreSQL-brightgreen?logo=postgresql)
-![Expo](https://img.shields.io/badge/Expo-52-000000?logo=expo)
+![Expo](https://img.shields.io/badge/Expo-54-000000?logo=expo)
 
 A multi-platform full-stack app for Bulgarian neighborhoods — skill sharing, time swapping, and community connection.
 
@@ -53,7 +53,7 @@ neighborhood-hub/
 │   │   ├── src/
 │   │   │   ├── app/
 │   │   │   │   ├── api/         # REST API routes
-│   │   │   │   │   ├── auth/    # register, login, logout, refresh, me, verify-email, forgot-password, reset-password
+│   │   │   │   │   ├── auth/    # register, login, logout, refresh, me, verify-email, resend-verification, forgot-password, reset-password
 │   │   │   │   │   ├── skills/  # CRUD skill listings
 │   │   │   │   │   ├── skill-requests/  # booking requests state machine
 │   │   │   │   │   ├── notifications/   # in-app notifications
@@ -140,6 +140,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | POST | `/api/auth/refresh` | cookie | Rotate refresh token |
 | GET | `/api/auth/me` | JWT | Get current user |
 | POST | `/api/auth/verify-email` | — | Verify email with token |
+| POST | `/api/auth/resend-verification` | JWT | Resend verification email |
 | POST | `/api/auth/forgot-password` | — | Send password reset email |
 | POST | `/api/auth/reset-password` | — | Set new password with token |
 
@@ -164,7 +165,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | GET | `/api/profile` | JWT | Get my profile |
-| PATCH | `/api/profile` | JWT | Update my profile |
+| PUT | `/api/profile` | JWT | Update my profile |
 | GET | `/api/notifications` | JWT | List my notifications |
 | POST | `/api/notifications/read` | JWT | Mark notifications as read |
 
@@ -216,6 +217,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | Skill Detail + Request | `/(app)/skills/[id]` |
 | My Requests | `/(app)/my-requests` |
 | Profile | `/(app)/profile` |
+| Neighborhood Radar | `/(app)/radar` |
 
 ---
 
@@ -236,6 +238,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 - **Soft delete:** `deleted_at` on `users` and `skills`
 - **Audit log:** all admin actions logged with metadata
 - **Security headers:** `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Content-Security-Policy`, `Strict-Transport-Security`
+- **Concurrent request protection:** partial unique index on `skill_requests(skill_id, user_from_id)` where status is `pending` or `accepted` — prevents race condition duplicates at the DB level
 
 ---
 
