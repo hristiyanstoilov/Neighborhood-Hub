@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { querySkills } from '@/lib/queries/skills'
 import { queryCategories } from '@/lib/queries/categories'
 import { queryLocations } from '@/lib/queries/locations'
+import { EmptyState, ErrorState } from '@/components/ui/async-states'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,7 @@ interface Skill {
   description: string | null
   status: string
   availableHours: number | null
+  imageUrl: string | null
   ownerName: string | null
   categoryLabel: string | null
   locationNeighborhood: string | null
@@ -175,59 +177,61 @@ export default async function SkillsPage({
       </div>
 
       {fetchError ? (
-        <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load skills.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
-        </div>
+        <ErrorState title="Could not load skills." message="Please try refreshing the page." />
       ) : skills.length === 0 ? (
-        <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">No skills found.</p>
-          {search || categoryId || locationId || status ? (
-            <Link href="/skills" className="text-sm text-green-700 hover:underline">
-              Clear filters
-            </Link>
-          ) : (
-            <p className="text-sm">Be the first to offer a skill in your neighborhood.</p>
-          )}
-        </div>
+        <EmptyState
+          title="No skills found."
+          message={search || categoryId || locationId || status ? undefined : 'Be the first to offer a skill in your neighborhood.'}
+          actionLabel={search || categoryId || locationId || status ? 'Clear filters' : undefined}
+          actionHref={search || categoryId || locationId || status ? '/skills' : undefined}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {skills.map((skill) => (
             <Link
               key={skill.id}
               href={`/skills/${skill.id}`}
-              className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-green-400 hover:shadow-sm transition-all"
+              className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-green-400 hover:shadow-sm transition-all"
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="font-semibold text-gray-900 line-clamp-2">{skill.title}</h2>
-                <span
-                  className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-                    skill.status === 'available'
-                      ? 'bg-green-100 text-green-700'
-                      : skill.status === 'busy'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {skill.status}
-                </span>
-              </div>
-
-              {skill.description && (
-                <p className="text-sm text-gray-500 line-clamp-2 mb-3">{skill.description}</p>
+              {skill.imageUrl && (
+                <img
+                  src={skill.imageUrl}
+                  alt={skill.title}
+                  className="w-full h-36 object-cover"
+                />
               )}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h2 className="font-semibold text-gray-900 line-clamp-2">{skill.title}</h2>
+                  <span
+                    className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                      skill.status === 'available'
+                        ? 'bg-green-100 text-green-700'
+                        : skill.status === 'busy'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {skill.status}
+                  </span>
+                </div>
 
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-                {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
-                {skill.locationNeighborhood && (
-                  <span>{skill.locationNeighborhood}, {skill.locationCity}</span>
+                {skill.description && (
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-3">{skill.description}</p>
                 )}
-                {skill.availableHours != null && <span>{skill.availableHours}h/week</span>}
-              </div>
 
-              {skill.ownerName && (
-                <p className="text-xs text-gray-400 mt-2">by {skill.ownerName}</p>
-              )}
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                  {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
+                  {skill.locationNeighborhood && (
+                    <span>{skill.locationNeighborhood}, {skill.locationCity}</span>
+                  )}
+                  {skill.availableHours != null && <span>{skill.availableHours}h/week</span>}
+                </div>
+
+                {skill.ownerName && (
+                  <p className="text-xs text-gray-400 mt-2">by {skill.ownerName}</p>
+                )}
+              </div>
             </Link>
           ))}
         </div>
