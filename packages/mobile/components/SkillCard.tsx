@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
 
 interface SkillCardProps {
   title: string
   ownerName: string | null
   category: string | null
   status: string
+  imageUrl?: string | null
   onPress: () => void
 }
 
@@ -14,11 +15,15 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   retired: { bg: '#f3f4f6', text: '#6b7280' },
 }
 
-export default function SkillCard({ title, ownerName, category, status, onPress }: SkillCardProps) {
+export default function SkillCard({ title, ownerName, category, status, imageUrl, onPress }: SkillCardProps) {
   const statusStyle = STATUS_COLORS[status] ?? STATUS_COLORS.available
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+      {imageUrl && (
+        <Image source={{ uri: imageUrl }} style={styles.image} />
+      )}
+      <View style={[styles.body]}>
       <View style={styles.top}>
         {category && (
           <View style={styles.categoryBadge}>
@@ -33,6 +38,7 @@ export default function SkillCard({ title, ownerName, category, status, onPress 
       {ownerName && (
         <Text style={styles.owner}>by {ownerName}</Text>
       )}
+      </View>
     </TouchableOpacity>
   )
 }
@@ -41,7 +47,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 14,
+    overflow: 'hidden',
     marginHorizontal: 16,
     marginVertical: 6,
     shadowColor: '#000',
@@ -49,6 +55,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
+  },
+  image: {
+    width: '100%',
+    height: 120,
+  },
+  body: {
+    padding: 14,
   },
   top: {
     flexDirection: 'row',

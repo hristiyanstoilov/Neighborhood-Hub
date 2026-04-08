@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native'
-import { useAuth } from '../../contexts/auth'
-import { apiFetch } from '../../lib/api'
-import RequestCard, { SkillRequestRow } from '../../components/RequestCard'
+import { useFocusEffect } from 'expo-router'
+import { useAuth } from '../../../contexts/auth'
+import { apiFetch } from '../../../lib/api'
+import RequestCard, { SkillRequestRow } from '../../../components/RequestCard'
 
 type Tab = 'requester' | 'owner'
 
@@ -39,10 +40,10 @@ export default function MyRequestsScreen() {
     }
   }, [])
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     setState({ type: 'loading' })
     fetchRequests(tab)
-  }, [tab, fetchRequests])
+  }, [tab, fetchRequests]))
 
   async function handleRefresh() {
     setRefreshing(true)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   View,
   Text,
@@ -10,10 +10,10 @@ import {
   Alert,
   Image,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import { useAuth } from '../../contexts/auth'
-import { apiFetch } from '../../lib/api'
+import { useAuth } from '../../../contexts/auth'
+import { apiFetch } from '../../../lib/api'
 
 interface ProfileData {
   name: string | null
@@ -109,9 +109,9 @@ export default function ProfileScreen() {
     }
   }, [])
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchProfile()
-  }, [fetchProfile])
+  }, [fetchProfile]))
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -230,8 +230,29 @@ export default function ProfileScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() => router.push('/(app)/profile/edit')}
+        >
+          <Text style={styles.primaryBtnText}>Edit profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.secondaryBtn}
-          onPress={() => router.push('/(app)/my-requests')}
+          onPress={() => router.push('/(app)/my-skills')}
+        >
+          <Text style={styles.secondaryBtnText}>My Skills</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => router.push('/(app)/skills/new')}
+        >
+          <Text style={styles.secondaryBtnText}>Offer a skill</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => router.push('/(app)/(tabs)/my-requests')}
         >
           <Text style={styles.secondaryBtnText}>My Requests</Text>
         </TouchableOpacity>
@@ -380,6 +401,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   btnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  primaryBtn: {
+    backgroundColor: '#15803d',
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,

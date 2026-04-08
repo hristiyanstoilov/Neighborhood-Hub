@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   View,
   Text,
+  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -18,6 +19,7 @@ interface SkillDetail {
   description: string | null
   status: string
   availableHours: number | null
+  imageUrl: string | null
   ownerId: string
   ownerName: string | null
   category: string | null
@@ -41,7 +43,6 @@ export default function SkillDetailScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const [state, setState] = useState<FetchState>({ type: 'loading' })
-  const [requesting, setRequesting] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -66,6 +67,7 @@ export default function SkillDetailScreen() {
             description: s.description ?? null,
             status: s.status,
             availableHours: s.availableHours ?? null,
+            imageUrl: s.imageUrl ?? null,
             ownerId: s.ownerId,
             ownerName: s.ownerName ?? null,
             category: s.categoryLabel ?? null,
@@ -81,7 +83,7 @@ export default function SkillDetailScreen() {
     fetchSkill()
   }, [id])
 
-  async function handleRequest() {
+  function handleRequest() {
     if (!user) {
       Alert.alert('Login required', 'Please login to request this skill.', [
         { text: 'Cancel', style: 'cancel' },
@@ -119,62 +121,7 @@ export default function SkillDetailScreen() {
       return
     }
 
-    Alert.alert(
-      'Request this skill',
-      'Send a request to the skill owner?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send request',
-          onPress: async () => {
-            setRequesting(true)
-            try {
-              // Schedule for tomorrow, 1-hour session, in person
-              const start = new Date()
-              start.setDate(start.getDate() + 1)
-              start.setHours(10, 0, 0, 0)
-              const end = new Date(start.getTime() + 60 * 60 * 1000)
-
-              const res = await apiFetch('/api/skill-requests', {
-                method: 'POST',
-                body: JSON.stringify({
-                  skillId: skill.id,
-                  scheduledStart: start.toISOString(),
-                  scheduledEnd: end.toISOString(),
-                  meetingType: 'in_person',
-                }),
-              })
-
-              const json = await res.json()
-
-              if (!res.ok) {
-                const msgs: Record<string, string> = {
-                  UNVERIFIED_EMAIL:       'Please verify your email first.',
-                  SKILL_NOT_AVAILABLE:    'This skill is no longer available.',
-                  REQUEST_ALREADY_EXISTS: 'You already have an active request for this skill.',
-                  TOO_MANY_REQUESTS:      'Too many attempts. Please wait.',
-                }
-                Alert.alert('Could not send request', msgs[json.error] ?? 'Something went wrong.')
-                return
-              }
-
-              Alert.alert(
-                'Request sent!',
-                'The skill owner will be notified. Track your request in My Requests.',
-                [
-                  { text: 'OK' },
-                  { text: 'View My Requests', onPress: () => router.push('/(app)/my-requests') },
-                ]
-              )
-            } catch {
-              Alert.alert('Error', 'Network error. Please try again.')
-            } finally {
-              setRequesting(false)
-            }
-          },
-        },
-      ]
-    )
+    router.push(`/(app)/skills/request/${skill.id}`)
   }
 
   if (state.type === 'loading') {
@@ -215,7 +162,17 @@ export default function SkillDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Banner image */}
+      {skill.imageUrl && (
+        <Image
+          source={{ uri: skill.imageUrl }}
+          style={styles.bannerImage}
+          resizeMode="cover"
+        />
+      )}
+
       {/* Badges */}
+      <View style={styles.bodyPadding}>
       <View style={styles.badges}>
         {skill.category && (
           <View style={styles.categoryBadge}>
@@ -232,7 +189,11 @@ export default function SkillDetailScreen() {
 
       {/* Owner */}
       {skill.ownerName && (
-        <Text style={styles.owner}>Offered by {skill.ownerName}</Text>
+        <TouchableOpacity onPress={() => router.push(`/(app)/users/${skill.ownerId}`)}>
+          <Text style={styles.owner}>
+            Offered by <Text style={styles.ownerLink}>{skill.ownerName}</Text>
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Location */}
@@ -253,19 +214,29 @@ export default function SkillDetailScreen() {
         </View>
       )}
 
+      </View>
+
       {/* Request button */}
+      <View style={styles.bodyPadding}>
       {isOwner ? (
-        <View style={styles.ownerNotice}>
-          <Text style={styles.ownerNoticeText}>This is your skill listing.</Text>
+        <View style={styles.ownerActions}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push(`/(app)/skills/edit/${skill.id}`)}
+          >
+            <Text style={styles.editButtonText}>Edit skill</Text>
+          </TouchableOpacity>
+          <View style={styles.ownerNotice}>
+            <Text style={styles.ownerNoticeText}>You are the owner of this listing.</Text>
+          </View>
         </View>
       ) : canRequest ? (
         <TouchableOpacity
-          style={[styles.requestButton, requesting && { opacity: 0.6 }]}
+          style={styles.requestButton}
           onPress={handleRequest}
-          disabled={requesting}
         >
           <Text style={styles.requestButtonText}>
-            {requesting ? 'Sending…' : user ? 'Request this skill' : 'Login to request'}
+            {user ? 'Request this skill' : 'Login to request'}
           </Text>
         </TouchableOpacity>
       ) : (
@@ -273,6 +244,7 @@ export default function SkillDetailScreen() {
           <Text style={styles.unavailableText}>This skill is currently not available.</Text>
         </View>
       )}
+      </View>
     </ScrollView>
   )
 }
@@ -283,8 +255,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   content: {
-    padding: 20,
     paddingBottom: 40,
+  },
+  bannerImage: {
+    width: '100%',
+    height: 200,
+    marginBottom: 16,
+  },
+  bodyPadding: {
+    paddingHorizontal: 20,
   },
   center: {
     flex: 1,
@@ -330,6 +309,10 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginBottom: 4,
   },
+  ownerLink: {
+    color: '#15803d',
+    fontWeight: '500',
+  },
   meta: {
     fontSize: 13,
     color: '#6b7280',
@@ -363,6 +346,21 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   requestButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  ownerActions: {
+    marginTop: 24,
+    gap: 10,
+  },
+  editButton: {
+    backgroundColor: '#15803d',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  editButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
