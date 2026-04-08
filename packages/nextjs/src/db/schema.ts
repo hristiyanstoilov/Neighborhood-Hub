@@ -49,7 +49,7 @@ export const users = pgTable(
   (t) => [
     uniqueIndex('users_email_idx').on(t.email),
     index('users_active_idx').on(t.id).where(sql`${t.deletedAt} IS NULL`),
-    check('users_email_format', sql`${t.email} ~ '^[^@]+@[^@]+\.[^@]+$'`),
+    check('users_email_format', sql`${t.email} ~ '^[^@]+@[^@]+\\.[^@]+$'`),
   ]
 )
 
