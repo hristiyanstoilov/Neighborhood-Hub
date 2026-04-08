@@ -75,6 +75,84 @@ A community platform for neighborhood sharing in Bulgaria.
 
 ---
 
+## Post-MVP Stabilization and Modularity Plan
+
+This section tracks the next execution plan after closing critical DB/Auth issues.
+Only high-value items are listed below.
+
+### Must Have
+
+1. Modularize large web screens without behavior changes
+- Scope: skills, profile, users, chat, admin pages
+- Goal: split monolithic pages into small feature components
+- Success: build passes and routes keep same behavior
+
+2. Reusable modal and confirmation patterns
+- Scope: add/edit/delete flows across web app
+- Goal: use one consistent confirm and form modal pattern
+- Success: fewer duplicated modal implementations and consistent UX
+
+3. Searchable picker pattern for reusable selection dialogs
+- Scope: category, location, user, and other entity selectors
+- Goal: one reusable searchable picker component and API
+- Success: better UX on large datasets and less duplicated code
+
+4. Unified async states
+- Scope: list and detail pages with server data
+- Goal: standard loading, empty, and error UI states
+- Success: all key pages use the same async state conventions
+
+5. DB/Auth hygiene maintenance
+- Scope: refresh token cleanup for expired/revoked rows
+- Goal: keep auth tables healthy over time
+- Success: cleanup logic covered by smoke tests and no auth regressions
+
+### Nice to Have
+
+1. Standardized table-editor layout for admin-like screens
+- Scope: users, categories, profile skills, and future CRUD-heavy pages
+
+2. Better dependency-aware delete UX
+- Scope: delete confirmations showing impact on related entities
+
+3. Demo readiness polish
+- Scope: better empty states, onboarding hints, and sample data quality
+
+4. AI chat UX hardening
+- Scope: clearer fallback states for provider unavailability (503)
+
+### Technical Implementation Plan
+
+1. Wave 1: Shared UI primitives
+- Create reusable components for modal base, confirm dialog, loading/empty/error states
+- Introduce shared action row patterns for list/table UIs
+
+2. Wave 2: Skills feature modularization
+- Refactor skills list/detail pages into feature folders and reusable sections
+- Keep existing API contracts unchanged
+
+3. Wave 3: Profile and public users modularization
+- Split profile and public user pages into sections and shared blocks
+- Reuse picker and async state components
+
+4. Wave 4: Chat and admin consistency pass
+- Standardize async/error feedback in chat and admin CRUD interactions
+- Keep business logic unchanged (structure-only refactor)
+
+5. Validation after each wave
+- Run web build and route smoke tests
+- Verify no TypeScript errors in changed files
+- Keep commits small and feature-scoped
+
+### Execution Rules
+
+1. Do not change business logic unless explicitly requested.
+2. Keep API response shapes backward-compatible.
+3. Use small, meaningful commits per wave.
+4. Exclude low-value ideas that do not improve stability, maintainability, or UX.
+
+---
+
 ## v0.2 – Module 2: Neighborhood Tool Library *(planned – after MVP)*
 
 - Share tools and household items (drill, ladder, lawnmower, etc.)
