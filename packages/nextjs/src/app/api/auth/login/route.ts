@@ -12,6 +12,7 @@ import {
 import { loginRatelimit } from '@/lib/ratelimit'
 import { getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { cleanupRefreshTokensForUser } from '@/lib/refresh-token-hygiene'
 
 const schema = z.object({
   email: z.string().email(),
@@ -78,6 +79,11 @@ export async function POST(req: NextRequest) {
       .update(users)
       .set({ failedLoginAttempts: 0, lockedUntil: null, updatedAt: new Date() })
       .where(eq(users.id, user.id))
+
+    // Best-effort token hygiene before creating a new refresh token.
+    await cleanupRefreshTokensForUser(user.id).catch((err) => {
+      console.error('[login] token cleanup failed:', err)
+    })
 
     const payload = { sub: user.id, email: user.email, role: user.role }
     const accessToken = signAccessToken(payload)

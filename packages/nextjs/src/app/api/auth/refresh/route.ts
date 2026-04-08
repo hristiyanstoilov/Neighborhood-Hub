@@ -9,6 +9,7 @@ import {
 } from '@/lib/auth'
 import { getClientIp } from '@/lib/middleware'
 import { loginRatelimit } from '@/lib/ratelimit'
+import { cleanupRefreshTokensForUser } from '@/lib/refresh-token-hygiene'
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,6 +52,11 @@ export async function POST(req: NextRequest) {
     if (!user || user.deletedAt) {
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 401 })
     }
+
+    // Best-effort token hygiene for the current user.
+    await cleanupRefreshTokensForUser(user.id).catch((err) => {
+      console.error('[refresh] token cleanup failed:', err)
+    })
 
     const newRawToken = generateSecureToken()
     const expiresAt = refreshTokenExpiresAt()
