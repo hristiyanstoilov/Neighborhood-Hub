@@ -1,6 +1,9 @@
 import { db } from '@/db'
 import { auditLog } from '@/db/schema'
 import { desc } from 'drizzle-orm'
+import { AdminPageHeader } from '../_components/admin-page-header'
+import { AdminPagination } from '../_components/admin-pagination'
+import { AdminState } from '../_components/admin-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,18 +80,15 @@ export default async function AdminAuditPage({
   if (fetchError) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Audit Log</h1>
-        <div className="text-center py-16 text-gray-500">
-          <p className="text-lg mb-2">Could not load audit log.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
-        </div>
+        <AdminPageHeader title="Audit Log" />
+        <AdminState title="Could not load audit log." message="Please try refreshing the page." />
       </div>
     )
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Audit Log</h1>
+      <AdminPageHeader title="Audit Log" />
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
@@ -137,14 +137,12 @@ export default async function AdminAuditPage({
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between mt-4 text-sm">
-        {page > 1
-          ? <a href={`/admin/audit?page=${page - 1}`} className="text-green-700 hover:underline">← Previous</a>
-          : <span />}
-        {hasNext
-          ? <a href={`/admin/audit?page=${page + 1}`} className="text-green-700 hover:underline">Next →</a>
-          : <span />}
-      </div>
+      <AdminPagination
+        page={page}
+        hasNext={hasNext}
+        prevHref={`/admin/audit?page=${page - 1}`}
+        nextHref={`/admin/audit?page=${page + 1}`}
+      />
     </div>
   )
 }

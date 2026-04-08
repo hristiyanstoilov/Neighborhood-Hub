@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { ChatSidebar } from './_components/chat-sidebar'
+import { ChatMessageList } from './_components/chat-message-list'
+import { ChatComposer } from './_components/chat-composer'
 
 interface Message {
   id?: string
@@ -83,11 +86,13 @@ export default function ChatClient() {
     }
   }
 
-  async function handleSend() {
-    const text = input.trim()
+  async function handleSend(messageText?: string) {
+    const text = (messageText ?? input).trim()
     if (!text || sending) return
 
-    setInput('')
+    if (!messageText) {
+      setInput('')
+    }
     setError(null)
     setSending(true)
 
@@ -162,131 +167,43 @@ export default function ChatClient() {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[500px]">
-      {/* Sidebar — conversation history */}
-      <aside className="w-56 shrink-0 flex flex-col gap-1">
-        <button
-          onClick={startNewConversation}
-          className="w-full text-left px-3 py-2 rounded-lg bg-green-700 text-white text-sm font-medium hover:bg-green-800 transition-colors mb-2"
-        >
-          + New conversation
-        </button>
+      <ChatSidebar
+        conversations={conversations}
+        activeConvId={activeConvId}
+        loadingConvs={loadingConvs}
+        onStartNewConversation={startNewConversation}
+        onSelectConversation={loadConversation}
+        onDeleteConversation={deleteConversation}
+      />
 
-        {loadingConvs ? (
-          <p className="text-xs text-gray-400 px-2">Loading…</p>
-        ) : conversations.length === 0 ? (
-          <p className="text-xs text-gray-400 px-2">No conversations yet.</p>
-        ) : (
-          <div className="overflow-y-auto flex-1 flex flex-col gap-0.5">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 cursor-pointer transition-colors ${
-                  activeConvId === conv.id
-                    ? 'bg-green-50 text-green-800'
-                    : 'hover:bg-gray-100 text-gray-700'
-                }`}
-                onClick={() => loadConversation(conv.id)}
-              >
-                <span className="flex-1 text-xs line-clamp-2 leading-snug">
-                  {conv.title ?? 'Untitled'}
-                </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id) }}
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity text-xs px-1"
-                  title="Delete"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </aside>
-
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-          {loadingMsgs ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-sm text-gray-400">Loading…</p>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
-              <div className="text-4xl">💬</div>
-              <p className="text-gray-500 text-sm max-w-xs">
-                Ask me anything about Neighborhood Hub — how to post a skill, what happens after a request, or anything else.
-              </p>
-              <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
-                {[
-                  'How do skill requests work?',
-                  'What skills can I offer?',
-                  'How do I get started?',
-                ].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => { setInput(suggestion); inputRef.current?.focus() }}
-                    className="text-xs text-green-700 border border-green-200 rounded-lg px-3 py-1.5 hover:bg-green-50 transition-colors text-left"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, i) => (
-              <div
-                key={msg.id ?? i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-green-700 text-white rounded-br-sm'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-                  } ${msg.pending ? 'animate-pulse opacity-60' : ''}`}
-                >
-                  {msg.pending ? '…' : msg.content}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={bottomRef} />
-        </div>
+        <ChatMessageList
+          loadingMsgs={loadingMsgs}
+          messages={messages}
+          bottomRef={bottomRef}
+          suggestions={[
+            { icon: '🔄', text: 'How do skill requests work?' },
+            { icon: '💡', text: 'What skills can I offer?' },
+            { icon: '🗺️', text: 'What is the Neighborhood Radar?' },
+            { icon: '🚀', text: 'How do I get started?' },
+          ]}
+          onSuggestionClick={handleSend}
+        />
 
-        {/* Error */}
         {error && (
           <div className="px-4 py-2 bg-red-50 border-t border-red-100">
             <p className="text-xs text-red-600">{error}</p>
           </div>
         )}
 
-        {/* Input */}
-        <div className="border-t border-gray-200 p-3 flex gap-2 items-end">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask something… (Enter to send, Shift+Enter for new line)"
-            rows={1}
-            disabled={sending}
-            className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent disabled:opacity-50 max-h-32 overflow-y-auto"
-            style={{ height: 'auto', minHeight: '38px' }}
-            onInput={(e) => {
-              const el = e.currentTarget
-              el.style.height = 'auto'
-              el.style.height = `${Math.min(el.scrollHeight, 128)}px`
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || sending}
-            className="shrink-0 bg-green-700 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {sending ? '…' : 'Send'}
-          </button>
-        </div>
+        <ChatComposer
+          inputRef={inputRef}
+          input={input}
+          sending={sending}
+          onInputChange={setInput}
+          onKeyDown={handleKeyDown}
+          onSend={() => handleSend()}
+        />
       </div>
     </div>
   )

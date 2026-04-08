@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   userId: string
@@ -75,49 +76,44 @@ export default function UserActions({ userId, currentRole, isLocked }: Props) {
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {confirm ? (
-        <>
-          <span className="text-xs text-gray-600 self-center">
-            {confirm === 'delete' ? 'Delete user?' : `${ACTION_LABELS[confirm]}?`}
-          </span>
-          <button
-            onClick={() => execute(confirm)}
-            disabled={loading !== null}
-            className={`text-xs px-2.5 py-1 rounded-md font-medium text-white disabled:opacity-50 transition-colors ${
-              confirm === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-700 hover:bg-green-800'
-            }`}
-          >
-            {loading === confirm ? '…' : 'Yes'}
-          </button>
-          <button
-            onClick={() => setConfirm(null)}
-            className="text-xs px-2.5 py-1 rounded-md font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
-          >
-            No
-          </button>
-        </>
-      ) : (
-        actions.map((action) => (
-          <button
-            key={action}
-            onClick={() => handleClick(action)}
-            disabled={loading !== null}
-            className={`text-xs px-2.5 py-1 rounded-md font-medium disabled:opacity-50 transition-colors ${
-              action === 'delete'
-                ? 'text-red-600 border border-red-200 hover:bg-red-50'
-                : action === 'lock'
-                ? 'text-orange-600 border border-orange-200 hover:bg-orange-50'
-                : 'text-gray-600 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {loading === action ? '…' : ACTION_LABELS[action]}
-          </button>
-        ))
-      )}
+      {actions.map((action) => (
+        <button
+          key={action}
+          onClick={() => handleClick(action)}
+          disabled={loading !== null}
+          className={`text-xs px-2.5 py-1 rounded-md font-medium disabled:opacity-50 transition-colors ${
+            action === 'delete'
+              ? 'text-red-600 border border-red-200 hover:bg-red-50'
+              : action === 'lock'
+              ? 'text-orange-600 border border-orange-200 hover:bg-orange-50'
+              : 'text-gray-600 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {loading === action ? '…' : ACTION_LABELS[action]}
+        </button>
+      ))}
 
       {error && (
         <p className="w-full text-xs text-red-600 mt-1">{error}</p>
       )}
+
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm === 'delete' ? 'Delete user?' : confirm ? `${ACTION_LABELS[confirm]}?` : 'Confirm action'}
+        description={
+          confirm === 'delete'
+            ? 'This will permanently remove the user from the admin list.'
+            : confirm
+            ? `Are you sure you want to ${ACTION_LABELS[confirm].toLowerCase()} this user?`
+            : undefined
+        }
+        confirmLabel={loading === confirm ? '…' : 'Yes'}
+        cancelLabel="No"
+        confirmVariant={confirm === 'delete' ? 'danger' : 'primary'}
+        onConfirm={() => confirm && execute(confirm)}
+        onCancel={() => setConfirm(null)}
+        busy={loading !== null}
+      />
     </div>
   )
 }

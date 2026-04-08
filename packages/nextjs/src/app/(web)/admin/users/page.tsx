@@ -2,6 +2,9 @@ import { db } from '@/db'
 import { users, profiles } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import UserActions from './user-actions'
+import { AdminPageHeader } from '../_components/admin-page-header'
+import { AdminPagination } from '../_components/admin-pagination'
+import { AdminState } from '../_components/admin-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,18 +69,15 @@ export default async function AdminUsersPage({
   if (fetchError) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Users</h1>
-        <div className="text-center py-16 text-gray-500">
-          <p className="text-lg mb-2">Could not load users.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
-        </div>
+        <AdminPageHeader title="Users" />
+        <AdminState title="Could not load users." message="Please try refreshing the page." />
       </div>
     )
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Users</h1>
+      <AdminPageHeader title="Users" />
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
@@ -140,14 +140,12 @@ export default async function AdminUsersPage({
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between mt-4 text-sm">
-        {page > 1
-          ? <a href={`/admin/users?page=${page - 1}`} className="text-green-700 hover:underline">← Previous</a>
-          : <span />}
-        {hasNext
-          ? <a href={`/admin/users?page=${page + 1}`} className="text-green-700 hover:underline">Next →</a>
-          : <span />}
-      </div>
+      <AdminPagination
+        page={page}
+        hasNext={hasNext}
+        prevHref={`/admin/users?page=${page - 1}`}
+        nextHref={`/admin/users?page=${page + 1}`}
+      />
     </div>
   )
 }
