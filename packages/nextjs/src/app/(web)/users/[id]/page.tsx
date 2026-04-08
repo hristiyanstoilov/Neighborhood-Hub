@@ -1,10 +1,13 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { users, profiles, locations, skills, categories } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { uuidSchema } from '@/lib/schemas/skill'
-import { EmptyState, ErrorState } from '@/components/ui/async-states'
+import { ErrorState } from '@/components/ui/async-states'
+import { PublicProfileBackLink } from './_components/public-profile-back-link'
+import { PublicProfileHeader } from './_components/public-profile-header'
+import { PublicProfileSkills } from './_components/public-profile-skills'
+import { PrivateProfileState } from './_components/private-profile-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +49,7 @@ export default async function PublicProfilePage({ params }: Props) {
   if (fetchError) {
     return (
       <div className="max-w-2xl">
-        <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">← Browse skills</Link>
+        <PublicProfileBackLink />
         <ErrorState title="Could not load this profile." message="Please try refreshing the page." />
       </div>
     )
@@ -57,12 +60,8 @@ export default async function PublicProfilePage({ params }: Props) {
   if (!row.isPublic) {
     return (
       <div className="max-w-2xl">
-        <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">← Browse skills</Link>
-        <div className="text-center py-24">
-          <p className="text-4xl mb-4">🔒</p>
-          <h1 className="text-xl font-semibold text-gray-700 mb-2">Private profile</h1>
-          <p className="text-sm text-gray-400">This neighbor has set their profile to private.</p>
-        </div>
+        <PublicProfileBackLink />
+        <PrivateProfileState />
       </div>
     )
   }
@@ -85,63 +84,9 @@ export default async function PublicProfilePage({ params }: Props) {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">← Browse skills</Link>
-
-      {/* Profile header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-2xl font-bold text-green-700 shrink-0 overflow-hidden border border-gray-100">
-            {row.avatarUrl
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={row.avatarUrl} alt={row.name ?? 'Avatar'} className="w-full h-full object-cover" />
-              : (row.name?.[0] ?? '?').toUpperCase()
-            }
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">{row.name ?? 'Neighbor'}</h1>
-            {location && <p className="text-sm text-gray-500 mt-0.5">📍 {location}</p>}
-            {row.bio && <p className="text-sm text-gray-700 mt-3 leading-relaxed">{row.bio}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Skills */}
-      <h2 className="text-base font-semibold text-gray-800 mb-3">
-        Skills offered
-        {userSkills.length > 0 && (
-          <span className="ml-2 text-sm font-normal text-gray-400">({userSkills.length})</span>
-        )}
-      </h2>
-
-      {userSkills.length === 0 ? (
-        <EmptyState title="No available skills at the moment." />
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {userSkills.map((skill) => (
-            <Link
-              key={skill.id}
-              href={`/skills/${skill.id}`}
-              className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-green-400 hover:shadow-sm transition-all"
-            >
-              {skill.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={skill.imageUrl} alt={skill.title} className="w-full h-24 object-cover" />
-              )}
-              <div className="px-4 py-3 flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 line-clamp-1">{skill.title}</p>
-                  {skill.categoryLabel && (
-                    <p className="text-xs text-gray-400 mt-0.5">{skill.categoryLabel}</p>
-                  )}
-                </div>
-                <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                  available
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <PublicProfileBackLink />
+      <PublicProfileHeader name={row.name} avatarUrl={row.avatarUrl} location={location} bio={row.bio} />
+      <PublicProfileSkills skills={userSkills} />
     </div>
   )
 }
