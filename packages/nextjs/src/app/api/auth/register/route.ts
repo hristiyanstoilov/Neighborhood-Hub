@@ -41,25 +41,27 @@ export async function POST(req: NextRequest) {
     const verificationToken = generateSecureToken()
     const verificationExpiresAt = verificationTokenExpiresAt()
 
-    // Create user + profile atomically
-    const [user] = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(users)
-        .values({
-          email: email.toLowerCase(),
-          passwordHash,
-          emailVerificationToken: verificationToken,
-          emailVerificationExpiresAt: verificationExpiresAt,
-        })
-        .returning({ id: users.id, email: users.email, role: users.role })
+    // neon-http does not support transactions, so insert user first,
+    // then create profile and clean up user if profile insert fails.
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: email.toLowerCase(),
+        passwordHash,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: verificationExpiresAt,
+      })
+      .returning({ id: users.id, email: users.email, role: users.role })
 
-      await tx.insert(profiles).values({
-        userId: inserted[0].id,
+    try {
+      await db.insert(profiles).values({
+        userId: user.id,
         name: name ?? null,
       })
-
-      return inserted
-    })
+    } catch (profileErr) {
+      await db.delete(users).where(eq(users.id, user.id))
+      throw profileErr
+    }
 
     await writeAuditLog({
       userId: user.id,

@@ -265,7 +265,7 @@ Rules:
 - Use `VARCHAR + CHECK constraint` for all status/type fields that may evolve (skill_requests.status, skills.status, locations.type, meeting_type) – `ALTER TYPE` doesn't work in transactions in Neon
 - Use `.references()` with `onDelete: 'cascade'` for foreign keys
 - Soft delete on `skills` and `users` – add `deleted_at` column, never hard DELETE
-- Use `@neondatabase/serverless` driver with `drizzle-orm/neon-http` – HTTP transport for all queries including transactions (pipeline)
+- Use `@neondatabase/serverless` driver with `drizzle-orm/neon-http` – HTTP transport for query execution (do not use `db.transaction` with this driver)
 - Auth data (`email`, `password_hash`) lives in `users`; profile data (`name`, `bio`, `avatar_url`) lives in `profiles` – NO city/neighborhood in profiles, derive via `location_id FK → locations`
 - Store `refresh_tokens` in DB to enable logout invalidation
 - Log admin actions to `audit_log` table
@@ -280,6 +280,8 @@ Rules:
 ### Frontend (React + Tailwind)
 - Each page in `src/app/(web)/[page]/page.tsx`
 - Components in `src/components/`
+- Follow Step 7 "Modular React Components": split large screens into reusable components and feature folders.
+- Refactors for modularization must preserve existing behavior (structure-only improvement, no hidden logic changes unless explicitly requested).
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
 

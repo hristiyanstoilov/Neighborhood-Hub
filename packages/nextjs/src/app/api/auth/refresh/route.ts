@@ -55,21 +55,33 @@ export async function POST(req: NextRequest) {
     const newRawToken = generateSecureToken()
     const expiresAt = refreshTokenExpiresAt()
 
-    // Rotate — revoke old + insert new in one transaction
-    await db.transaction(async (tx) => {
-      await tx
-        .update(refreshTokens)
-        .set({ isRevoked: true })
-        .where(eq(refreshTokens.id, stored.id))
+    // neon-http does not support transactions.
+    // Rotate with sequential writes and a best-effort compensation on failure.
+    const revoked = await db
+      .update(refreshTokens)
+      .set({ isRevoked: true })
+      .where(and(eq(refreshTokens.id, stored.id), eq(refreshTokens.isRevoked, false)))
+      .returning({ id: refreshTokens.id })
 
-      await tx.insert(refreshTokens).values({
+    if (revoked.length === 0) {
+      return NextResponse.json({ error: 'INVALID_REFRESH_TOKEN' }, { status: 401 })
+    }
+
+    try {
+      await db.insert(refreshTokens).values({
         userId: user.id,
         token: newRawToken,
         expiresAt,
         ipAddress: ip,
         userAgent: req.headers.get('user-agent') ?? undefined,
       })
-    })
+    } catch (insertErr) {
+      await db
+        .update(refreshTokens)
+        .set({ isRevoked: false })
+        .where(eq(refreshTokens.id, stored.id))
+      throw insertErr
+    }
 
     const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role })
 
