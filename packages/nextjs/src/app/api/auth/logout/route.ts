@@ -37,7 +37,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      path: '/api/auth',
+      path: '/',
       maxAge: 0,
     })
 
