@@ -151,6 +151,28 @@ Only high-value items are listed below.
 3. Use small, meaningful commits per wave.
 4. Exclude low-value ideas that do not improve stability, maintainability, or UX.
 
+### Feature Quality Gate (Mandatory)
+
+Apply this process after every feature change (before commit):
+
+1. Senior Dev Code Review
+- Review only changed files in the feature scope.
+- Focus on bugs, regressions, API compatibility, error handling, and maintainability.
+- Output findings ordered by severity with exact file references.
+
+2. Senior QA Validation
+- Run build validation (`npm run build:web`).
+- Run runtime smoke checks for impacted routes and API endpoints.
+- Validate both happy-path and at least one negative-path behavior.
+
+3. Merge/Commit Decision
+- Commit only when critical/high findings are resolved.
+- If medium/low findings remain, document rationale and follow-up task.
+
+Reusable prompt for agents (copy/paste):
+
+"Act as a Senior Developer and perform a strict code review for this feature change. Then act as a Senior QA and execute build + runtime smoke validation for all impacted routes/endpoints. Return: (1) Findings ordered by severity with file references, (2) Test evidence with pass/fail, (3) Final go/no-go decision for commit."
+
 ---
 
 ## v0.2 – Module 2: Neighborhood Tool Library *(planned – after MVP)*

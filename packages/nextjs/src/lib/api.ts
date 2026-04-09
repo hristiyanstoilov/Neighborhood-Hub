@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_APP_URL ?? ''
+const BASE = typeof window === 'undefined' ? process.env.NEXT_PUBLIC_APP_URL ?? '' : ''
 
 let accessToken: string | null = null
 

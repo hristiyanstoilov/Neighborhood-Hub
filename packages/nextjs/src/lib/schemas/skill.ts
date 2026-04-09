@@ -13,6 +13,7 @@ export const createSkillSchema = z.object({
 
 export const updateSkillSchema = createSkillSchema.partial().extend({
   status: z.enum(['available', 'busy', 'retired']).optional(),
+  imageUrl: z.string().url().max(2048).nullable().optional(),
 })
 
 export const skillStatusSchema = z.object({

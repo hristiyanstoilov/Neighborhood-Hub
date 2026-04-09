@@ -73,6 +73,14 @@ export default async function SkillDetailPage({
           </span>
         </div>
 
+        {skill!.imageUrl && (
+          <img
+            src={skill!.imageUrl}
+            alt={skill!.title}
+            className="w-full h-56 object-cover rounded-lg mb-5 border border-gray-100"
+          />
+        )}
+
         {skill!.description && (
           <p className="text-gray-600 mb-6 leading-relaxed">{skill!.description}</p>
         )}

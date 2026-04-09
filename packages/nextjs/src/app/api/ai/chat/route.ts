@@ -2,28 +2,79 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { db } from '@/db'
-import { aiConversations, aiMessages } from '@/db/schema'
-import { eq, and, isNull, asc } from 'drizzle-orm'
+import { aiConversations, aiMessages, profiles, locations, skills, users } from '@/db/schema'
+import { eq, and, isNull, asc, count } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { aiRatelimit } from '@/lib/ratelimit'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-const SYSTEM_PROMPT = `You are a helpful neighborhood assistant for Neighborhood Hub — a platform that connects neighbors to share skills, tools, and time.
+const BASE_SYSTEM_PROMPT = `You are a helpful neighborhood assistant for Neighborhood Hub — a platform that connects neighbors in Bulgarian neighborhoods to share skills, time, and expertise.
 
 You help users:
 - Find and request skills from neighbors
 - Understand how skill requests work (pending → accepted → completed flow)
-- Navigate the platform features: skill listings, requests, profile setup
+- Navigate the platform features: skill listings, requests, profile setup, radar map
 - Get advice on what skills to offer or how to write a good skill description
+- Understand the neighborhood radar map (interactive map showing skill counts per neighborhood)
 
 You do NOT:
-- Have access to any user's personal data, emails, passwords, or private information
-- Access real-time data — you cannot see current skill listings or request statuses
+- Have access to passwords, payment data, or any sensitive private information
+- Access real-time listings — you cannot see current skill availability or request statuses
 - Make bookings or submit requests on behalf of users
 - Discuss topics unrelated to the Neighborhood Hub platform and community
 
 Keep responses concise, friendly, and helpful. If asked about something outside your scope, politely redirect to what you can help with.`
+
+async function buildSystemPrompt(userId: string): Promise<string> {
+  try {
+    const [profileRows, userRows, skillCountRows] = await Promise.all([
+      db
+        .select({
+          name: profiles.name,
+          locationNeighborhood: locations.neighborhood,
+          locationCity: locations.city,
+        })
+        .from(profiles)
+        .leftJoin(locations, eq(locations.id, profiles.locationId))
+        .where(eq(profiles.userId, userId))
+        .limit(1),
+      db
+        .select({ emailVerifiedAt: users.emailVerifiedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1),
+      db
+        .select({ skillCount: count() })
+        .from(skills)
+        .where(and(eq(skills.ownerId, userId), isNull(skills.deletedAt))),
+    ])
+
+    const profileRow = profileRows[0]
+    const userRow = userRows[0]
+    const { skillCount } = skillCountRows[0]
+
+    const name = profileRow?.name ?? 'neighbor'
+    const neighborhood = profileRow?.locationNeighborhood
+      ? `${profileRow.locationNeighborhood}, ${profileRow.locationCity ?? 'Sofia'}`
+      : null
+    const verified = !!userRow?.emailVerifiedAt
+
+    const contextLines = [
+      `\n\n--- Current user context ---`,
+      `Name: ${name}`,
+      neighborhood ? `Neighborhood: ${neighborhood}` : `Neighborhood: not set`,
+      `Email verified: ${verified ? 'yes' : 'no — cannot create skill listings until verified'}`,
+      `Skills offered: ${skillCount}`,
+      `---`,
+    ]
+
+    return BASE_SYSTEM_PROMPT + contextLines.join('\n')
+  } catch {
+    // Non-critical — fall back to base prompt if DB fails
+    return BASE_SYSTEM_PROMPT
+  }
+}
 
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
@@ -94,13 +145,16 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     { role: 'user', content: message },
   ]
 
+  // Build personalised system prompt (includes user context from DB)
+  const systemPrompt = await buildSystemPrompt(user.sub)
+
   // Call Anthropic
   let assistantContent: string
   try {
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: contextMessages,
     })
     assistantContent = response.content[0].type === 'text' ? response.content[0].text : ''

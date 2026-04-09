@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { querySkills } from '@/lib/queries/skills'
+import { queryRadarLocations } from '@/lib/queries/locations'
 import { db } from '@/db'
 import { skills } from '@/db/schema'
 import { isNull, sql } from 'drizzle-orm'
@@ -13,6 +14,7 @@ type SkillPreview = {
   title: string
   description: string | null
   status: string
+  imageUrl: string | null
   ownerName: string | null
   categoryLabel: string | null
   locationNeighborhood: string | null
@@ -25,17 +27,20 @@ export default async function HomePage() {
   const refreshToken = cookieStore.get('refresh_token')?.value
   const user = refreshToken ? await queryUserByRefreshToken(refreshToken) : null
 
-  // Fetch stats + preview skills in parallel
+  // Fetch stats + preview skills + radar in parallel
   let skillCount = 0
   let recentSkills: SkillPreview[] = []
+  let radarLocations: { id: string; neighborhood: string; city: string; skillCount: number }[] = []
 
   try {
-    const [countResult, skillRows] = await Promise.all([
+    const [countResult, skillRows, radarRows] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(skills).where(isNull(skills.deletedAt)),
       querySkills({ limit: 6 }),
+      queryRadarLocations(),
     ])
     skillCount = countResult[0]?.count ?? 0
     recentSkills = skillRows
+    radarLocations = radarRows
   } catch {
     // non-critical — page still renders without stats
   }
@@ -87,20 +92,25 @@ export default async function HomePage() {
                 <Link
                   key={skill.id}
                   href={`/skills/${skill.id}`}
-                  className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-green-400 hover:shadow-sm transition-all"
+                  className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-green-400 hover:shadow-sm transition-all"
                 >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">{skill.title}</h3>
-                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-                      skill.status === 'available' ? 'bg-green-100 text-green-700'
-                      : skill.status === 'busy' ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-gray-100 text-gray-500'
-                    }`}>{skill.status}</span>
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
-                    {skill.categoryLabel && skill.ownerName && <span> · </span>}
-                    {skill.ownerName && <span>by {skill.ownerName}</span>}
+                  {skill.imageUrl && (
+                    <img src={skill.imageUrl} alt={skill.title} className="w-full h-28 object-cover" />
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">{skill.title}</h3>
+                      <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        skill.status === 'available' ? 'bg-green-100 text-green-700'
+                        : skill.status === 'busy' ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-500'
+                      }`}>{skill.status}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
+                      {skill.categoryLabel && skill.ownerName && <span> · </span>}
+                      {skill.ownerName && <span>by {skill.ownerName}</span>}
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -150,6 +160,47 @@ export default async function HomePage() {
         ))}
       </div>
 
+      {/* Radar widget */}
+      {radarLocations.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-800">Neighborhood Radar</h2>
+            <Link href="/radar" className="text-sm text-green-700 hover:underline">Open map →</Link>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex flex-wrap gap-2">
+              {radarLocations
+                .filter((l) => l.skillCount > 0)
+                .sort((a, b) => b.skillCount - a.skillCount)
+                .slice(0, 8)
+                .map((loc) => (
+                  <Link
+                    key={loc.id}
+                    href={`/skills?locationId=${loc.id}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 hover:border-green-400 hover:bg-green-50 transition-colors text-sm"
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${
+                        loc.skillCount >= 8 ? 'bg-green-700'
+                        : loc.skillCount >= 3 ? 'bg-green-500'
+                        : 'bg-green-300'
+                      }`}
+                    />
+                    <span className="text-gray-700 font-medium">{loc.neighborhood}</span>
+                    <span className="text-gray-400 text-xs">{loc.skillCount}</span>
+                  </Link>
+                ))}
+            </div>
+            {radarLocations.filter((l) => l.skillCount === 0).length > 0 && (
+              <p className="text-xs text-gray-400 mt-3">
+                {radarLocations.filter((l) => l.skillCount === 0).length} neighborhoods with no skills yet.{' '}
+                <Link href="/skills/new" className="text-green-700 hover:underline">Be the first to offer one.</Link>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recent skills */}
       {recentSkills.length > 0 && (
         <div>
@@ -162,23 +213,28 @@ export default async function HomePage() {
               <Link
                 key={skill.id}
                 href={`/skills/${skill.id}`}
-                className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-green-400 hover:shadow-sm transition-all"
+                className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-green-400 hover:shadow-sm transition-all"
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">{skill.title}</h3>
-                  <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
-                    skill.status === 'available' ? 'bg-green-100 text-green-700'
-                    : skill.status === 'busy' ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-500'
-                  }`}>{skill.status}</span>
-                </div>
-                {skill.description && (
-                  <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{skill.description}</p>
+                {skill.imageUrl && (
+                  <img src={skill.imageUrl} alt={skill.title} className="w-full h-28 object-cover" />
                 )}
-                <div className="text-xs text-gray-400 mt-1.5">
-                  {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
-                  {skill.categoryLabel && skill.locationNeighborhood && <span> · </span>}
-                  {skill.locationNeighborhood && <span>{skill.locationNeighborhood}</span>}
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">{skill.title}</h3>
+                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                      skill.status === 'available' ? 'bg-green-100 text-green-700'
+                      : skill.status === 'busy' ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-500'
+                    }`}>{skill.status}</span>
+                  </div>
+                  {skill.description && (
+                    <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{skill.description}</p>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1.5">
+                    {skill.categoryLabel && <span>{skill.categoryLabel}</span>}
+                    {skill.categoryLabel && skill.locationNeighborhood && <span> · </span>}
+                    {skill.locationNeighborhood && <span>{skill.locationNeighborhood}</span>}
+                  </div>
                 </div>
               </Link>
             ))}

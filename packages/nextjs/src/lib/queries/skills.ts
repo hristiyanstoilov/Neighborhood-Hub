@@ -27,14 +27,16 @@ export async function querySkills(opts: {
   search?: string
   categoryId?: string
   locationId?: string
+  ownerId?: string
   limit?: number
   page?: number
 }) {
-  const { status, search, categoryId, locationId, limit = 20, page = 1 } = opts
+  const { status, search, categoryId, locationId, ownerId, limit = 20, page = 1 } = opts
   const conditions = [isNull(skills.deletedAt)]
   if (status) conditions.push(eq(skills.status, status))
   if (categoryId) conditions.push(eq(skills.categoryId, categoryId))
   if (locationId) conditions.push(eq(skills.locationId, locationId))
+  if (ownerId) conditions.push(eq(skills.ownerId, ownerId))
   if (search) conditions.push(ilike(skills.title, `%${search}%`))
 
   return db
