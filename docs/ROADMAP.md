@@ -202,6 +202,100 @@ Reusable prompt for agents (copy/paste):
 
 ---
 
+## Top Technical Debt Priority (Parallel Track)
+
+### Objective
+
+Incrementally redesign client component logic where it is currently state-heavy and fetch-heavy, using TanStack Query to reduce duplicated state handling, simplify mutations, and improve data consistency.
+
+This is a **parallel** track to MVP stabilization and must avoid aggressive rewrites.
+
+### Explicit Non-Goals
+
+1. Do not introduce `react-router` in Next.js or Expo apps.
+2. Do not rewrite server-rendered pages that already behave well.
+3. Do not run a large cross-app migration in one PR.
+
+### Why This Track Exists
+
+1. Repeated `loading/error/retry` logic in multiple client components.
+2. Manual synchronization between list views and mutation results.
+3. Higher risk of stale UI after optimistic actions and deletes.
+4. Increasing maintenance cost as features expand.
+
+### Guiding Architecture Rules
+
+1. Use TanStack Query only in client components that benefit from caching/refetch/invalidation.
+2. Keep API response contracts unchanged.
+3. Prefer small, domain-scoped query keys (example: `['notifications', 'unread', userId]`).
+4. Keep auth/session logic in existing auth layer; do not duplicate in query hooks.
+5. Each refactor PR must include code review findings + QA evidence.
+
+### Wave Plan (Incremental)
+
+#### Wave A (P0) — Completed foundation
+
+1. Add `QueryClientProvider` in web UI provider.
+2. Migrate notifications and chat sidebar data loading to TanStack Query.
+3. Ensure query keys are user-scoped to avoid cache bleed.
+
+Status: ✅ in progress/completed in recent commits.
+
+#### Wave B (P0) — My Requests flow (Web)
+
+1. Split page logic into focused components:
+	- role tabs and header
+	- requests list container
+	- request item action panel
+2. Move requests list fetching to `useQuery` in client layer where practical.
+3. Convert request actions (`accept/reject/complete/cancel`) to `useMutation` with deterministic `invalidateQueries`.
+4. Keep business rules in API routes only; UI must only mirror allowed actions.
+
+Target outcome: less local state juggling in request cards and predictable list consistency after actions.
+
+#### Wave C (P1) — Skills list/search/filter (Web)
+
+1. Extract filters + list data orchestration into query-driven hooks.
+2. Add stable query keys for `category/location/search/page`.
+3. Remove duplicated fetch-on-change logic and simplify pagination transitions.
+
+Target outcome: cleaner filter UX and fewer race/stale states.
+
+#### Wave D (P1) — Mobile high-churn screens
+
+1. Apply the same pattern to mobile `my-requests`, `notifications`, and `chat` conversation list.
+2. Keep Expo Router navigation unchanged; only data layer and component boundaries evolve.
+3. Reuse query key conventions from web when domain matches.
+
+Target outcome: parity of data reliability and lower code duplication across platforms.
+
+#### Wave E (P2) — Shared query conventions and guardrails
+
+1. Introduce shared query key helpers by domain.
+2. Define default retry/stale policies per endpoint type.
+3. Add developer docs for when to use query vs server rendering.
+
+Target outcome: consistent implementation style and easier onboarding.
+
+### Refactor Quality Gates (Mandatory per Wave)
+
+1. Senior code review findings first (ordered by severity).
+2. Run `npm run --prefix packages/nextjs lint`.
+3. Run smoke checks for affected flows:
+	- `npm run smoke:web`
+	- `npm run smoke:auth`
+	- `npm run smoke:auth:browser`
+4. For state-machine-sensitive changes, run specialized transition smoke tests.
+5. Commit only when critical/high issues are resolved.
+
+### Delivery Cadence
+
+1. One domain at a time (no broad rewrites).
+2. Small commits with reversible scope.
+3. Keep this track in top technical debt priority until Waves B and C are completed.
+
+---
+
 ## v0.2 – Module 2: Neighborhood Tool Library *(planned – after MVP)*
 
 - Share tools and household items (drill, ladder, lawnmower, etc.)
