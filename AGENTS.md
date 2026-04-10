@@ -367,3 +367,7 @@ Do not make any changes until you have 95% confidence in what you need to build.
 "Generate Drizzle migration for adding the locations table"
 "Review this API route for security issues"
 ```
+
+> **Note**: n8n workflow automation instructions have been extracted to separate documentation files.
+> This AGENTS.md focuses exclusively on Neighborhood Hub development.
+> Code generation guidelines for Next.js, React, React Native, PostgreSQL/Drizzle, and authentication remain in sections above.

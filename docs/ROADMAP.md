@@ -75,85 +75,108 @@ A community platform for neighborhood sharing in Bulgaria.
 
 ---
 
-## Post-MVP Stabilization and Modularity Plan
+## Production Polish Pass
 
-This section tracks the next execution plan after closing critical DB/Auth issues.
-Only high-value items are listed below.
+The core MVP is already complete. The next phase should not add new product scope; it should raise trust, clarity, accessibility, and resilience across the existing screens and APIs.
+
+### Current Analysis
+
+The codebase is functionally solid, but the remaining rough edges are all production-facing:
+
+1. Loading and empty states are still visually inconsistent across web and mobile.
+2. Several mutations still lack explicit success feedback, so users may not know an action completed.
+3. Destructive actions are not uniformly guarded by confirmation dialogs.
+4. Error recovery is weak in a few high-traffic flows because retries are not first-class.
+5. Accessibility is acceptable but not polished enough for keyboard and screen-reader confidence.
+6. Date/time formatting and form validation copy still vary by screen and platform.
+
+These are not feature gaps. They are confidence gaps.
 
 ### Must Have
 
-1. Modularize large web screens without behavior changes
-- Scope: skills, profile, users, chat, admin pages
-- Goal: split monolithic pages into small feature components
-- Success: build passes and routes keep same behavior
+1. Action feedback and recovery
+- Scope: request actions, conversation actions, profile edits, skill create/edit, admin mutations
+- Goal: show a clear success toast or inline confirmation after every successful mutation, and provide retry on recoverable failures
+- Success: users always know whether the action completed and can recover from transient errors without a full refresh
 
-2. Reusable modal and confirmation patterns
-- Scope: add/edit/delete flows across web app
-- Goal: use one consistent confirm and form modal pattern
-- Success: fewer duplicated modal implementations and consistent UX
+2. Error and empty state parity
+- Scope: web list/detail pages and mobile tab/detail screens
+- Goal: standardize loading, empty, and error states with a shared visual language and retry affordance
+- Success: every primary data screen has a visible, actionable fallback state
 
-3. Searchable picker pattern for reusable selection dialogs
-- Scope: category, location, user, and other entity selectors
-- Goal: one reusable searchable picker component and API
-- Success: better UX on large datasets and less duplicated code
+3. Destructive action protection
+- Scope: delete conversation, delete skill, admin lock/delete actions, any irreversible mutation
+- Goal: use one confirm pattern everywhere and make destructive intent explicit
+- Success: no one can delete important data with a single accidental tap/click
 
-4. Unified async states
-- Scope: list and detail pages with server data
-- Goal: standard loading, empty, and error UI states
-- Success: all key pages use the same async state conventions
-
-5. DB/Auth hygiene maintenance
-- Scope: refresh token cleanup for expired/revoked rows
-- Goal: keep auth tables healthy over time
-- Success: cleanup logic covered by smoke tests and no auth regressions
+4. Mobile error-state completeness
+- Scope: profile, skills, my requests, chat, radar
+- Goal: ensure every fetch state renders loading, error, and empty paths instead of falling through to blank UI
+- Success: flaky mobile connectivity never produces a silent screen
 
 ### Nice to Have
 
-1. Standardized table-editor layout for admin-like screens
-- Scope: users, categories, profile skills, and future CRUD-heavy pages
+1. Skeleton loaders for the highest-traffic screens
+- Scope: home dashboard, skills list, profile, my requests, mobile list screens
+- Goal: replace generic loading text with skeleton cards and section placeholders
+- Success: the UI feels intentional instead of abruptly blank while data loads
 
-2. Better dependency-aware delete UX
-- Scope: delete confirmations showing impact on related entities
+2. Shared formatting utilities
+- Scope: dates, times, status labels, meeting types, counts
+- Goal: centralize date/time and enum presentation in one formatter module
+- Success: less copy drift and fewer raw technical labels in the UI
 
-3. Demo readiness polish
-- Scope: better empty states, onboarding hints, and sample data quality
+3. Accessibility pass
+- Scope: navigation, dropdowns, modals, request forms, notification controls
+- Goal: add missing aria labels, aria-expanded, and focus management where needed
+- Success: keyboard and screen-reader usage becomes predictable across the app
 
-4. AI chat UX hardening
-- Scope: clearer fallback states for provider unavailability (503)
+4. Form validation consistency
+- Scope: auth, profile, skill create/edit, request form, mobile equivalents
+- Goal: align field-level validation copy and submit-state behavior across platforms
+- Success: users get actionable feedback before they hit submit, not only after failure
 
-### Technical Implementation Plan
+### Recommended Implementation Waves
 
-1. Wave 1: Shared UI primitives
-- Create reusable components for modal base, confirm dialog, loading/empty/error states
-- Introduce shared action row patterns for list/table UIs
+1. Wave 1: Confidence-critical mutations
+- Add success feedback for successful writes
+- Add confirm dialogs to destructive actions
+- Add retry actions to recoverable error states
+- Fix the mobile profile error branch and any other blank-state paths
 
-2. Wave 2: Skills feature modularization
-- Refactor skills list/detail pages into feature folders and reusable sections
-- Keep existing API contracts unchanged
+2. Wave 2: Shared UI surface polish
+- Introduce skeleton loaders for the busiest screens
+- Centralize empty/error/loading layouts into reusable primitives
+- Normalize button, badge, and status presentation
 
-3. Wave 3: Profile and public users modularization
-- Split profile and public user pages into sections and shared blocks
-- Reuse picker and async state components
+3. Wave 3: Accessibility and content consistency
+- Add aria metadata and focus handling to interactive controls and dialogs
+- Standardize date/time and status formatting
+- Harmonize validation messages across web and mobile
 
-4. Wave 4: Chat and admin consistency pass
-- Standardize async/error feedback in chat and admin CRUD interactions
-- Keep business logic unchanged (structure-only refactor)
+4. Wave 4: Resilience hardening
+- Add soft-delete or archived-state handling where destructive UX is still risky
+- Add backoff or retry caps for repeatable network failures
+- Tighten fallback behavior for AI/chat and other provider-dependent flows
 
-5. Validation after each wave
-- Run web build and route smoke tests
-- Verify no TypeScript errors in changed files
-- Keep commits small and feature-scoped
+### Validation After Each Wave
+
+1. Run the web build.
+2. Smoke the impacted web routes and API endpoints.
+3. Validate at least one happy path and one negative path.
+4. Recheck the mobile screens that share the same data flow.
+5. Keep commits small and feature-scoped.
 
 ### Execution Rules
 
 1. Do not change business logic unless explicitly requested.
 2. Keep API response shapes backward-compatible.
-3. Use small, meaningful commits per wave.
-4. Exclude low-value ideas that do not improve stability, maintainability, or UX.
+3. Prefer shared primitives over one-off fixes.
+4. Exclude low-value ideas such as dark mode, WebSockets, or animation-first polish.
 
 ### Feature Quality Gate (Mandatory)
 
-Apply this process after every feature change (before commit):
+Apply this process after every feature change before commit:
 
 1. Senior Dev Code Review
 - Review only changed files in the feature scope.
@@ -169,9 +192,13 @@ Apply this process after every feature change (before commit):
 - Commit only when critical/high findings are resolved.
 - If medium/low findings remain, document rationale and follow-up task.
 
+Reference playbook:
+
+- Use docs/QA_REGRESSION_PACK.md for canonical regression IDs, evidence format, and release gate criteria.
+
 Reusable prompt for agents (copy/paste):
 
-"Act as a Senior Developer and perform a strict code review for this feature change. Then act as a Senior QA and execute build + runtime smoke validation for all impacted routes/endpoints. Return: (1) Findings ordered by severity with file references, (2) Test evidence with pass/fail, (3) Final go/no-go decision for commit."
+"Act as a Senior Developer and perform a strict code review for this production polish change. Then act as a Senior QA and execute build + runtime smoke validation for all impacted routes/endpoints. Return: (1) Findings ordered by severity with file references, (2) Test evidence with pass/fail, (3) Final go/no-go decision for commit."
 
 ---
 
