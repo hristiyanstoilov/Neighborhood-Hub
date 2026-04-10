@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { locations, skills } from '@/db/schema'
 import { eq, and, isNull, sql } from 'drizzle-orm'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const rows = await db
     .select({
       id: locations.id,

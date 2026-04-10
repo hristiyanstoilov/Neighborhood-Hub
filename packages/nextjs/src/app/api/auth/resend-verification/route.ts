@@ -3,13 +3,12 @@ import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { loginRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { requireAuth } from '@/lib/middleware'
 import { generateSecureToken, verificationTokenExpiresAt } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email'
 
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
-    const ip = getClientIp(req)
     const { success } = await loginRatelimit.limit(user.sub)
     if (!success) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })

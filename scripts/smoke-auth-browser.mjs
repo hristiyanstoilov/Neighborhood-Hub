@@ -3,6 +3,7 @@ import { chromium } from 'playwright'
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000'
 const EMAIL = process.env.SMOKE_AUTH_EMAIL || ''
 const PASSWORD = process.env.SMOKE_AUTH_PASSWORD || ''
+const REFRESH_TOKEN = process.env.SMOKE_AUTH_REFRESH_TOKEN || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
 
 function fail(message) {
@@ -26,28 +27,63 @@ async function main() {
   const page = await context.newPage()
 
   try {
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
-    const loginResult = await page.evaluate(
-      async ({ email, password }) => {
-        const response = await fetch('/api/auth/login', {
+    let bootstrapped = false
+
+    if (REFRESH_TOKEN) {
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
+      await page.evaluate((refreshToken) => {
+        document.cookie = `refresh_token=${refreshToken}; path=/`
+      }, REFRESH_TOKEN)
+
+      const refreshFromCookie = await page.evaluate(async () => {
+        const response = await fetch('/api/auth/refresh', {
           method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
           credentials: 'include',
-          body: JSON.stringify({ email, password }),
         })
 
         return {
           status: response.status,
           body: await response.json().catch(() => null),
         }
-      },
-      { email: EMAIL, password: PASSWORD }
-    )
+      })
 
-    if (loginResult.status !== 200) {
-      fail(`Expected login bootstrap to succeed, got ${loginResult.status}`)
+      if (refreshFromCookie.status === 200) {
+        bootstrapped = true
+      }
+    }
+
+    if (!bootstrapped) {
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
+      const loginResult = await page.evaluate(
+        async ({ email, password }) => {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email, password }),
+          })
+
+          return {
+            status: response.status,
+            body: await response.json().catch(() => null),
+          }
+        },
+        { email: EMAIL, password: PASSWORD }
+      )
+
+      if (loginResult.status === 429) {
+        if (STRICT) {
+          fail('Login bootstrap was rate-limited (429)')
+        }
+        console.log('Skipping authenticated browser smoke: login bootstrap hit rate limit (429)')
+        return
+      }
+
+      if (loginResult.status !== 200) {
+        fail(`Expected login bootstrap to succeed, got ${loginResult.status}`)
+      }
     }
 
     await page.goto(`${BASE_URL}/chat`, { waitUntil: 'domcontentloaded' })

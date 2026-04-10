@@ -5,8 +5,6 @@ import { eq, and, isNull, asc } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 
-type Ctx = { params: Promise<{ id: string }> }
-
 export const GET = requireAuth(async (req: NextRequest, { user }) => {
   const { success } = await apiRatelimit.limit(user.sub)
   if (!success) {

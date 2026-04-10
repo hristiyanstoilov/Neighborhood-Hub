@@ -107,5 +107,13 @@ export async function queryRecommendedSkills(userId: string, limit = 6): Promise
   return scored
     .sort((left, right) => right.score - left.score || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, limit)
-    .map(({ score: _score, createdAt: _createdAt, categoryId: _categoryId, locationId: _locationId, ...skill }) => skill)
+    .map((skill) => ({
+      id: skill.id,
+      title: skill.title,
+      categoryLabel: skill.categoryLabel,
+      locationNeighborhood: skill.locationNeighborhood,
+      locationCity: skill.locationCity,
+      ownerName: skill.ownerName,
+      reason: skill.reason,
+    }))
 }

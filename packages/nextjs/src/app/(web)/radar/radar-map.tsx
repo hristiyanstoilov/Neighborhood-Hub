@@ -1,8 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
-import Link from 'next/link'
 import 'leaflet/dist/leaflet.css'
 
 interface LocationPin {

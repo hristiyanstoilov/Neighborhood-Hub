@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skills, profiles, categories, locations } from '@/db/schema'
+import { skills, categories, locations } from '@/db/schema'
 import { eq, and, isNull, desc, count } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
