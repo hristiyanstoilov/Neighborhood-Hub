@@ -14,6 +14,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
+import { Skeleton, SkeletonCircle } from '../../../components/Skeleton'
 
 interface ProfileData {
   name: string | null
@@ -146,8 +147,21 @@ export default function ProfileScreen() {
 
   if (state.type === 'loading') {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#15803d" />
+      <View style={styles.loadingWrap}>
+        <View style={styles.loadingCard}>
+          <View style={styles.loadingHeader}>
+            <SkeletonCircle size={72} />
+            <View style={styles.loadingHeaderText}>
+              <Skeleton width="55%" height={18} />
+              <Skeleton width="70%" height={14} />
+              <Skeleton width="45%" height={14} />
+            </View>
+          </View>
+          <Skeleton width="100%" height={42} radius={12} />
+          <Skeleton width="100%" height={42} radius={12} />
+          <Skeleton width="100%" height={42} radius={12} />
+          <Skeleton width="100%" height={42} radius={12} />
+        </View>
       </View>
     )
   }
@@ -280,6 +294,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     backgroundColor: '#f3f4f6',
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f3f4f6',
+  },
+  loadingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    gap: 14,
+  },
+  loadingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingHeaderText: {
+    flex: 1,
+    gap: 8,
   },
   avatarSection: {
     alignItems: 'center',

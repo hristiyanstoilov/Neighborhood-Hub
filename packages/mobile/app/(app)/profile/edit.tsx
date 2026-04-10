@@ -46,11 +46,13 @@ export default function EditProfileScreen() {
           setIsPublic(d.isPublic ?? true)
         }
 
-        setLocations((locJson.data ?? []).map((l: any) => ({
-          id: l.id,
-          city: l.city,
-          neighborhood: l.neighborhood,
-        })))
+        if (locRes.ok) {
+          setLocations((locJson.data ?? []).map((l: any) => ({
+            id: l.id,
+            city: l.city,
+            neighborhood: l.neighborhood,
+          })))
+        }
       } catch {
         Alert.alert('Error', 'Could not load profile. Please try again.')
         router.back()

@@ -4,14 +4,14 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
 import RequestCard, { SkillRequestRow } from '../../../components/RequestCard'
+import { Skeleton } from '../../../components/Skeleton'
 
 type Tab = 'requester' | 'owner'
 
@@ -22,11 +22,17 @@ type FetchState =
 
 export default function MyRequestsScreen() {
   const { user } = useAuth()
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>('requester')
   const [state, setState] = useState<FetchState>({ type: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
 
   const fetchRequests = useCallback(async (role: Tab) => {
+    if (!user) {
+      setState({ type: 'error' })
+      return
+    }
+
     try {
       const res = await apiFetch(`/api/skill-requests?role=${role}&limit=50`)
       if (!res.ok) {
@@ -38,12 +44,13 @@ export default function MyRequestsScreen() {
     } catch {
       setState({ type: 'error' })
     }
-  }, [])
+  }, [user])
 
   useFocusEffect(useCallback(() => {
+    if (!user) return
     setState({ type: 'loading' })
     fetchRequests(tab)
-  }, [tab, fetchRequests]))
+  }, [tab, fetchRequests, user]))
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -59,7 +66,16 @@ export default function MyRequestsScreen() {
     })
   }
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.emptyText}>Please log in to view your requests.</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/(auth)/login')}>
+          <Text style={styles.retryText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -84,8 +100,38 @@ export default function MyRequestsScreen() {
       </View>
 
       {state.type === 'loading' ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#15803d" />
+        <View style={styles.loadingWrap}>
+          <View style={styles.loadingHeader}>
+            <Skeleton width={110} height={22} />
+            <View style={styles.loadingTabs}>
+              <Skeleton width={86} height={38} radius={8} />
+              <Skeleton width={92} height={38} radius={8} />
+            </View>
+          </View>
+          <View style={styles.loadingList}>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <View key={index} style={styles.loadingCard}>
+                <View style={styles.loadingCardHeader}>
+                  <View style={{ flex: 1, gap: 8 }}>
+                    <Skeleton width="70%" height={16} />
+                    <Skeleton width="45%" height={12} />
+                  </View>
+                  <Skeleton width={72} height={20} radius={999} />
+                </View>
+                <View style={styles.loadingGrid}>
+                  <Skeleton width="100%" height={40} />
+                  <Skeleton width="100%" height={40} />
+                  <Skeleton width="100%" height={40} />
+                  <Skeleton width="100%" height={40} />
+                </View>
+                <View style={styles.loadingActions}>
+                  <Skeleton width={80} height={34} radius={8} />
+                  <Skeleton width={80} height={34} radius={8} />
+                  <Skeleton width={80} height={34} radius={8} />
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       ) : state.type === 'error' ? (
         <View style={styles.center}>
@@ -161,6 +207,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+  },
+  loadingWrap: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  loadingHeader: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  loadingTabs: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  loadingList: {
+    padding: 16,
+    gap: 12,
+  },
+  loadingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 16,
+    gap: 12,
+  },
+  loadingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  loadingGrid: {
+    gap: 8,
+  },
+  loadingActions: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
   },
   errorText: {
     fontSize: 14,

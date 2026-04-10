@@ -59,11 +59,13 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false)
   const [loadingConvs, setLoadingConvs] = useState(true)
   const [loadingMsgs, setLoadingMsgs] = useState(false)
+  const [messagesError, setMessagesError] = useState<string | null>(null)
 
   const flatListRef = useRef<FlatList>(null)
   const inputRef = useRef<TextInput>(null)
 
   const loadConversations = useCallback(async () => {
+    setLoadingConvs(true)
     try {
       const res = await apiFetch('/api/ai/conversations')
       if (res.ok) {
@@ -76,8 +78,14 @@ export default function ChatScreen() {
   }, [])
 
   useFocusEffect(useCallback(() => {
-    if (user) loadConversations()
-    else setLoadingConvs(false)
+    if (user) {
+      loadConversations()
+    } else {
+      setConversations([])
+      setActiveConvId(null)
+      setMessages([])
+      setLoadingConvs(false)
+    }
   }, [user, loadConversations]))
 
   // Scroll to bottom when messages change
@@ -91,13 +99,18 @@ export default function ChatScreen() {
     setActiveConvId(conv.id)
     setActiveConvTitle(conv.title ?? 'Conversation')
     setMessages([])
+    setMessagesError(null)
     setLoadingMsgs(true)
     try {
       const res = await apiFetch(`/api/ai/conversations/${conv.id}`)
       if (res.ok) {
         const json = await res.json()
         setMessages(json.data.messages ?? [])
+      } else {
+        setMessagesError('Could not load messages for this conversation.')
       }
+    } catch {
+      setMessagesError('Could not load messages for this conversation.')
     } finally {
       setLoadingMsgs(false)
     }
@@ -107,6 +120,7 @@ export default function ChatScreen() {
     setActiveConvId(null)
     setActiveConvTitle('')
     setMessages([])
+    setMessagesError(null)
     setTimeout(() => inputRef.current?.focus(), 100)
   }
 
@@ -316,24 +330,31 @@ export default function ChatScreen() {
           <ActivityIndicator size="large" color="#15803d" />
         </View>
       ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item, i) => item.id ?? String(i)}
-          contentContainerStyle={styles.messageList}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.centerSubtitle}>No messages yet. Send one below.</Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <View style={[styles.bubble, item.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
-              <Text style={[styles.bubbleText, item.role === 'user' ? styles.bubbleTextUser : styles.bubbleTextAssistant, item.pending && styles.bubblePending]}>
-                {item.pending ? '…' : item.content}
-              </Text>
+        <>
+          {messagesError && (
+            <View style={styles.messageErrorWrap}>
+              <Text style={styles.errorText}>{messagesError}</Text>
             </View>
           )}
-        />
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item, i) => item.id ?? String(i)}
+            contentContainerStyle={styles.messageList}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <Text style={styles.centerSubtitle}>No messages yet. Send one below.</Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={[styles.bubble, item.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant]}>
+                <Text style={[styles.bubbleText, item.role === 'user' ? styles.bubbleTextUser : styles.bubbleTextAssistant, item.pending && styles.bubblePending]}>
+                  {item.pending ? '…' : item.content}
+                </Text>
+              </View>
+            )}
+          />
+        </>
       )}
 
       {/* Input */}
@@ -423,6 +444,14 @@ const styles = StyleSheet.create({
   bubbleTextUser: { color: '#fff' },
   bubbleTextAssistant: { color: '#111827' },
   bubblePending: { opacity: 0.5 },
+  messageErrorWrap: {
+    backgroundColor: '#fef2f2',
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  errorText: { color: '#991b1b', fontSize: 12, fontWeight: '500' },
 
   // Input bar
   inputBar: {

@@ -11,6 +11,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import { apiFetch } from '../../lib/api'
 import SkillCard from '../../components/SkillCard'
+import { useAuth } from '../../contexts/auth'
 
 interface MySkill {
   id: string
@@ -30,6 +31,7 @@ type FetchState =
 
 export default function MySkillsScreen() {
   const router = useRouter()
+  const { user } = useAuth()
   const [state, setState] = useState<FetchState>({ type: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -63,10 +65,14 @@ export default function MySkillsScreen() {
   }, [])
 
   useFocusEffect(useCallback(() => {
+    if (!user) {
+      setState({ type: 'error' })
+      return
+    }
     setState({ type: 'loading' })
     setPage(1)
     fetchMySkills(1)
-  }, [fetchMySkills]))
+  }, [fetchMySkills, user]))
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -84,6 +90,17 @@ export default function MySkillsScreen() {
     setLoadingMore(false)
   }
 
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Please log in to manage your skills.</Text>
+        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/(auth)/login')}>
+          <Text style={styles.btnText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
   if (state.type === 'loading') {
     return (
       <View style={styles.center}>
@@ -96,7 +113,13 @@ export default function MySkillsScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Could not load your skills.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => fetchMySkills(1)}>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => {
+            setState({ type: 'loading' })
+            void fetchMySkills(1)
+          }}
+        >
           <Text style={styles.btnText}>Retry</Text>
         </TouchableOpacity>
       </View>

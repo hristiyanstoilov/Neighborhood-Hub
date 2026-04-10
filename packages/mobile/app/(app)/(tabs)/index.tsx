@@ -14,6 +14,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
 import SkillCard from '../../../components/SkillCard'
+import { Skeleton } from '../../../components/Skeleton'
 
 interface Skill {
   id: string
@@ -302,9 +303,29 @@ export default function SkillListScreen() {
 
   if (state.type === 'loading') {
     return (
-      <View style={styles.center}>
-        {renderHeader()}
-        <ActivityIndicator size="large" color="#15803d" style={{ marginTop: 40 }} />
+      <View style={styles.container}>
+        <View style={styles.loadingWrap}>
+          {renderHeader()}
+          <View style={styles.loadingList}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <View key={index} style={styles.loadingCard}>
+                <Skeleton height={120} radius={0} />
+                <View style={styles.loadingCardBody}>
+                  <View style={styles.loadingTopRow}>
+                    <Skeleton width="62%" height={16} />
+                    <Skeleton width={64} height={20} radius={999} />
+                  </View>
+                  <Skeleton width="85%" height={14} />
+                  <View style={styles.loadingMetaRow}>
+                    <Skeleton width={88} height={18} radius={999} />
+                    <Skeleton width={72} height={18} radius={999} />
+                    <Skeleton width={60} height={18} radius={999} />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
     )
   }
@@ -385,6 +406,27 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   center: { flex: 1, backgroundColor: '#f3f4f6' },
   list: { paddingBottom: 24 },
+  loadingWrap: { flex: 1, backgroundColor: '#f3f4f6' },
+  loadingList: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
+  loadingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  loadingCardBody: { padding: 14, gap: 10 },
+  loadingTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'center',
+  },
+  loadingMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
 
   // Header
   header: {

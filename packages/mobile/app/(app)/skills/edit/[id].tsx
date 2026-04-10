@@ -83,12 +83,17 @@ export default function EditSkillScreen() {
         setLocationId(s.locationId ?? null)
         setImageUrl(s.imageUrl ?? null)
 
-        setCategories(catJson.data ?? [])
-        setLocations((locJson.data ?? []).map((l: any) => ({
-          id: l.id,
-          city: l.city,
-          neighborhood: l.neighborhood,
-        })))
+        if (catRes.ok) {
+          setCategories(catJson.data ?? [])
+        }
+
+        if (locRes.ok) {
+          setLocations((locJson.data ?? []).map((l: any) => ({
+            id: l.id,
+            city: l.city,
+            neighborhood: l.neighborhood,
+          })))
+        }
       } catch {
         Alert.alert('Error', 'Network error. Please try again.')
         router.back()
