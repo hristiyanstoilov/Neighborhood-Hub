@@ -13,6 +13,13 @@ export const loginRatelimit = new Ratelimit({
   prefix: 'rl:login',
 })
 
+// 20 requests per 15 minutes per session key — for refresh
+export const refreshRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, '15 m'),
+  prefix: 'rl:refresh',
+})
+
 // 3 requests per hour per IP — for register
 export const registerRatelimit = new Ratelimit({
   redis,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'node:crypto'
 import { db } from '@/db'
 import { users, refreshTokens } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
@@ -8,16 +9,16 @@ import {
   refreshTokenExpiresAt,
 } from '@/lib/auth'
 import { getClientIp } from '@/lib/middleware'
-import { loginRatelimit } from '@/lib/ratelimit'
+import { refreshRatelimit } from '@/lib/ratelimit'
 import { cleanupRefreshTokensForUser } from '@/lib/refresh-token-hygiene'
+
+function tokenFingerprint(token: string) {
+  return createHash('sha256').update(token).digest('hex').slice(0, 16)
+}
 
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req)
-    const { success } = await loginRatelimit.limit(ip)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const cookieToken = req.cookies.get('refresh_token')?.value
 
@@ -31,6 +32,15 @@ export async function POST(req: NextRequest) {
 
     const rawRefreshToken = cookieToken ?? bodyToken
     const isMobileRequest = !cookieToken && !!bodyToken
+
+    const rateLimitKey = rawRefreshToken
+      ? `${ip}:${tokenFingerprint(rawRefreshToken)}`
+      : ip
+
+    const { success } = await refreshRatelimit.limit(rateLimitKey)
+    if (!success) {
+      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
 
     if (!rawRefreshToken) {
       return NextResponse.json({ error: 'MISSING_REFRESH_TOKEN' }, { status: 401 })

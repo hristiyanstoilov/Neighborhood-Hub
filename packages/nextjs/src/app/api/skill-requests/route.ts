@@ -113,9 +113,10 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     })
 
     return NextResponse.json({ data: newRequest }, { status: 201 })
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Unique constraint violation — concurrent duplicate request
-    if (err?.code === '23505') {
+    const code = typeof err === 'object' && err !== null && 'code' in err ? (err as { code?: string }).code : undefined
+    if (code === '23505') {
       return NextResponse.json({ error: 'REQUEST_ALREADY_EXISTS' }, { status: 409 })
     }
     console.error('[POST /api/skill-requests]', err)
