@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 import { formatDateTime } from '@/lib/format'
@@ -24,42 +25,44 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const POLL_INTERVAL_MS = 30_000
+const NOTIFICATIONS_QUERY_KEY = ['notifications', 'unread']
 
 export default function NotificationsBell() {
   const router = useRouter()
   const { user, loading } = useAuth()
-  const [items, setItems] = useState<NotificationRow[]>([])
   const [open, setOpen] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const menuId = 'notifications-menu'
+  const queryClient = useQueryClient()
 
-  const fetchNotifications = useCallback(async () => {
-    if (loading || !user) return
+  const { data: items = [] } = useQuery<NotificationRow[]>({
+    queryKey: NOTIFICATIONS_QUERY_KEY,
+    enabled: !loading && !!user,
+    refetchInterval: POLL_INTERVAL_MS,
+    queryFn: async () => {
+      try {
+        const res = await apiFetch('/api/notifications')
+        if (!res.ok) return []
+        const json = await res.json()
+        return json.data ?? []
+      } catch {
+        // Silent — bell must never crash the nav
+        return []
+      }
+    },
+  })
 
-    try {
-      const res = await apiFetch('/api/notifications')
-      if (!res.ok) return
-      const json = await res.json()
-      setItems(json.data ?? [])
-    } catch {
-      // Silent — bell must never crash the nav
-    }
-  }, [loading, user])
-
-  // Initial fetch on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchNotifications()
-    }, 0)
-    return () => clearTimeout(timer)
-  }, [fetchNotifications])
-
-  // Poll every 30 seconds
-  useEffect(() => {
-    const timer = setInterval(fetchNotifications, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [fetchNotifications])
+  const markReadMutation = useMutation({
+    mutationFn: async (payload?: { id?: string }) => {
+      await apiFetch('/api/notifications/read', {
+        method: 'PATCH',
+        body: payload?.id ? JSON.stringify({ id: payload.id }) : undefined,
+      })
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY })
+    },
+  })
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -82,20 +85,12 @@ export default function NotificationsBell() {
   }, [open])
 
   async function markAllRead() {
-    setItems([]) // optimistic
-    await apiFetch('/api/notifications/read', { method: 'PATCH' }).catch(() => {})
+    await markReadMutation.mutateAsync()
   }
 
   async function handleNotificationClick(item: NotificationRow) {
-    setActionLoading(true)
-    // Optimistic remove
-    setItems((prev) => prev.filter((n) => n.id !== item.id))
     setOpen(false)
-    await apiFetch('/api/notifications/read', {
-      method: 'PATCH',
-      body: JSON.stringify({ id: item.id }),
-    }).catch(() => {})
-    setActionLoading(false)
+    await markReadMutation.mutateAsync({ id: item.id }).catch(() => {})
     if (item.entityType === 'skill_request') {
       router.push('/my-requests')
     }
@@ -163,7 +158,7 @@ export default function NotificationsBell() {
                   <button
                     type="button"
                     onClick={() => handleNotificationClick(item)}
-                    disabled={actionLoading}
+                    disabled={markReadMutation.isPending}
                     role="menuitem"
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
