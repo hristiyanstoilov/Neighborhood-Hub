@@ -1,0 +1,237 @@
+name: CI Smoke
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  quality-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Deterministic CI placeholders to avoid build-time env crashes.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
+      JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-token
+      RESEND_API_KEY: re_ci_key
+      RESEND_FROM: ci@example.com
+      ANTHROPIC_API_KEY: ci-anthropic-key
+      CLOUDFLARE_R2_BUCKET: ci-bucket
+      CLOUDFLARE_R2_ACCOUNT_ID: ci-account
+      CLOUDFLARE_R2_ACCESS_KEY: ci-access
+      CLOUDFLARE_R2_SECRET_KEY: ci-secret
+      CLOUDFLARE_R2_PUBLIC_URL: https://example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/nextjs/package-lock.json
+            packages/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix packages/nextjs
+          npm ci --prefix packages/mobile --legacy-peer-deps
+
+      - name: Build web
+        run: npm run build:web
+
+      - name: Mobile typecheck
+        run: npm run typecheck:mobile
+
+      - name: Start web server
+        run: |
+          npm run start --prefix packages/nextjs -- -p 3000 > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in time"
+          cat /tmp/next-start.log
+          exit 1
+
+      - name: Route smoke checks
+        run: npm run smoke:web
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat /tmp/next-start.log
+
+      - name: Stop web server
+        if: always()
+        run: |
+          if [ -f /tmp/next-start.pid ]; then
+            kill "$(cat /tmp/next-start.pid)" || true
+          fi
+
+  authenticated-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality-and-smoke
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
+      JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-token
+      RESEND_API_KEY: re_ci_key
+      RESEND_FROM: ci@example.com
+      ANTHROPIC_API_KEY: ci-anthropic-key
+      CLOUDFLARE_R2_BUCKET: ci-bucket
+      CLOUDFLARE_R2_ACCOUNT_ID: ci-account
+      CLOUDFLARE_R2_ACCESS_KEY: ci-access
+      CLOUDFLARE_R2_SECRET_KEY: ci-secret
+      CLOUDFLARE_R2_PUBLIC_URL: https://example.com
+      SMOKE_AUTH_STRICT: 'true'
+      SMOKE_AUTH_EMAIL: ${{ secrets.SMOKE_AUTH_EMAIL }}
+      SMOKE_AUTH_PASSWORD: ${{ secrets.SMOKE_AUTH_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/nextjs/package-lock.json
+            packages/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix packages/nextjs
+
+      - name: Build web
+        run: npm run build:web
+
+      - name: Start web server
+        run: |
+          npm run start --prefix packages/nextjs -- -p 3000 > /tmp/next-auth-start.log 2>&1 &
+          echo $! > /tmp/next-auth-start.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in time"
+          cat /tmp/next-auth-start.log
+          exit 1
+
+      - name: Authenticated smoke checks
+        run: npm run smoke:auth
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat /tmp/next-auth-start.log
+
+      - name: Stop web server
+        if: always()
+        run: |
+          if [ -f /tmp/next-auth-start.pid ]; then
+            kill "$(cat /tmp/next-auth-start.pid)" || true
+          fi
+
+  authenticated-browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: authenticated-smoke
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
+      JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-token
+      RESEND_API_KEY: re_ci_key
+      RESEND_FROM: ci@example.com
+      ANTHROPIC_API_KEY: ci-anthropic-key
+      CLOUDFLARE_R2_BUCKET: ci-bucket
+      CLOUDFLARE_R2_ACCOUNT_ID: ci-account
+      CLOUDFLARE_R2_ACCESS_KEY: ci-access
+      CLOUDFLARE_R2_SECRET_KEY: ci-secret
+      CLOUDFLARE_R2_PUBLIC_URL: https://example.com
+      SMOKE_AUTH_STRICT: 'true'
+      SMOKE_AUTH_EMAIL: ${{ secrets.SMOKE_AUTH_EMAIL }}
+      SMOKE_AUTH_PASSWORD: ${{ secrets.SMOKE_AUTH_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/nextjs/package-lock.json
+            packages/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix packages/nextjs
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build web
+        run: npm run build:web
+
+      - name: Start web server
+        run: |
+          npm run start --prefix packages/nextjs -- -p 3000 > /tmp/next-auth-browser-start.log 2>&1 &
+          echo $! > /tmp/next-auth-browser-start.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in time"
+          cat /tmp/next-auth-browser-start.log
+          exit 1
+
+      - name: Authenticated browser smoke checks
+        run: npm run smoke:auth:browser
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat /tmp/next-auth-browser-start.log
+
+      - name: Stop web server
+        if: always()
+        run: |
+          if [ -f /tmp/next-auth-browser-start.pid ]; then
+            kill "$(cat /tmp/next-auth-browser-start.pid)" || true
+          fi
