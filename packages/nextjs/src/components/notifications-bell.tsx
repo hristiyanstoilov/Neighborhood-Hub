@@ -25,8 +25,6 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const POLL_INTERVAL_MS = 30_000
-const NOTIFICATIONS_QUERY_KEY = ['notifications', 'unread']
-
 export default function NotificationsBell() {
   const router = useRouter()
   const { user, loading } = useAuth()
@@ -35,8 +33,10 @@ export default function NotificationsBell() {
   const menuId = 'notifications-menu'
   const queryClient = useQueryClient()
 
+  const notificationsQueryKey = ['notifications', 'unread', user?.id ?? 'anonymous']
+
   const { data: items = [] } = useQuery<NotificationRow[]>({
-    queryKey: NOTIFICATIONS_QUERY_KEY,
+    queryKey: notificationsQueryKey,
     enabled: !loading && !!user,
     refetchInterval: POLL_INTERVAL_MS,
     queryFn: async () => {
@@ -60,7 +60,7 @@ export default function NotificationsBell() {
       })
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY })
+      await queryClient.invalidateQueries({ queryKey: notificationsQueryKey })
     },
   })
 

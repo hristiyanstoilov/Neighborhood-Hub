@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 import { ChatSidebar } from './_components/chat-sidebar'
@@ -25,68 +26,63 @@ interface Conversation {
 
 export default function ChatClient() {
   const { user, loading } = useAuth()
-  const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [loadingConvs, setLoadingConvs] = useState(true)
-  const [loadingRecommendations, setLoadingRecommendations] = useState(true)
-  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null)
   const [deletingConversation, setDeletingConversation] = useState(false)
-  const [recommendations, setRecommendations] = useState<RecommendedSkill[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
+  const conversationsQueryKey = ['ai', 'conversations', user?.id ?? 'anonymous']
+  const recommendationsQueryKey = ['ai', 'recommendations', user?.id ?? 'anonymous']
 
-  // Load conversation list on mount
-  useEffect(() => {
-    if (loading || !user) return
+  const {
+    data: conversations = [],
+    isLoading: loadingConvs,
+  } = useQuery<Conversation[]>({
+    queryKey: conversationsQueryKey,
+    enabled: !loading && !!user,
+    queryFn: async () => {
+      const res = await apiFetch('/api/ai/conversations')
+      if (!res.ok) return []
+      const json = await res.json()
+      return json.data ?? []
+    },
+  })
 
-    async function loadConversations() {
-      try {
-        const res = await apiFetch('/api/ai/conversations')
-        if (res.ok) {
-          const json = await res.json()
-          setConversations(json.data ?? [])
+  const {
+    data: recommendations = [],
+    isLoading: loadingRecommendations,
+    error: recommendationsQueryError,
+  } = useQuery<RecommendedSkill[]>({
+    queryKey: recommendationsQueryKey,
+    enabled: !loading && !!user,
+    staleTime: 60_000,
+    retry: 0,
+    queryFn: async () => {
+      const res = await apiFetch('/api/ai/recommendations?limit=5')
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        if (json?.error === 'TOO_MANY_REQUESTS') {
+          throw new Error('TOO_MANY_REQUESTS')
         }
-      } finally {
-        setLoadingConvs(false)
+        throw new Error('RECOMMENDATIONS_UNAVAILABLE')
       }
-    }
+      const json = await res.json()
+      return json.data ?? []
+    },
+  })
 
-    loadConversations()
-  }, [loading, user])
-
-  useEffect(() => {
-    if (loading || !user) return
-
-    async function loadRecommendations() {
-      try {
-        const res = await apiFetch('/api/ai/recommendations?limit=5')
-        if (!res.ok) {
-          const json = await res.json().catch(() => null)
-          if (json?.error === 'TOO_MANY_REQUESTS') {
-            setRecommendationsError('Recommendations are temporarily rate limited.')
-          } else {
-            setRecommendationsError('Could not load recommendations right now.')
-          }
-          return
-        }
-        const json = await res.json()
-        setRecommendations(json.data ?? [])
-      } catch {
-        setRecommendationsError('Could not load recommendations right now.')
-      } finally {
-        setLoadingRecommendations(false)
-      }
-    }
-
-    loadRecommendations()
-  }, [loading, user])
+  const recommendationsError = recommendationsQueryError
+    ? recommendationsQueryError instanceof Error && recommendationsQueryError.message === 'TOO_MANY_REQUESTS'
+      ? 'Recommendations are temporarily rate limited.'
+      : 'Could not load recommendations right now.'
+    : null
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -132,7 +128,9 @@ export default function ChatClient() {
         return
       }
 
-      setConversations((prev) => prev.filter((c) => c.id !== deleteTarget.id))
+      queryClient.setQueryData<Conversation[]>(conversationsQueryKey, (prev = []) =>
+        prev.filter((c) => c.id !== deleteTarget.id)
+      )
       if (activeConvId === deleteTarget.id) {
         setActiveConvId(null)
         setMessages([])
@@ -211,15 +209,9 @@ export default function ChatClient() {
       // Update conversation list
       if (!activeConvId) {
         setActiveConvId(conversationId)
-        // Refresh conversation list to show new entry
-        const convRes = await apiFetch('/api/ai/conversations')
-        if (convRes.ok) {
-          const convJson = await convRes.json()
-          setConversations(convJson.data ?? [])
-        }
+        await queryClient.invalidateQueries({ queryKey: conversationsQueryKey })
       } else {
-        // Update updatedAt for sorting
-        setConversations((prev) =>
+        queryClient.setQueryData<Conversation[]>(conversationsQueryKey, (prev = []) =>
           prev
             .map((c) => (c.id === conversationId ? { ...c, updatedAt: new Date().toISOString() } : c))
             .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
