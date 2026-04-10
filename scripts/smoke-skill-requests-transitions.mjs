@@ -1,6 +1,7 @@
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000'
 const REQUESTER_EMAIL = process.env.SMOKE_AUTH_EMAIL || ''
 const REQUESTER_PASSWORD = process.env.SMOKE_AUTH_PASSWORD || ''
+const REQUESTER_REFRESH_TOKEN = process.env.SMOKE_AUTH_REFRESH_TOKEN || ''
 const OWNER_EMAIL = process.env.SMOKE_AUTH_OWNER_EMAIL || ''
 const OWNER_PASSWORD = process.env.SMOKE_AUTH_OWNER_PASSWORD || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
@@ -42,6 +43,43 @@ async function login(email, password, label) {
   return { token, userId }
 }
 
+async function requesterLoginViaRefreshToken() {
+  if (!REQUESTER_REFRESH_TOKEN) return null
+
+  const refreshRes = await fetch(fullUrl('/api/auth/refresh'), {
+    method: 'POST',
+    headers: {
+      cookie: `refresh_token=${REQUESTER_REFRESH_TOKEN}`,
+    },
+  })
+
+  const refreshBody = await refreshRes.json().catch(() => null)
+  if (!refreshRes.ok) {
+    return null
+  }
+
+  const token = refreshBody?.data?.accessToken
+  if (!token) {
+    return null
+  }
+
+  const meRes = await fetch(fullUrl('/api/auth/me'), {
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+  })
+
+  const meBody = await meRes.json().catch(() => null)
+  if (!meRes.ok || !meBody?.data?.id) {
+    return null
+  }
+
+  return {
+    token,
+    userId: meBody.data.id,
+  }
+}
+
 async function getAvailableOwnerSkill(ownerId) {
   const res = await fetch(fullUrl('/api/skills?status=available&limit=50'))
   if (!res.ok) {
@@ -52,8 +90,29 @@ async function getAvailableOwnerSkill(ownerId) {
   const skills = body?.data ?? []
   const skill = skills.find((row) => row.ownerId === ownerId)
 
-  if (!skill) {
-    fail('No available skill found for owner account. Cannot run transition smoke.')
+  return skill ?? null
+}
+
+async function createOwnerSkill(ownerToken) {
+  const unique = Date.now()
+  const res = await fetch(fullUrl('/api/skills'), {
+    method: 'POST',
+    headers: authHeaders(ownerToken),
+    body: JSON.stringify({
+      title: `Smoke Owner Skill ${unique}`,
+      description: 'Temporary skill for transition smoke validation.',
+      availableHours: 2,
+    }),
+  })
+
+  const body = await res.json().catch(() => null)
+  if (!res.ok) {
+    fail(`Failed creating owner skill fallback: ${res.status} ${body?.error ?? ''}`.trim())
+  }
+
+  const skill = body?.data
+  if (!skill?.id) {
+    fail('Owner fallback skill create succeeded but skill id is missing')
   }
 
   return skill
@@ -140,14 +199,19 @@ async function main() {
     return
   }
 
-  const requester = await login(REQUESTER_EMAIL, REQUESTER_PASSWORD, 'Requester')
+  const requester = (await requesterLoginViaRefreshToken())
+    ?? (await login(REQUESTER_EMAIL, REQUESTER_PASSWORD, 'Requester'))
   const owner = await login(OWNER_EMAIL, OWNER_PASSWORD, 'Owner')
 
   if (requester.userId === owner.userId) {
     fail('Requester and owner credentials must belong to different users')
   }
 
-  const skill = await getAvailableOwnerSkill(owner.userId)
+  let skill = await getAvailableOwnerSkill(owner.userId)
+  if (!skill) {
+    console.log('No available owner skill found. Creating fallback skill for smoke run...')
+    skill = await createOwnerSkill(owner.token)
+  }
   console.log(`Using owner skill: ${skill.id} (${skill.title})`)
 
   // Case 1: pending -> cancelled only requester
