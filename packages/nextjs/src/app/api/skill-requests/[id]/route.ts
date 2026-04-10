@@ -69,6 +69,9 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     }
 
     if (action === 'complete') {
+      if (!isRequester) {
+        return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+      }
       if (existing.status !== 'accepted') {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
       }
@@ -77,6 +80,14 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     if (action === 'cancel') {
       if (!['pending', 'accepted'].includes(existing.status)) {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
+      }
+
+      if (existing.status === 'pending' && !isRequester) {
+        return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+      }
+
+      if (existing.status === 'accepted' && !isRequester && !isOwner) {
+        return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
     }
 

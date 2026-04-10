@@ -165,7 +165,7 @@ export default function RequestCard({ request, viewerId }: Props) {
             </>
           )}
 
-          {(status === 'accepted') && (
+          {isRequester && status === 'accepted' && (
             <button
               type="button"
               onClick={() => handleAction('complete')}
@@ -176,7 +176,7 @@ export default function RequestCard({ request, viewerId }: Props) {
             </button>
           )}
 
-          {(isRequester && status === 'pending') || status === 'accepted' ? (
+          {(isRequester && status === 'pending') || ((isRequester || isOwner) && status === 'accepted') ? (
             <button
               type="button"
               onClick={() => setCancelPrompt(true)}
