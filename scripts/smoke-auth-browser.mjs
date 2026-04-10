@@ -3,7 +3,6 @@ import { chromium } from 'playwright'
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000'
 const EMAIL = process.env.SMOKE_AUTH_EMAIL || ''
 const PASSWORD = process.env.SMOKE_AUTH_PASSWORD || ''
-const REFRESH_TOKEN = process.env.SMOKE_AUTH_REFRESH_TOKEN || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
 
 function fail(message) {
@@ -27,14 +26,29 @@ async function main() {
   const page = await context.newPage()
 
   try {
-    if (!REFRESH_TOKEN) {
-      fail('SMOKE_AUTH_REFRESH_TOKEN is required for browser smoke bootstrap')
-    }
-
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
-    await page.evaluate((refreshToken) => {
-      document.cookie = `refresh_token=${refreshToken}; path=/`
-    }, REFRESH_TOKEN)
+    const loginResult = await page.evaluate(
+      async ({ email, password }) => {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ email, password }),
+        })
+
+        return {
+          status: response.status,
+          body: await response.json().catch(() => null),
+        }
+      },
+      { email: EMAIL, password: PASSWORD }
+    )
+
+    if (loginResult.status !== 200) {
+      fail(`Expected login bootstrap to succeed, got ${loginResult.status}`)
+    }
 
     await page.goto(`${BASE_URL}/chat`, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(2500)
