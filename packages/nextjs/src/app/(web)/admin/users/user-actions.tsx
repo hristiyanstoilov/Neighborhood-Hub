@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Props {
   userId: string
@@ -25,6 +26,7 @@ const CONFIRM_ACTIONS: Action[] = ['promote', 'demote', 'delete']
 
 export default function UserActions({ userId, currentRole, isLocked }: Props) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState<Action | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<Action | null>(null)
@@ -58,6 +60,11 @@ export default function UserActions({ userId, currentRole, isLocked }: Props) {
         return
       }
 
+      showToast({
+        variant: 'success',
+        title: 'User updated',
+        message: `${ACTION_LABELS[action]} action completed successfully.`,
+      })
       router.refresh()
     } catch {
       setError('Network error. Please try again.')

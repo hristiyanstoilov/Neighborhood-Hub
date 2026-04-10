@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { useAuth } from '@/contexts/auth'
 import { ChatSidebar } from './_components/chat-sidebar'
 import { ChatMessageList } from './_components/chat-message-list'
 import { ChatComposer } from './_components/chat-composer'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
+import type { RecommendedSkill } from './_components/chat-sidebar'
 
 interface Message {
   id?: string
@@ -20,19 +24,28 @@ interface Conversation {
 }
 
 export default function ChatClient() {
+  const { user, loading } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loadingConvs, setLoadingConvs] = useState(true)
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true)
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null)
+  const [deletingConversation, setDeletingConversation] = useState(false)
+  const [recommendations, setRecommendations] = useState<RecommendedSkill[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { showToast } = useToast()
 
   // Load conversation list on mount
   useEffect(() => {
+    if (loading || !user) return
+
     async function loadConversations() {
       try {
         const res = await apiFetch('/api/ai/conversations')
@@ -44,8 +57,36 @@ export default function ChatClient() {
         setLoadingConvs(false)
       }
     }
+
     loadConversations()
-  }, [])
+  }, [loading, user])
+
+  useEffect(() => {
+    if (loading || !user) return
+
+    async function loadRecommendations() {
+      try {
+        const res = await apiFetch('/api/ai/recommendations?limit=5')
+        if (!res.ok) {
+          const json = await res.json().catch(() => null)
+          if (json?.error === 'TOO_MANY_REQUESTS') {
+            setRecommendationsError('Recommendations are temporarily rate limited.')
+          } else {
+            setRecommendationsError('Could not load recommendations right now.')
+          }
+          return
+        }
+        const json = await res.json()
+        setRecommendations(json.data ?? [])
+      } catch {
+        setRecommendationsError('Could not load recommendations right now.')
+      } finally {
+        setLoadingRecommendations(false)
+      }
+    }
+
+    loadRecommendations()
+  }, [loading, user])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -75,14 +116,42 @@ export default function ChatClient() {
     inputRef.current?.focus()
   }
 
-  async function deleteConversation(id: string) {
-    const res = await apiFetch(`/api/ai/conversations/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setConversations((prev) => prev.filter((c) => c.id !== id))
-      if (activeConvId === id) {
+  async function deleteConversation() {
+    if (!deleteTarget) return
+
+    setDeletingConversation(true)
+    try {
+      const res = await apiFetch(`/api/ai/conversations/${deleteTarget.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        showToast({
+          variant: 'error',
+          title: 'Conversation not deleted',
+          message: json?.error === 'CONVERSATION_NOT_FOUND' ? 'The conversation was already removed.' : 'Please try again.',
+        })
+        return
+      }
+
+      setConversations((prev) => prev.filter((c) => c.id !== deleteTarget.id))
+      if (activeConvId === deleteTarget.id) {
         setActiveConvId(null)
         setMessages([])
       }
+
+      showToast({
+        variant: 'success',
+        title: 'Conversation deleted',
+        message: deleteTarget.title ? `"${deleteTarget.title}" was removed.` : 'The conversation was removed.',
+      })
+    } catch {
+      showToast({
+        variant: 'error',
+        title: 'Delete failed',
+        message: 'Please check your connection and try again.',
+      })
+    } finally {
+      setDeletingConversation(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -105,10 +174,14 @@ export default function ChatClient() {
     setMessages((prev) => [...prev, { id: placeholderId, role: 'assistant', content: '', pending: true }])
 
     try {
+      const payload = activeConvId
+        ? { message: text, conversationId: activeConvId }
+        : { message: text }
+
       const res = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, conversationId: activeConvId }),
+        body: JSON.stringify(payload),
       })
 
       const json = await res.json()
@@ -171,9 +244,12 @@ export default function ChatClient() {
         conversations={conversations}
         activeConvId={activeConvId}
         loadingConvs={loadingConvs}
+        loadingRecommendations={loadingRecommendations}
+        recommendationsError={recommendationsError}
+        recommendations={recommendations}
         onStartNewConversation={startNewConversation}
         onSelectConversation={loadConversation}
-        onDeleteConversation={deleteConversation}
+        onRequestDeleteConversation={setDeleteTarget}
       />
 
       <div className="flex-1 flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -205,6 +281,17 @@ export default function ChatClient() {
           onSend={() => handleSend()}
         />
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete conversation?"
+        description={deleteTarget ? `This will permanently delete ${deleteTarget.title ?? 'this conversation'}.` : undefined}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={deleteConversation}
+        onCancel={() => setDeleteTarget(null)}
+        busy={deletingConversation}
+      />
     </div>
   )
 }

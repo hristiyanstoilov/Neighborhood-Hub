@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
 
 interface Props {
   skillId: string
@@ -18,9 +20,10 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export default function SkillOwnerActions({ skillId }: Props) {
   const router = useRouter()
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const { showToast } = useToast()
 
   async function handleDelete() {
     setDeleting(true)
@@ -32,16 +35,20 @@ export default function SkillOwnerActions({ skillId }: Props) {
 
       if (!res.ok) {
         setDeleteError(ERROR_MESSAGES[json.error] ?? 'Could not delete skill. Please try again.')
-        setConfirmDelete(false)
         return
       }
 
+      showToast({
+        variant: 'success',
+        title: 'Skill deleted',
+        message: 'The skill listing was removed successfully.',
+      })
       router.push('/skills')
     } catch {
       setDeleteError('Network error. Please check your connection and try again.')
-      setConfirmDelete(false)
     } finally {
       setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -54,35 +61,28 @@ export default function SkillOwnerActions({ skillId }: Props) {
         Edit
       </Link>
 
-      {!confirmDelete ? (
-        <button
-          onClick={() => { setConfirmDelete(true); setDeleteError(null) }}
-          className="px-4 py-1.5 rounded-md text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-        >
-          Delete
-        </button>
-      ) : (
-        <>
-          <span className="text-sm text-gray-600">Are you sure?</span>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="px-3 py-1.5 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-          >
-            {deleting ? 'Deleting…' : 'Yes, delete'}
-          </button>
-          <button
-            onClick={() => { setConfirmDelete(false); setDeleteError(null) }}
-            className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-        </>
-      )}
+      <button
+        type="button"
+        onClick={() => { setConfirmDelete(true); setDeleteError(null) }}
+        className="px-4 py-1.5 rounded-md text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+      >
+        Delete
+      </button>
 
       {deleteError && (
         <p className="text-sm text-red-600">{deleteError}</p>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete skill?"
+        description="This will permanently remove the skill listing from the marketplace."
+        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => { setConfirmDelete(false); setDeleteError(null) }}
+        busy={deleting}
+      />
     </div>
   )
 }

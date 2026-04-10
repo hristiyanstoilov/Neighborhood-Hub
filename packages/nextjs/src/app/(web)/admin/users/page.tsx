@@ -5,6 +5,7 @@ import UserActions from './user-actions'
 import { AdminPageHeader } from '../_components/admin-page-header'
 import { AdminPagination } from '../_components/admin-pagination'
 import { AdminState } from '../_components/admin-state'
+import { formatDate } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,11 +57,6 @@ export default async function AdminUsersPage({
   }
 
   const hasNext = rows.length === PAGE_SIZE
-
-  function fmt(date: Date | string | null) {
-    if (!date) return '—'
-    return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
 
   function isLocked(row: UserRow) {
     return row.lockedUntil != null && new Date(row.lockedUntil) > new Date()
@@ -119,7 +115,7 @@ export default async function AdminUsersPage({
                     ? <span className="text-xs text-orange-600">Locked</span>
                     : <span className="text-xs text-gray-400">Active</span>}
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-500">{fmt(row.createdAt)}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{formatDate(row.createdAt)}</td>
                 <td className="px-4 py-3">
                   {!row.deletedAt && (
                     <UserActions

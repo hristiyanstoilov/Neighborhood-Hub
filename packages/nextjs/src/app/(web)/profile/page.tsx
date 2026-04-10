@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth'
 import { ProfilePageHeader } from './_components/profile-page-header'
 import { ProfileSummaryCard } from './_components/profile-summary-card'
 import { ProfileEmailWarning } from './_components/profile-email-warning'
+import { ProfilePageSkeleton } from '@/components/ui/skeletons'
 
 export default function ProfilePage() {
   const { user, loading } = useAuth()
@@ -18,7 +19,7 @@ export default function ProfilePage() {
   }, [user, loading, router])
 
   if (loading || !user) {
-    return <p className="text-gray-400 text-sm">Loading…</p>
+    return <ProfilePageSkeleton />
   }
 
   return (

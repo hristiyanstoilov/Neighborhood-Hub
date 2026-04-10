@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/ui/toast'
 
 interface SkillData {
   id: string
@@ -25,6 +26,7 @@ interface Props {
 
 export default function EditSkillForm({ skill, categories, locations }: Props) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +68,11 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         return
       }
 
+      showToast({
+        variant: 'success',
+        title: 'Skill saved',
+        message: 'Your changes were updated successfully.',
+      })
       router.push(`/skills/${skill.id}`)
     } catch {
       setError('Network error. Please check your connection and try again.')
@@ -79,10 +86,11 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-skill-title" className="block text-sm font-medium text-gray-700 mb-1">
             Title <span className="text-red-500">*</span>
           </label>
           <input
+            id="edit-skill-title"
             name="title"
             type="text"
             required
@@ -94,8 +102,9 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <label htmlFor="edit-skill-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select
+            id="edit-skill-status"
             name="status"
             defaultValue={skill.status}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -107,8 +116,9 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="edit-skill-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea
+            id="edit-skill-description"
             name="description"
             rows={4}
             maxLength={2000}
@@ -119,8 +129,9 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="edit-skill-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
+              id="edit-skill-category"
               name="categoryId"
               defaultValue={skill.categoryId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -133,8 +144,9 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="edit-skill-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <select
+              id="edit-skill-location"
               name="locationId"
               defaultValue={skill.locationId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -148,10 +160,11 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         </div>
 
         <div className="w-40">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="edit-skill-hours" className="block text-sm font-medium text-gray-700 mb-1">
             Hours available / week
           </label>
           <input
+            id="edit-skill-hours"
             name="availableHours"
             type="number"
             min={0}
@@ -162,7 +175,7 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </p>
         )}

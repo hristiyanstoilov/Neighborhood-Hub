@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/ui/toast'
 
 interface Profile {
   name: string | null
@@ -23,35 +24,53 @@ interface Props {
 export default function EditProfileForm({ profile, locations }: Props) {
   const router = useRouter()
   const { refreshUser } = useAuth()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '')
   const [uploading, setUploading] = useState(false)
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null)
 
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function uploadAvatar(file: File) {
     setUploading(true)
+    setUploadError(null)
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) {
-        setError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
-        return
+        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        return false
       }
+
       setAvatarUrl(json.data.url)
+      setPendingAvatarFile(null)
+      return true
     } catch {
-      setError('Upload failed. Please try again.')
+      setUploadError('Upload failed. Please try again.')
+      return false
     } finally {
       setUploading(false)
     }
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPendingAvatarFile(file)
+    await uploadAvatar(file)
+  }
+
+  async function retryAvatarUpload() {
+    if (!pendingAvatarFile) return
+    await uploadAvatar(pendingAvatarFile)
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setSubmitError(null)
     setLoading(true)
 
     try {
@@ -77,15 +96,20 @@ export default function EditProfileForm({ profile, locations }: Props) {
           LOCATION_NOT_FOUND: 'Selected location is invalid.',
           TOO_MANY_REQUESTS:  'Too many attempts. Please wait and try again.',
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
         return
       }
 
       // Refresh auth context so nav shows the updated name
       await refreshUser()
+      showToast({
+        variant: 'success',
+        title: 'Profile saved',
+        message: 'Your profile details were updated successfully.',
+      })
       router.push('/profile')
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setSubmitError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -96,8 +120,9 @@ export default function EditProfileForm({ profile, locations }: Props) {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
           <input
+            id="profile-name"
             name="name"
             type="text"
             maxLength={100}
@@ -108,8 +133,9 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+          <label htmlFor="profile-bio" className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
           <textarea
+            id="profile-bio"
             name="bio"
             rows={3}
             maxLength={500}
@@ -121,7 +147,7 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
+          <label htmlFor="profile-avatar" className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
           {avatarUrl && (
             <img
               src={avatarUrl}
@@ -130,6 +156,7 @@ export default function EditProfileForm({ profile, locations }: Props) {
             />
           )}
           <input
+            id="profile-avatar"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleAvatarChange}
@@ -138,11 +165,25 @@ export default function EditProfileForm({ profile, locations }: Props) {
           />
           {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
           <p className="text-xs text-gray-400 mt-1">JPEG, PNG or WebP, max 5 MB.</p>
+          {uploadError && (
+            <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
+          )}
+          {uploadError && pendingAvatarFile && (
+            <button
+              type="button"
+              onClick={() => void retryAvatarUpload()}
+              disabled={uploading}
+              className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+            >
+              Retry upload
+            </button>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label htmlFor="profile-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
           <select
+            id="profile-location"
             name="locationId"
             defaultValue={profile?.locationId ?? ''}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -155,8 +196,9 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Profile visibility</label>
+          <label htmlFor="profile-visibility" className="block text-sm font-medium text-gray-700 mb-1">Profile visibility</label>
           <select
+            id="profile-visibility"
             name="isPublic"
             defaultValue={profile?.isPublic === false ? 'false' : 'true'}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -166,9 +208,9 @@ export default function EditProfileForm({ profile, locations }: Props) {
           </select>
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-            {error}
+        {submitError && (
+          <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            {submitError}
           </p>
         )}
 

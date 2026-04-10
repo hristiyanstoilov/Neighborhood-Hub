@@ -59,8 +59,9 @@ export default function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label htmlFor="login-email" className="block text-sm font-medium mb-1">Email</label>
           <input
+            id="login-email"
             name="email"
             type="email"
             required
@@ -72,12 +73,13 @@ export default function LoginForm() {
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium">Password</label>
+            <label htmlFor="login-password" className="block text-sm font-medium">Password</label>
             <Link href="/forgot-password" className="text-xs text-gray-400 hover:text-green-700 transition-colors">
               Forgot password?
             </Link>
           </div>
           <input
+            id="login-password"
             name="password"
             type="password"
             required

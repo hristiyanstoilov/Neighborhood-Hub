@@ -29,9 +29,12 @@ export function ConfirmDialog({
   const descriptionId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!open) return
+
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -73,6 +76,8 @@ export function ConfirmDialog({
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
+      returnFocusRef.current?.focus()
+      returnFocusRef.current = null
     }
   }, [open, busy, onCancel])
 

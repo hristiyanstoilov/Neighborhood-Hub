@@ -21,6 +21,7 @@ export default function Logo({ variant = 'light', height = 36, className = '' }:
       src={src}
       width={width}
       height={height}
+      style={{ width, height }}
       alt={alt}
       className={className}
       priority

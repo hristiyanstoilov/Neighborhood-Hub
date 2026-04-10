@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
 import type { SkillRequestRow } from '@/lib/queries/skill-requests'
+import { useToast } from '@/components/ui/toast'
+import { formatDateTime, formatMeetingType, formatRequestStatus } from '@/lib/format'
 
 interface Props {
   request: SkillRequestRow
@@ -18,23 +20,13 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
-function formatDateTime(date: Date | string | null) {
-  if (!date) return '—'
-  return new Date(date).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export default function RequestCard({ request, viewerId }: Props) {
   const [status, setStatus] = useState(request.status)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const { showToast } = useToast()
 
   const isOwner = request.userToId === viewerId
   const isRequester = request.userFromId === viewerId
@@ -70,6 +62,11 @@ export default function RequestCard({ request, viewerId }: Props) {
       setStatus(json.data.status)
       setCancelPrompt(false)
       setCancelReason('')
+      showToast({
+        variant: 'success',
+        title: 'Request updated',
+        message: `The request is now ${json.data.status}.`,
+      })
     } catch {
       setError('Network error. Please check your connection and try again.')
     } finally {
@@ -92,7 +89,7 @@ export default function RequestCard({ request, viewerId }: Props) {
           </p>
         </div>
         <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_STYLES[status] ?? STATUS_STYLES.cancelled}`}>
-          {status}
+          {formatRequestStatus(status)}
         </span>
       </div>
 
@@ -107,7 +104,7 @@ export default function RequestCard({ request, viewerId }: Props) {
         </div>
         <div>
           <dt className="text-gray-400 text-xs">Meeting</dt>
-          <dd className="text-gray-700 capitalize">{request.meetingType.replaceAll('_', ' ')}</dd>
+          <dd className="text-gray-700">{formatMeetingType(request.meetingType)}</dd>
         </div>
         {request.meetingUrl && (
           <div>
@@ -139,7 +136,7 @@ export default function RequestCard({ request, viewerId }: Props) {
       )}
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-3">
+        <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-3">
           {error}
         </p>
       )}
@@ -150,6 +147,7 @@ export default function RequestCard({ request, viewerId }: Props) {
           {isOwner && status === 'pending' && (
             <>
               <button
+                type="button"
                 onClick={() => handleAction('accept')}
                 disabled={loading}
                 className="bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
@@ -157,6 +155,7 @@ export default function RequestCard({ request, viewerId }: Props) {
                 Accept
               </button>
               <button
+                type="button"
                 onClick={() => handleAction('reject')}
                 disabled={loading}
                 className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
@@ -168,6 +167,7 @@ export default function RequestCard({ request, viewerId }: Props) {
 
           {(status === 'accepted') && (
             <button
+              type="button"
               onClick={() => handleAction('complete')}
               disabled={loading}
               className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
@@ -178,6 +178,7 @@ export default function RequestCard({ request, viewerId }: Props) {
 
           {(isRequester && status === 'pending') || status === 'accepted' ? (
             <button
+              type="button"
               onClick={() => setCancelPrompt(true)}
               disabled={loading}
               className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors"
@@ -197,10 +198,12 @@ export default function RequestCard({ request, viewerId }: Props) {
             rows={2}
             maxLength={500}
             placeholder="Please provide a reason for cancelling…"
+            aria-label="Cancellation reason"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
           />
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => handleAction('cancel')}
               disabled={loading || !cancelReason.trim()}
               className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
@@ -208,6 +211,7 @@ export default function RequestCard({ request, viewerId }: Props) {
               Confirm cancel
             </button>
             <button
+              type="button"
               onClick={() => { setCancelPrompt(false); setCancelReason('') }}
               className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
             >

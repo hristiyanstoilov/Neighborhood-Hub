@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useAuth } from '@/contexts/auth'
+import { formatDateTime } from '@/lib/format'
 
 interface NotificationRow {
   id: string
@@ -25,12 +27,16 @@ const POLL_INTERVAL_MS = 30_000
 
 export default function NotificationsBell() {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const [items, setItems] = useState<NotificationRow[]>([])
   const [open, setOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuId = 'notifications-menu'
 
   const fetchNotifications = useCallback(async () => {
+    if (loading || !user) return
+
     try {
       const res = await apiFetch('/api/notifications')
       if (!res.ok) return
@@ -39,11 +45,14 @@ export default function NotificationsBell() {
     } catch {
       // Silent — bell must never crash the nav
     }
-  }, [])
+  }, [loading, user])
 
   // Initial fetch on mount
   useEffect(() => {
-    fetchNotifications()
+    const timer = setTimeout(() => {
+      void fetchNotifications()
+    }, 0)
+    return () => clearTimeout(timer)
   }, [fetchNotifications])
 
   // Poll every 30 seconds
@@ -61,6 +70,15 @@ export default function NotificationsBell() {
     }
     if (open) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
+
+  useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+
+    if (open) document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
   }, [open])
 
   async function markAllRead() {
@@ -88,8 +106,12 @@ export default function NotificationsBell() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
         className="relative p-1.5 rounded-md text-gray-600 hover:text-green-700 hover:bg-gray-100 transition-colors"
       >
         <svg
@@ -116,11 +138,12 @@ export default function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+        <div id={menuId} role="menu" aria-label="Notifications menu" className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
             <span className="text-sm font-semibold text-gray-800">Notifications</span>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={markAllRead}
                 className="text-xs text-green-700 hover:underline"
               >
@@ -138,20 +161,17 @@ export default function NotificationsBell() {
               {items.map((item) => (
                 <li key={item.id}>
                   <button
+                    type="button"
                     onClick={() => handleNotificationClick(item)}
                     disabled={actionLoading}
+                    role="menuitem"
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
                     <p className="text-sm font-medium text-gray-800 leading-snug">
                       {TYPE_LABELS[item.type] ?? 'New notification'}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(item.createdAt).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatDateTime(item.createdAt)}
                     </p>
                   </button>
                 </li>

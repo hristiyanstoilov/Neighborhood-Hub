@@ -86,8 +86,9 @@ export default function ResetPasswordForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">New password</label>
+          <label htmlFor="reset-password" className="block text-sm font-medium mb-1">New password</label>
           <input
+            id="reset-password"
             name="password"
             type="password"
             required
@@ -99,8 +100,9 @@ export default function ResetPasswordForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Confirm password</label>
+          <label htmlFor="reset-password-confirm" className="block text-sm font-medium mb-1">Confirm password</label>
           <input
+            id="reset-password-confirm"
             name="confirm"
             type="password"
             required
@@ -112,7 +114,7 @@ export default function ResetPasswordForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </p>
         )}

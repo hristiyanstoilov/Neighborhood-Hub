@@ -70,7 +70,12 @@ export default async function SkillsPage({
       />
 
       {fetchError ? (
-        <ErrorState title="Could not load skills." message="Please try refreshing the page." />
+        <ErrorState
+          title="Could not load skills."
+          message="Please try again."
+          actionLabel="Try again"
+          actionHref="/skills"
+        />
       ) : skills.length === 0 ? (
         <EmptyState
           title="No skills found."

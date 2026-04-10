@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useToast } from '@/components/ui/toast'
 
 interface Category { id: string; slug: string; label: string }
 interface Location { id: string; city: string; neighborhood: string }
@@ -14,35 +15,53 @@ interface Props {
 
 export default function NewSkillForm({ categories, locations }: Props) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null)
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function uploadImage(file: File) {
     setUploading(true)
+    setUploadError(null)
     try {
       const fd = new FormData()
       fd.append('file', file)
       const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) {
-        setError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
-        return
+        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        return false
       }
+
       setImageUrl(json.data.url)
+      setPendingImageFile(null)
+      return true
     } catch {
-      setError('Upload failed. Please try again.')
+      setUploadError('Upload failed. Please try again.')
+      return false
     } finally {
       setUploading(false)
     }
   }
 
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPendingImageFile(file)
+    void uploadImage(file)
+  }
+
+  async function retryImageUpload() {
+    if (!pendingImageFile) return
+    await uploadImage(pendingImageFile)
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setSubmitError(null)
     setLoading(true)
 
     try {
@@ -71,13 +90,18 @@ export default function NewSkillForm({ categories, locations }: Props) {
           VALIDATION_ERROR: 'Please check your inputs.',
           UNAUTHORIZED: 'You must be logged in to offer a skill.',
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
         return
       }
 
+      showToast({
+        variant: 'success',
+        title: 'Skill published',
+        message: 'Your new skill is now visible to the community.',
+      })
       router.push(`/skills/${json.data.id}`)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setSubmitError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -88,10 +112,11 @@ export default function NewSkillForm({ categories, locations }: Props) {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="skill-title" className="block text-sm font-medium text-gray-700 mb-1">
             Title <span className="text-red-500">*</span>
           </label>
           <input
+            id="skill-title"
             name="title"
             type="text"
             required
@@ -103,8 +128,9 @@ export default function NewSkillForm({ categories, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="skill-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <textarea
+            id="skill-description"
             name="description"
             rows={4}
             maxLength={2000}
@@ -114,7 +140,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <label htmlFor="skill-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
           {imageUrl && (
             <img
               src={imageUrl}
@@ -123,6 +149,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
             />
           )}
           <input
+            id="skill-image"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleImageChange}
@@ -131,12 +158,26 @@ export default function NewSkillForm({ categories, locations }: Props) {
           />
           {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
           <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
+          {uploadError && (
+            <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
+          )}
+          {uploadError && pendingImageFile && (
+            <button
+              type="button"
+              onClick={() => void retryImageUpload()}
+              disabled={uploading}
+              className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+            >
+              Retry upload
+            </button>
+          )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="skill-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
+              id="skill-category"
               name="categoryId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
@@ -148,8 +189,9 @@ export default function NewSkillForm({ categories, locations }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="skill-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <select
+              id="skill-location"
               name="locationId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
@@ -162,10 +204,11 @@ export default function NewSkillForm({ categories, locations }: Props) {
         </div>
 
         <div className="w-40">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="skill-hours" className="block text-sm font-medium text-gray-700 mb-1">
             Hours available / week
           </label>
           <input
+            id="skill-hours"
             name="availableHours"
             type="number"
             min={0}
@@ -175,9 +218,9 @@ export default function NewSkillForm({ categories, locations }: Props) {
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-            {error}
+        {submitError && (
+          <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            {submitError}
           </p>
         )}
 

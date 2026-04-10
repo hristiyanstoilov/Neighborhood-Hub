@@ -4,6 +4,7 @@ import { desc } from 'drizzle-orm'
 import { AdminPageHeader } from '../_components/admin-page-header'
 import { AdminPagination } from '../_components/admin-pagination'
 import { AdminState } from '../_components/admin-state'
+import { formatDateTime, humanizeValue } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,17 +56,6 @@ export default async function AdminAuditPage({
 
   const hasNext = rows.length === PAGE_SIZE
 
-  function fmt(date: Date | string | null) {
-    if (!date) return '—'
-    return new Date(date).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   const ACTION_COLORS: Record<string, string> = {
     create:         'bg-green-100 text-green-700',
     update:         'bg-blue-100 text-blue-700',
@@ -105,7 +95,7 @@ export default async function AdminAuditPage({
             {rows.map((row) => (
               <tr key={row.id}>
                 <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                  {fmt(row.createdAt)}
+                  {formatDateTime(row.createdAt)}
                 </td>
                 <td className="px-4 py-3">
                   <p className="text-xs text-gray-700">{row.userEmail ?? '—'}</p>
@@ -115,7 +105,7 @@ export default async function AdminAuditPage({
                 </td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ACTION_COLORS[row.action] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {row.action}
+                    {humanizeValue(row.action)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">
