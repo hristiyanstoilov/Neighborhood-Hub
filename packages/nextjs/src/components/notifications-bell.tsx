@@ -39,16 +39,14 @@ export default function NotificationsBell() {
     queryKey: notificationsQueryKey,
     enabled: !loading && !!user,
     refetchInterval: POLL_INTERVAL_MS,
+    retry: 2,
+    // Throw on failure so TanStack Query retries automatically.
+    // The `data = []` default means the bell shows 0 on error — no nav crash.
     queryFn: async () => {
-      try {
-        const res = await apiFetch('/api/notifications')
-        if (!res.ok) return []
-        const json = await res.json()
-        return json.data ?? []
-      } catch {
-        // Silent — bell must never crash the nav
-        return []
-      }
+      const res = await apiFetch('/api/notifications')
+      if (!res.ok) throw new Error('NOTIFICATIONS_FETCH_FAILED')
+      const json = await res.json()
+      return json.data ?? []
     },
   })
 
@@ -85,7 +83,7 @@ export default function NotificationsBell() {
   }, [open])
 
   async function markAllRead() {
-    await markReadMutation.mutateAsync()
+    await markReadMutation.mutateAsync(undefined)
   }
 
   async function handleNotificationClick(item: NotificationRow) {

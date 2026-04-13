@@ -8,7 +8,20 @@ import { cleanupRefreshTokensForUser } from '@/lib/refresh-token-hygiene'
 
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
-    const rawRefreshToken = req.cookies.get('refresh_token')?.value
+    // Web clients send refresh token as an httpOnly cookie.
+    // Mobile clients cannot use httpOnly cookies, so they send it in the JSON body.
+    const cookieToken = req.cookies.get('refresh_token')?.value
+
+    let bodyToken: string | undefined
+    if (!cookieToken) {
+      const contentType = req.headers.get('content-type') ?? ''
+      if (contentType.includes('application/json')) {
+        const body = await req.json().catch(() => ({}))
+        bodyToken = typeof body?.refreshToken === 'string' ? body.refreshToken : undefined
+      }
+    }
+
+    const rawRefreshToken = cookieToken ?? bodyToken
 
     if (rawRefreshToken) {
       await db

@@ -114,10 +114,14 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     return NextResponse.json({ data: newRequest }, { status: 201 })
   } catch (err: unknown) {
-    // Unique constraint violation — concurrent duplicate request
     const code = typeof err === 'object' && err !== null && 'code' in err ? (err as { code?: string }).code : undefined
+    // Unique constraint — concurrent duplicate request
     if (code === '23505') {
       return NextResponse.json({ error: 'REQUEST_ALREADY_EXISTS' }, { status: 409 })
+    }
+    // FK violation — skill was deleted between availability check and INSERT
+    if (code === '23503') {
+      return NextResponse.json({ error: 'SKILL_NOT_FOUND' }, { status: 404 })
     }
     console.error('[POST /api/skill-requests]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
