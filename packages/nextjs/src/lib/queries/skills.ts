@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
-import { eq, and, isNull, desc, ilike } from 'drizzle-orm'
+import { eq, and, isNull, desc, ilike, count } from 'drizzle-orm'
 
 const skillSelect = {
   id: skills.id,
@@ -49,6 +49,29 @@ export async function querySkills(opts: {
     .limit(limit)
     .offset((page - 1) * limit)
     .orderBy(desc(skills.createdAt))
+}
+
+export async function querySkillsPage(opts: {
+  status?: string
+  search?: string
+  categoryId?: string
+  locationId?: string
+  limit?: number
+  page?: number
+}): Promise<{ skills: Awaited<ReturnType<typeof querySkills>>; total: number }> {
+  const { limit = 20, page = 1, ...rest } = opts
+  const conditions = [isNull(skills.deletedAt)]
+  if (rest.status) conditions.push(eq(skills.status, rest.status))
+  if (rest.categoryId) conditions.push(eq(skills.categoryId, rest.categoryId))
+  if (rest.locationId) conditions.push(eq(skills.locationId, rest.locationId))
+  if (rest.search) conditions.push(ilike(skills.title, `%${rest.search}%`))
+
+  const [rows, [{ total }]] = await Promise.all([
+    querySkills({ ...rest, limit, page }),
+    db.select({ total: count() }).from(skills).where(and(...conditions)),
+  ])
+
+  return { skills: rows, total }
 }
 
 export async function querySkillById(id: string) {
