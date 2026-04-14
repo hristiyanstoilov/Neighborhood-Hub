@@ -3,6 +3,7 @@ import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../contexts/auth'
 import { QueryProvider } from '../components/query-provider'
+import { ToastProvider } from '../lib/toast'
 
 function RootNavigation() {
   const { user, loading } = useAuth()
@@ -28,8 +29,10 @@ export default function RootLayout() {
   return (
     <QueryProvider>
       <AuthProvider>
-        <StatusBar style="auto" />
-        <RootNavigation />
+        <ToastProvider>
+          <StatusBar style="auto" />
+          <RootNavigation />
+        </ToastProvider>
       </AuthProvider>
     </QueryProvider>
   )

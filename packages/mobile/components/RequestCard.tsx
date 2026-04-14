@@ -14,6 +14,7 @@ import {
   type SkillRequestRow,
   updateSkillRequestAction,
 } from '../lib/queries/skill-requests'
+import { useToast } from '../lib/toast'
 
 interface Props {
   request: SkillRequestRow
@@ -30,6 +31,13 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 const TERMINAL = ['rejected', 'completed', 'cancelled']
 
+const ACTION_TOASTS: Record<RequestAction, string> = {
+  accept:   'Request accepted',
+  reject:   'Request rejected',
+  complete: 'Session marked as completed',
+  cancel:   'Request cancelled',
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString('en-GB', {
     day: '2-digit',
@@ -41,6 +49,7 @@ function formatDate(dateStr: string): string {
 
 export default function RequestCard({ request, viewerId }: Props) {
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const mutation = useMutation({
     mutationFn: updateSkillRequestAction,
     onSuccess: async () => {
@@ -61,6 +70,7 @@ export default function RequestCard({ request, viewerId }: Props) {
         action,
         cancellationReason,
       })
+      showToast({ message: ACTION_TOASTS[action], variant: 'success' })
     } catch (error) {
       const errorCode = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
       Alert.alert('Error', getSkillRequestActionErrorMessage(errorCode))

@@ -18,10 +18,12 @@ import {
   profileUpdateErrorMessage,
   updateOwnProfile,
 } from '../../../lib/queries/profile'
+import { useToast } from '../../../lib/toast'
 
 export default function EditProfileScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
@@ -43,6 +45,7 @@ export default function EditProfileScreen() {
     mutationFn: updateOwnProfile,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: profileKeys.all })
+      showToast({ message: 'Profile saved', variant: 'success' })
       router.back()
     },
   })

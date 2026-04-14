@@ -18,6 +18,7 @@ import { apiFetch } from '../../../../lib/api'
 import { mySkillsKeys } from '../../../../lib/queries/my-skills'
 import { SkillNotFoundError, fetchSkillDetail, skillDetailKeys } from '../../../../lib/queries/skill-detail'
 import { fetchCategories, fetchLocations, skillsKeys } from '../../../../lib/queries/skills'
+import { useToast } from '../../../../lib/toast'
 import {
   SkillAvailableHoursField,
   SkillCategoryPicker,
@@ -37,6 +38,7 @@ export default function EditSkillScreen() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const skillId = typeof id === 'string' ? id : ''
   const hydratedFromQuery = useRef(false)
   const ownershipChecked = useRef(false)
@@ -100,6 +102,7 @@ export default function EditSkillScreen() {
       await queryClient.invalidateQueries({ queryKey: skillDetailKeys.detail(skillId) })
       await queryClient.invalidateQueries({ queryKey: skillsKeys.all })
       await queryClient.invalidateQueries({ queryKey: mySkillsKeys.all })
+      showToast({ message: 'Skill saved', variant: 'success' })
       router.replace(`/(app)/skills/${skillId}`)
     },
   })
@@ -118,6 +121,7 @@ export default function EditSkillScreen() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: skillsKeys.all })
       await queryClient.invalidateQueries({ queryKey: mySkillsKeys.all })
+      showToast({ message: 'Skill deleted', variant: 'success' })
       router.replace('/(app)/')
     },
   })
