@@ -1,58 +1,48 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/auth'
 import { ChatSidebar } from './_components/chat-sidebar'
 import { ChatMessageList } from './_components/chat-message-list'
 import { ChatComposer } from './_components/chat-composer'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast'
-import type { RecommendedSkill } from './_components/chat-sidebar'
-
-interface Message {
-  id?: string
-  role: 'user' | 'assistant'
-  content: string
-  pending?: boolean
-}
-
-interface Conversation {
-  id: string
-  title: string | null
-  updatedAt: string
-}
+import {
+  chatKeys,
+  deleteChatConversation,
+  fetchChatConversations,
+  fetchChatRecommendations,
+  fetchConversationMessages,
+  sendChatMessage,
+  type ChatConversation,
+  type ChatMessage,
+  type RecommendedSkill,
+} from './_lib/chat-queries'
 
 export default function ChatClient() {
   const { user, loading } = useAuth()
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null)
-  const [deletingConversation, setDeletingConversation] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ChatConversation | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const { showToast } = useToast()
   const queryClient = useQueryClient()
-  const conversationsQueryKey = ['ai', 'conversations', user?.id ?? 'anonymous']
-  const recommendationsQueryKey = ['ai', 'recommendations', user?.id ?? 'anonymous']
+  const viewerId = user?.id ?? 'anonymous'
+  const conversationsQueryKey = chatKeys.conversations(viewerId)
+  const recommendationsQueryKey = chatKeys.recommendations(viewerId)
 
   const {
     data: conversations = [],
     isLoading: loadingConvs,
-  } = useQuery<Conversation[]>({
+  } = useQuery<ChatConversation[]>({
     queryKey: conversationsQueryKey,
     enabled: !loading && !!user,
-    queryFn: async () => {
-      const res = await apiFetch('/api/ai/conversations')
-      if (!res.ok) return []
-      const json = await res.json()
-      return json.data ?? []
-    },
+    queryFn: fetchChatConversations,
   })
 
   const {
@@ -64,18 +54,33 @@ export default function ChatClient() {
     enabled: !loading && !!user,
     staleTime: 60_000,
     retry: 0,
-    queryFn: async () => {
-      const res = await apiFetch('/api/ai/recommendations?limit=5')
-      if (!res.ok) {
-        const json = await res.json().catch(() => null)
-        if (json?.error === 'TOO_MANY_REQUESTS') {
-          throw new Error('TOO_MANY_REQUESTS')
-        }
-        throw new Error('RECOMMENDATIONS_UNAVAILABLE')
+    queryFn: fetchChatRecommendations,
+  })
+
+  const messagesQuery = useQuery<ChatMessage[]>({
+    queryKey: chatKeys.messages(activeConvId ?? ''),
+    queryFn: () => fetchConversationMessages(activeConvId as string),
+    enabled: Boolean(activeConvId),
+  })
+
+  const deleteConversationMutation = useMutation({
+    mutationFn: deleteChatConversation,
+    onSuccess: async (_result, deletedId) => {
+      queryClient.setQueryData<ChatConversation[]>(conversationsQueryKey, (prev = []) =>
+        prev.filter((conversation) => conversation.id !== deletedId)
+      )
+
+      if (activeConvId === deletedId) {
+        setActiveConvId(null)
+        setMessages([])
       }
-      const json = await res.json()
-      return json.data ?? []
+
+      await queryClient.invalidateQueries({ queryKey: conversationsQueryKey })
     },
+  })
+
+  const sendMutation = useMutation({
+    mutationFn: sendChatMessage,
   })
 
   const recommendationsError = recommendationsQueryError
@@ -89,20 +94,10 @@ export default function ChatClient() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function loadConversation(id: string) {
-    setLoadingMsgs(true)
+  function loadConversation(id: string) {
     setActiveConvId(id)
     setMessages([])
     setError(null)
-    try {
-      const res = await apiFetch(`/api/ai/conversations/${id}`)
-      if (res.ok) {
-        const json = await res.json()
-        setMessages(json.data.messages ?? [])
-      }
-    } finally {
-      setLoadingMsgs(false)
-    }
   }
 
   function startNewConversation() {
@@ -114,41 +109,23 @@ export default function ChatClient() {
 
   async function deleteConversation() {
     if (!deleteTarget) return
-
-    setDeletingConversation(true)
+    const currentTarget = deleteTarget
     try {
-      const res = await apiFetch(`/api/ai/conversations/${deleteTarget.id}`, { method: 'DELETE' })
-      if (!res.ok) {
-        const json = await res.json().catch(() => null)
-        showToast({
-          variant: 'error',
-          title: 'Conversation not deleted',
-          message: json?.error === 'CONVERSATION_NOT_FOUND' ? 'The conversation was already removed.' : 'Please try again.',
-        })
-        return
-      }
-
-      queryClient.setQueryData<Conversation[]>(conversationsQueryKey, (prev = []) =>
-        prev.filter((c) => c.id !== deleteTarget.id)
-      )
-      if (activeConvId === deleteTarget.id) {
-        setActiveConvId(null)
-        setMessages([])
-      }
+      await deleteConversationMutation.mutateAsync(currentTarget.id)
 
       showToast({
         variant: 'success',
         title: 'Conversation deleted',
-        message: deleteTarget.title ? `"${deleteTarget.title}" was removed.` : 'The conversation was removed.',
+        message: currentTarget.title ? `"${currentTarget.title}" was removed.` : 'The conversation was removed.',
       })
-    } catch {
+    } catch (mutationError) {
+      const code = mutationError instanceof Error ? mutationError.message : 'UNKNOWN_ERROR'
       showToast({
         variant: 'error',
-        title: 'Delete failed',
-        message: 'Please check your connection and try again.',
+        title: 'Conversation not deleted',
+        message: code === 'CONVERSATION_NOT_FOUND' ? 'The conversation was already removed.' : 'Please try again.',
       })
     } finally {
-      setDeletingConversation(false)
       setDeleteTarget(null)
     }
   }
@@ -172,36 +149,17 @@ export default function ChatClient() {
     setMessages((prev) => [...prev, { id: placeholderId, role: 'assistant', content: '', pending: true }])
 
     try {
-      const payload = activeConvId
-        ? { message: text, conversationId: activeConvId }
-        : { message: text }
-
-      const res = await apiFetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await sendMutation.mutateAsync({
+        message: text,
+        ...(activeConvId ? { conversationId: activeConvId } : {}),
       })
-
-      const json = await res.json()
-
-      if (!res.ok) {
-        const msgs: Record<string, string> = {
-          TOO_MANY_REQUESTS: 'You have reached the hourly limit (20 messages). Please try again later.',
-          AI_UNAVAILABLE: 'The AI service is temporarily unavailable. Please try again.',
-          CONVERSATION_NOT_FOUND: 'This conversation no longer exists.',
-        }
-        setError(msgs[json.error] ?? 'Something went wrong. Please try again.')
-        setMessages((prev) => prev.filter((m) => m.id !== optimisticId && m.id !== placeholderId))
-        return
-      }
-
-      const { conversationId, message: assistantMsg } = json.data
+      const { conversationId, assistantMessage } = response
 
       // Replace placeholder with real assistant message
       setMessages((prev) =>
         prev.map((m) =>
           m.id === placeholderId
-            ? { id: assistantMsg.id, role: 'assistant', content: assistantMsg.content }
+            ? assistantMessage
             : m
         )
       )
@@ -210,13 +168,24 @@ export default function ChatClient() {
       if (!activeConvId) {
         setActiveConvId(conversationId)
         await queryClient.invalidateQueries({ queryKey: conversationsQueryKey })
+        await queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) })
       } else {
-        queryClient.setQueryData<Conversation[]>(conversationsQueryKey, (prev = []) =>
+        queryClient.setQueryData<ChatConversation[]>(conversationsQueryKey, (prev = []) =>
           prev
             .map((c) => (c.id === conversationId ? { ...c, updatedAt: new Date().toISOString() } : c))
             .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         )
+        await queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) })
       }
+    } catch (mutationError) {
+      const code = mutationError instanceof Error ? mutationError.message : 'UNKNOWN_ERROR'
+      const msgs: Record<string, string> = {
+        TOO_MANY_REQUESTS: 'You have reached the hourly limit (20 messages). Please try again later.',
+        AI_UNAVAILABLE: 'The AI service is temporarily unavailable. Please try again.',
+        CONVERSATION_NOT_FOUND: 'This conversation no longer exists.',
+      }
+      setError(msgs[code] ?? 'Something went wrong. Please try again.')
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId && m.id !== placeholderId))
     } finally {
       setSending(false)
       inputRef.current?.focus()
@@ -229,6 +198,24 @@ export default function ChatClient() {
       handleSend()
     }
   }
+
+  useEffect(() => {
+    if (!activeConvId) {
+      return
+    }
+
+    if (messagesQuery.data) {
+      setMessages(messagesQuery.data)
+    }
+  }, [activeConvId, messagesQuery.data])
+
+  useEffect(() => {
+    if (messagesQuery.isError) {
+      setError('Could not load conversation messages. Please retry.')
+    }
+  }, [messagesQuery.isError])
+
+  const loadingMsgs = Boolean(activeConvId && messagesQuery.isLoading)
 
   return (
     <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[500px]">
@@ -282,7 +269,7 @@ export default function ChatClient() {
         confirmVariant="danger"
         onConfirm={deleteConversation}
         onCancel={() => setDeleteTarget(null)}
-        busy={deletingConversation}
+        busy={deleteConversationMutation.isPending}
       />
     </div>
   )
