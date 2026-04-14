@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../contexts/auth'
+import { QueryProvider } from '../components/query-provider'
 
 function RootNavigation() {
   const { user, loading } = useAuth()
@@ -25,9 +26,11 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <RootNavigation />
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <StatusBar style="auto" />
+        <RootNavigation />
+      </AuthProvider>
+    </QueryProvider>
   )
 }

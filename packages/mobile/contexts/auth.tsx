@@ -88,9 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function logout(): Promise<void> {
     try {
-      await apiFetch('/api/auth/logout', { method: 'POST' })
+      const refreshToken = await Storage.get('refresh_token')
+      await apiFetch('/api/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      })
     } catch {
-      // best-effort
+      // best-effort — local state is cleared regardless
     }
     setAccessToken(null)
     await Storage.delete('refresh_token')
