@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 type PublicProfileHeaderProps = {
   name: string | null
   avatarUrl: string | null
@@ -11,8 +13,7 @@ export function PublicProfileHeader({ name, avatarUrl, location, bio }: PublicPr
       <div className="flex items-start gap-4">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-2xl font-bold text-green-700 shrink-0 overflow-hidden border border-gray-100">
           {avatarUrl
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={avatarUrl} alt={name ?? 'Avatar'} className="w-full h-full object-cover" />
+            ? <Image src={avatarUrl} alt={name ?? 'Avatar'} width={64} height={64} unoptimized className="w-full h-full object-cover" />
             : (name?.[0] ?? '?').toUpperCase()
           }
         </div>

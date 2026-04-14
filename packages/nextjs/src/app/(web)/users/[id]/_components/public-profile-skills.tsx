@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { EmptyState } from '@/components/ui/async-states'
 
 type PublicProfileSkill = {
@@ -33,8 +34,14 @@ export function PublicProfileSkills({ skills }: PublicProfileSkillsProps) {
               className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-green-400 hover:shadow-sm transition-all"
             >
               {skill.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={skill.imageUrl} alt={skill.title} className="w-full h-24 object-cover" />
+                  <Image
+                    src={skill.imageUrl}
+                    alt={skill.title}
+                    width={640}
+                    height={192}
+                    unoptimized
+                    className="w-full h-24 object-cover"
+                  />
               )}
               <div className="px-4 py-3 flex items-start justify-between gap-2">
                 <div>

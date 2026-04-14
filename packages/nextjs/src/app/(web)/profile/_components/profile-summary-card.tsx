@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 type ProfileSummaryCardProps = {
   user: {
     email: string
@@ -17,9 +19,12 @@ export function ProfileSummaryCard({ user }: ProfileSummaryCardProps) {
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
       <div className="flex items-center gap-4">
         {user.profile?.avatarUrl ? (
-          <img
+          <Image
             src={user.profile.avatarUrl}
             alt={user.profile.name ?? 'Avatar'}
+            width={56}
+            height={56}
+            unoptimized
             className="w-14 h-14 rounded-full object-cover border border-gray-200"
           />
         ) : (

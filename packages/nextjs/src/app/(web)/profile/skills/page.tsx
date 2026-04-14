@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
@@ -77,7 +78,14 @@ export default async function MySkillsPage({
             {mySkills.map((skill) => (
               <div key={skill.id} className="relative bg-white rounded-lg border border-gray-200 overflow-hidden group">
                 {skill.imageUrl && (
-                  <img src={skill.imageUrl} alt={skill.title} className="w-full h-28 object-cover" />
+                  <Image
+                    src={skill.imageUrl}
+                    alt={skill.title}
+                    width={640}
+                    height={224}
+                    unoptimized
+                    className="w-full h-28 object-cover"
+                  />
                 )}
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-1">

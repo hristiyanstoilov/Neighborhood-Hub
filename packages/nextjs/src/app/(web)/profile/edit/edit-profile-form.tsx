@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
@@ -149,9 +150,12 @@ export default function EditProfileForm({ profile, locations }: Props) {
         <div>
           <label htmlFor="profile-avatar" className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
           {avatarUrl && (
-            <img
+            <Image
               src={avatarUrl}
               alt="Avatar preview"
+              width={64}
+              height={64}
+              unoptimized
               className="w-16 h-16 rounded-full object-cover mb-2 border border-gray-200"
             />
           )}

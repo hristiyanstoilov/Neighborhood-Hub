@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
@@ -142,9 +143,12 @@ export default function NewSkillForm({ categories, locations }: Props) {
         <div>
           <label htmlFor="skill-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
           {imageUrl && (
-            <img
+            <Image
               src={imageUrl}
               alt="Skill image preview"
+              width={1200}
+              height={720}
+              unoptimized
               className="w-full max-h-48 object-cover rounded-md mb-2 border border-gray-200"
             />
           )}

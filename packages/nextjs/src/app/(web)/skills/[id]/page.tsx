@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { uuidSchema } from '@/lib/schemas/skill'
@@ -74,9 +75,12 @@ export default async function SkillDetailPage({
         </div>
 
         {skill!.imageUrl && (
-          <img
+          <Image
             src={skill!.imageUrl}
             alt={skill!.title}
+            width={1200}
+            height={560}
+            unoptimized
             className="w-full h-56 object-cover rounded-lg mb-5 border border-gray-100"
           />
         )}
