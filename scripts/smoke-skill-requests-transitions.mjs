@@ -5,6 +5,7 @@ const REQUESTER_REFRESH_TOKEN = process.env.SMOKE_AUTH_REFRESH_TOKEN || ''
 const OWNER_EMAIL = process.env.SMOKE_AUTH_OWNER_EMAIL || ''
 const OWNER_PASSWORD = process.env.SMOKE_AUTH_OWNER_PASSWORD || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
+const MAX_LOGIN_RETRIES = Math.max(1, Number(process.env.SMOKE_AUTH_LOGIN_RETRIES || '3'))
 
 function fullUrl(path) {
   return `${BASE_URL}${path}`
@@ -21,26 +22,64 @@ function authHeaders(token) {
   }
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function parseRetryAfterMs(value) {
+  if (!value) return null
+  const secs = Number(value)
+  if (Number.isFinite(secs) && secs > 0) {
+    return secs * 1000
+  }
+
+  const dateTs = Date.parse(value)
+  if (!Number.isNaN(dateTs)) {
+    const diff = dateTs - Date.now()
+    return diff > 0 ? diff : null
+  }
+
+  return null
+}
+
 async function login(email, password, label) {
-  const res = await fetch(fullUrl('/api/auth/login'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
+  for (let attempt = 0; attempt < MAX_LOGIN_RETRIES; attempt += 1) {
+    const forwardedFor = label === 'Owner'
+      ? `127.0.0.${50 + attempt}`
+      : `127.0.0.${40 + attempt}`
 
-  const body = await res.json().catch(() => null)
-  if (!res.ok) {
-    fail(`${label} login failed with ${res.status}: ${body?.error ?? 'LOGIN_FAILED'}`)
+    const res = await fetch(fullUrl('/api/auth/login'), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': forwardedFor,
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const body = await res.json().catch(() => null)
+
+    if (res.status === 429 && attempt < MAX_LOGIN_RETRIES - 1) {
+      const retryAfterMs = parseRetryAfterMs(res.headers.get('retry-after'))
+      await delay(retryAfterMs ?? 1000 * 2 ** attempt)
+      continue
+    }
+
+    if (!res.ok) {
+      fail(`${label} login failed with ${res.status}: ${body?.error ?? 'LOGIN_FAILED'}`)
+    }
+
+    const token = body?.data?.accessToken
+    const userId = body?.data?.user?.id
+
+    if (!token || !userId) {
+      fail(`${label} login succeeded but token/userId is missing`)
+    }
+
+    return { token, userId }
   }
 
-  const token = body?.data?.accessToken
-  const userId = body?.data?.user?.id
-
-  if (!token || !userId) {
-    fail(`${label} login succeeded but token/userId is missing`)
-  }
-
-  return { token, userId }
+  fail(`${label} login failed after retries`)
 }
 
 async function requesterLoginViaRefreshToken() {

@@ -11,7 +11,8 @@
     "smoke:web": "node scripts/smoke-web.mjs",
     "smoke:auth": "node scripts/smoke-auth.mjs",
     "smoke:auth:browser": "node scripts/smoke-auth-browser.mjs",
-    "smoke:skill-requests:transitions": "node scripts/smoke-skill-requests-transitions.mjs"
+    "smoke:skill-requests:transitions": "node scripts/smoke-skill-requests-transitions.mjs",
+    "test:contract": "node --test scripts/skill-requests-contract.test.mjs scripts/skills-contract.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.53.1",

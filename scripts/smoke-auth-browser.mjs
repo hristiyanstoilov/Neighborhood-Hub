@@ -1,13 +1,138 @@
 import { chromium } from 'playwright'
+import { promises as fs } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000'
 const EMAIL = process.env.SMOKE_AUTH_EMAIL || ''
 const PASSWORD = process.env.SMOKE_AUTH_PASSWORD || ''
 const REFRESH_TOKEN = process.env.SMOKE_AUTH_REFRESH_TOKEN || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
+const MAX_LOGIN_RETRIES = Math.max(1, Number(process.env.SMOKE_AUTH_LOGIN_RETRIES || '3'))
+const CACHE_FILE = path.join(os.tmpdir(), 'neighborhood-hub-smoke-refresh-token.json')
 
 function fail(message) {
   throw new Error(message)
+}
+
+async function readCachedRefreshToken() {
+  try {
+    const raw = await fs.readFile(CACHE_FILE, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed.refreshToken === 'string' && parsed.refreshToken) {
+      return parsed.refreshToken
+    }
+  } catch {
+    // No cache yet.
+  }
+
+  return null
+}
+
+async function writeCachedRefreshToken(refreshToken) {
+  try {
+    await fs.writeFile(CACHE_FILE, JSON.stringify({ refreshToken }), 'utf8')
+  } catch {
+    // Best-effort cache.
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function parseRetryAfterMs(value) {
+  if (!value) return null
+  const secs = Number(value)
+  if (Number.isFinite(secs) && secs > 0) {
+    return secs * 1000
+  }
+
+  const dateTs = Date.parse(value)
+  if (!Number.isNaN(dateTs)) {
+    const diff = dateTs - Date.now()
+    return diff > 0 ? diff : null
+  }
+
+  return null
+}
+
+function extractRefreshTokenFromSetCookie(setCookieHeader) {
+  if (!setCookieHeader) return null
+  const match = setCookieHeader.match(/(?:^|[,;]\s*)refresh_token=([^;]+)/i)
+  return match?.[1] ?? null
+}
+
+async function bootstrapFromRefreshToken(page, refreshToken) {
+  if (!refreshToken) {
+    return { ok: false, rotatedRefreshToken: null }
+  }
+
+  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
+  await page.evaluate((token) => {
+    document.cookie = `refresh_token=${token}; path=/`
+  }, refreshToken)
+
+  const refreshResult = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    return {
+      status: response.status,
+      body: await response.json().catch(() => null),
+    }
+  })
+
+  const rotatedRefreshToken = refreshResult.body?.data?.refreshToken ?? null
+  return {
+    ok: refreshResult.status === 200,
+    rotatedRefreshToken,
+  }
+}
+
+async function loginWithRetry() {
+  for (let attempt = 0; attempt < MAX_LOGIN_RETRIES; attempt += 1) {
+    const forwardedFor = `127.0.0.${20 + attempt}`
+    const response = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': forwardedFor,
+      },
+      body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+    })
+
+    const body = await response.json().catch(() => null)
+    const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'))
+
+    if (response.status === 200) {
+      const bodyRefreshToken = body?.data?.refreshToken
+      const headerRefreshToken = extractRefreshTokenFromSetCookie(response.headers.get('set-cookie'))
+      return {
+        status: 200,
+        refreshToken: bodyRefreshToken || headerRefreshToken || null,
+      }
+    }
+
+    if (response.status !== 429) {
+      return {
+        status: response.status,
+        refreshToken: null,
+      }
+    }
+
+    if (attempt < MAX_LOGIN_RETRIES - 1) {
+      const backoffMs = retryAfterMs ?? 1000 * 2 ** attempt
+      await delay(backoffMs)
+    }
+  }
+
+  return {
+    status: 429,
+    refreshToken: null,
+  }
 }
 
 async function main() {
@@ -29,60 +154,41 @@ async function main() {
   try {
     let bootstrapped = false
 
-    if (REFRESH_TOKEN) {
-      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
-      await page.evaluate((refreshToken) => {
-        document.cookie = `refresh_token=${refreshToken}; path=/`
-      }, REFRESH_TOKEN)
+    const cachedRefreshToken = await readCachedRefreshToken()
+    const refreshCandidates = [REFRESH_TOKEN, cachedRefreshToken].filter(Boolean)
 
-      const refreshFromCookie = await page.evaluate(async () => {
-        const response = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-        })
-
-        return {
-          status: response.status,
-          body: await response.json().catch(() => null),
-        }
-      })
-
-      if (refreshFromCookie.status === 200) {
+    for (const token of refreshCandidates) {
+      const result = await bootstrapFromRefreshToken(page, token)
+      if (result.ok) {
         bootstrapped = true
+        if (result.rotatedRefreshToken) {
+          await writeCachedRefreshToken(result.rotatedRefreshToken)
+        }
+        break
       }
     }
 
     if (!bootstrapped) {
-      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' })
-      const loginResult = await page.evaluate(
-        async ({ email, password }) => {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({ email, password }),
-          })
-
-          return {
-            status: response.status,
-            body: await response.json().catch(() => null),
-          }
-        },
-        { email: EMAIL, password: PASSWORD }
-      )
+      const loginResult = await loginWithRetry()
 
       if (loginResult.status === 429) {
         if (STRICT) {
-          fail('Login bootstrap was rate-limited (429)')
+          fail('Login bootstrap was rate-limited (429) after retries')
         }
-        console.log('Skipping authenticated browser smoke: login bootstrap hit rate limit (429)')
+        console.log('Skipping authenticated browser smoke: login bootstrap hit rate limit (429) after retries')
         return
       }
 
       if (loginResult.status !== 200) {
         fail(`Expected login bootstrap to succeed, got ${loginResult.status}`)
+      }
+
+      if (loginResult.refreshToken) {
+        await writeCachedRefreshToken(loginResult.refreshToken)
+        const refreshBootstrap = await bootstrapFromRefreshToken(page, loginResult.refreshToken)
+        if (!refreshBootstrap.ok) {
+          fail('Expected refresh-token bootstrap to succeed after login')
+        }
       }
     }
 

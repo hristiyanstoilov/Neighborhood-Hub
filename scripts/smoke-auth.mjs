@@ -2,6 +2,10 @@ const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000'
 const EMAIL = process.env.SMOKE_AUTH_EMAIL || ''
 const PASSWORD = process.env.SMOKE_AUTH_PASSWORD || ''
 const STRICT = process.env.SMOKE_AUTH_STRICT === 'true'
+const os = await import('node:os')
+const path = await import('node:path')
+const fs = await import('node:fs/promises')
+const CACHE_FILE = path.join(os.tmpdir(), 'neighborhood-hub-smoke-refresh-token.json')
 
 function fullUrl(path) {
   return `${BASE_URL}${path}`
@@ -18,10 +22,29 @@ function authHeaders(token) {
   }
 }
 
+function extractRefreshTokenFromSetCookie(setCookieHeader) {
+  if (!setCookieHeader) return null
+  const match = setCookieHeader.match(/(?:^|[,;]\s*)refresh_token=([^;]+)/i)
+  return match?.[1] ?? null
+}
+
+async function writeCachedRefreshToken(refreshToken) {
+  if (!refreshToken) return
+
+  try {
+    await fs.writeFile(CACHE_FILE, JSON.stringify({ refreshToken }), 'utf8')
+  } catch {
+    // Best-effort cache.
+  }
+}
+
 async function login() {
   const res = await fetch(fullUrl('/api/auth/login'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': '127.0.0.30',
+    },
     body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
   })
 
@@ -35,6 +58,10 @@ async function login() {
   if (!token) {
     fail('Auth smoke login succeeded but accessToken is missing')
   }
+
+  const refreshTokenFromBody = body?.data?.refreshToken ?? null
+  const refreshTokenFromHeader = extractRefreshTokenFromSetCookie(res.headers.get('set-cookie'))
+  await writeCachedRefreshToken(refreshTokenFromBody || refreshTokenFromHeader)
 
   return token
 }
