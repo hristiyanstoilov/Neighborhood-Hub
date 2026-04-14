@@ -1,8 +1,8 @@
 import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
-import { eq, and, isNull, desc, ilike, count } from 'drizzle-orm'
+import { eq, and, isNull, desc, ilike, count, SQL } from 'drizzle-orm'
 
-const skillSelect = {
+export const skillSelect = {
   id: skills.id,
   title: skills.title,
   description: skills.description,
@@ -22,22 +22,27 @@ const skillSelect = {
   locationNeighborhood: locations.neighborhood,
 } as const
 
-export async function querySkills(opts: {
+export type SkillFilterOpts = {
   status?: string
   search?: string
   categoryId?: string
   locationId?: string
   ownerId?: string
-  limit?: number
-  page?: number
-}) {
-  const { status, search, categoryId, locationId, ownerId, limit = 20, page = 1 } = opts
-  const conditions = [isNull(skills.deletedAt)]
-  if (status) conditions.push(eq(skills.status, status))
-  if (categoryId) conditions.push(eq(skills.categoryId, categoryId))
-  if (locationId) conditions.push(eq(skills.locationId, locationId))
-  if (ownerId) conditions.push(eq(skills.ownerId, ownerId))
-  if (search) conditions.push(ilike(skills.title, `%${search}%`))
+}
+
+export function buildSkillConditions(opts: SkillFilterOpts): SQL[] {
+  const conditions: SQL[] = [isNull(skills.deletedAt)]
+  if (opts.status) conditions.push(eq(skills.status, opts.status))
+  if (opts.categoryId) conditions.push(eq(skills.categoryId, opts.categoryId))
+  if (opts.locationId) conditions.push(eq(skills.locationId, opts.locationId))
+  if (opts.ownerId) conditions.push(eq(skills.ownerId, opts.ownerId))
+  if (opts.search) conditions.push(ilike(skills.title, `%${opts.search}%`))
+  return conditions
+}
+
+export async function querySkills(opts: SkillFilterOpts & { limit?: number; page?: number }) {
+  const { limit = 20, page = 1, ...filterOpts } = opts
+  const conditions = buildSkillConditions(filterOpts)
 
   return db
     .select(skillSelect)
@@ -51,23 +56,15 @@ export async function querySkills(opts: {
     .orderBy(desc(skills.createdAt))
 }
 
-export async function querySkillsPage(opts: {
-  status?: string
-  search?: string
-  categoryId?: string
-  locationId?: string
+export async function querySkillsPage(opts: SkillFilterOpts & {
   limit?: number
   page?: number
 }): Promise<{ skills: Awaited<ReturnType<typeof querySkills>>; total: number }> {
-  const { limit = 20, page = 1, ...rest } = opts
-  const conditions = [isNull(skills.deletedAt)]
-  if (rest.status) conditions.push(eq(skills.status, rest.status))
-  if (rest.categoryId) conditions.push(eq(skills.categoryId, rest.categoryId))
-  if (rest.locationId) conditions.push(eq(skills.locationId, rest.locationId))
-  if (rest.search) conditions.push(ilike(skills.title, `%${rest.search}%`))
+  const { limit = 20, page = 1, ...filterOpts } = opts
+  const conditions = buildSkillConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([
-    querySkills({ ...rest, limit, page }),
+    querySkills({ ...filterOpts, limit, page }),
     db.select({ total: count() }).from(skills).where(and(...conditions)),
   ])
 

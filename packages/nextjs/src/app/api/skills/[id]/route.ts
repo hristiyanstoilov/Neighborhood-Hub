@@ -6,8 +6,14 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateSkillSchema, uuidSchema } from '@/lib/schemas/skill'
+import { skillSelect } from '@/lib/queries/skills'
 
 type Params = { params: Promise<{ id: string }> }
+
+function extractId(params: Params['params'] | undefined, url: string): string {
+  // For requireAuth handlers params is not passed through; extract from URL safely.
+  return new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? ''
+}
 
 // ─── GET /api/skills/[id] — public detail ────────────────────────────────────
 
@@ -19,25 +25,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }
 
     const [row] = await db
-      .select({
-        id: skills.id,
-        title: skills.title,
-        description: skills.description,
-        status: skills.status,
-        availableHours: skills.availableHours,
-        imageUrl: skills.imageUrl,
-        createdAt: skills.createdAt,
-        updatedAt: skills.updatedAt,
-        ownerId: skills.ownerId,
-        ownerName: profiles.name,
-        ownerAvatar: profiles.avatarUrl,
-        categoryId: skills.categoryId,
-        categorySlug: categories.slug,
-        categoryLabel: categories.label,
-        locationId: skills.locationId,
-        locationCity: locations.city,
-        locationNeighborhood: locations.neighborhood,
-      })
+      .select(skillSelect)
       .from(skills)
       .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
       .leftJoin(categories, eq(categories.id, skills.categoryId))
@@ -60,8 +48,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export const PUT = requireAuth(async (req: NextRequest, { user }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = extractId(undefined, req.url)
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
@@ -122,8 +109,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
 
 export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = extractId(undefined, req.url)
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }

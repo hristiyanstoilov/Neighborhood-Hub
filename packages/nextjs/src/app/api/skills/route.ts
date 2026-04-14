@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, profiles, categories, locations, users } from '@/db/schema'
-import { eq, and, isNull, desc, ilike, count } from 'drizzle-orm'
+import { eq, and, desc, ilike, count } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { listSkillsSchema, createSkillSchema } from '@/lib/schemas/skill'
+import { skillSelect, buildSkillConditions } from '@/lib/queries/skills'
 
 // ─── GET /api/skills — public listing ───────────────────────────────────────
 
@@ -25,32 +26,11 @@ export async function GET(req: NextRequest) {
 
     const { categoryId, locationId, status, search, page, limit } = parsed.data
 
-    const conditions = [isNull(skills.deletedAt)]
-    if (categoryId) conditions.push(eq(skills.categoryId, categoryId))
-    if (locationId) conditions.push(eq(skills.locationId, locationId))
-    if (status) conditions.push(eq(skills.status, status))
-    if (search) conditions.push(ilike(skills.title, `%${search}%`))
+    const conditions = buildSkillConditions({ categoryId, locationId, status, search })
 
     const [rows, [{ total }]] = await Promise.all([
       db
-        .select({
-          id: skills.id,
-          title: skills.title,
-          description: skills.description,
-          status: skills.status,
-          availableHours: skills.availableHours,
-          imageUrl: skills.imageUrl,
-          createdAt: skills.createdAt,
-          ownerId: skills.ownerId,
-          ownerName: profiles.name,
-          ownerAvatar: profiles.avatarUrl,
-          categoryId: skills.categoryId,
-          categorySlug: categories.slug,
-          categoryLabel: categories.label,
-          locationId: skills.locationId,
-          locationCity: locations.city,
-          locationNeighborhood: locations.neighborhood,
-        })
+        .select(skillSelect)
         .from(skills)
         .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
         .leftJoin(categories, eq(categories.id, skills.categoryId))
