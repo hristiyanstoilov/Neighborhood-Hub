@@ -28,6 +28,8 @@ export default function EditProfileForm({ profile, locations }: Props) {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [nameLength, setNameLength] = useState(profile?.name?.length ?? 0)
+  const [bioLength, setBioLength] = useState(profile?.bio?.length ?? 0)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '')
   const [uploading, setUploading] = useState(false)
@@ -129,8 +131,10 @@ export default function EditProfileForm({ profile, locations }: Props) {
             maxLength={100}
             defaultValue={profile?.name ?? ''}
             placeholder="Your display name"
+            onChange={(e) => setNameLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
+          <p className="text-xs text-gray-400 mt-1 text-right">{nameLength}/100</p>
         </div>
 
         <div>
@@ -142,9 +146,10 @@ export default function EditProfileForm({ profile, locations }: Props) {
             maxLength={500}
             defaultValue={profile?.bio ?? ''}
             placeholder="A short description about yourself…"
+            onChange={(e) => setBioLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
           />
-          <p className="text-xs text-gray-400 mt-1">Max 500 characters.</p>
+          <p className="text-xs text-gray-400 mt-1 text-right">{bioLength}/500</p>
         </div>
 
         <div>

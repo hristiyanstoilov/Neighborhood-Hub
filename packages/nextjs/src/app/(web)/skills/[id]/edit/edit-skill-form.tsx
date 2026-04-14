@@ -29,6 +29,8 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [titleLength, setTitleLength] = useState(skill.title?.length ?? 0)
+  const [descLength, setDescLength] = useState(skill.description?.length ?? 0)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -97,8 +99,10 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
             minLength={3}
             maxLength={200}
             defaultValue={skill.title}
+            onChange={(e) => setTitleLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
+          <p className="text-xs text-gray-400 mt-1 text-right">{titleLength}/200</p>
         </div>
 
         <div>
@@ -123,8 +127,10 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
             rows={4}
             maxLength={2000}
             defaultValue={skill.description ?? ''}
+            onChange={(e) => setDescLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
           />
+          <p className="text-xs text-gray-400 mt-1 text-right">{descLength}/2000</p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
