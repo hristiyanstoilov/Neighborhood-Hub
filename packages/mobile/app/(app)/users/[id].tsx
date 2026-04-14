@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import {
   View,
   Text,
@@ -9,59 +9,35 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { apiFetch } from '../../../lib/api'
-
-interface PublicSkill {
-  id: string
-  title: string
-  imageUrl: string | null
-  categoryLabel: string | null
-}
-
-interface PublicProfile {
-  id: string
-  name: string | null
-  bio: string | null
-  avatarUrl: string | null
-  location: string | null
-  memberSince: string
-  skills: PublicSkill[]
-}
-
-type FetchState =
-  | { type: 'loading' }
-  | { type: 'not_found' }
-  | { type: 'private' }
-  | { type: 'error' }
-  | { type: 'ok'; profile: PublicProfile }
+import { useQuery } from '@tanstack/react-query'
+import {
+  asPublicProfileErrorCode,
+  fetchPublicProfileById,
+  publicProfileKeys,
+} from '../../../lib/queries/public-profile'
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const [state, setState] = useState<FetchState>({ type: 'loading' })
+  const userId = typeof id === 'string' ? id : ''
 
-  useEffect(() => {
-    if (!id) return
-    async function load() {
-      try {
-        const res = await apiFetch(`/api/users/${id}`)
-        if (res.status === 404) { setState({ type: 'not_found' }); return }
-        if (res.status === 403) { setState({ type: 'private' }); return }
-        if (!res.ok) { setState({ type: 'error' }); return }
-        const json = await res.json()
-        setState({ type: 'ok', profile: json.data })
-      } catch {
-        setState({ type: 'error' })
-      }
-    }
-    load()
-  }, [id])
+  const profileQuery = useQuery({
+    queryKey: publicProfileKeys.detail(userId),
+    queryFn: () => fetchPublicProfileById(userId),
+    enabled: userId.length > 0,
+  })
 
-  if (state.type === 'loading') {
+  const errorCode = useMemo(() => {
+    if (!profileQuery.isError) return null
+    const message = profileQuery.error instanceof Error ? profileQuery.error.message : 'FETCH_FAILED'
+    return asPublicProfileErrorCode(message)
+  }, [profileQuery.error, profileQuery.isError])
+
+  if (profileQuery.isLoading) {
     return <View style={styles.center}><ActivityIndicator size="large" color="#15803d" /></View>
   }
 
-  if (state.type === 'not_found') {
+  if (errorCode === 'PROFILE_NOT_FOUND') {
     return (
       <View style={styles.center}>
         <Text style={styles.bigIcon}>👤</Text>
@@ -73,7 +49,7 @@ export default function PublicProfileScreen() {
     )
   }
 
-  if (state.type === 'private') {
+  if (errorCode === 'PROFILE_PRIVATE') {
     return (
       <View style={styles.center}>
         <Text style={styles.bigIcon}>🔒</Text>
@@ -86,18 +62,18 @@ export default function PublicProfileScreen() {
     )
   }
 
-  if (state.type === 'error') {
+  if (profileQuery.isError || !profileQuery.data) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Could not load profile.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.back()}>
-          <Text style={styles.btnText}>Go back</Text>
+        <TouchableOpacity style={styles.btn} onPress={() => void profileQuery.refetch()}>
+          <Text style={styles.btnText}>Retry</Text>
         </TouchableOpacity>
       </View>
     )
   }
 
-  const { profile } = state
+  const profile = profileQuery.data
   const initials = (profile.name ?? '?')[0].toUpperCase()
 
   return (

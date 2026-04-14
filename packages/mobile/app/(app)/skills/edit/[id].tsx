@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -12,11 +12,19 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../../contexts/auth'
 import { apiFetch } from '../../../../lib/api'
-
-interface Category { id: string; slug: string; label: string }
-interface Location { id: string; city: string; neighborhood: string }
+import { mySkillsKeys } from '../../../../lib/queries/my-skills'
+import { SkillNotFoundError, fetchSkillDetail, skillDetailKeys } from '../../../../lib/queries/skill-detail'
+import { fetchCategories, fetchLocations, skillsKeys } from '../../../../lib/queries/skills'
+import {
+  SkillAvailableHoursField,
+  SkillCategoryPicker,
+  SkillDescriptionField,
+  SkillLocationPicker,
+  SkillTitleField,
+} from '../_components/skill-form-core'
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'available', label: 'Available' },
@@ -28,6 +36,10 @@ export default function EditSkillScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const queryClient = useQueryClient()
+  const skillId = typeof id === 'string' ? id : ''
+  const hydratedFromQuery = useRef(false)
+  const ownershipChecked = useRef(false)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -38,71 +50,99 @@ export default function EditSkillScreen() {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [locations, setLocations] = useState<Location[]>([])
-  const [loadingData, setLoadingData] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [notFound, setNotFound] = useState(false)
+  const skillQuery = useQuery({
+    queryKey: skillDetailKeys.detail(skillId),
+    queryFn: () => fetchSkillDetail(skillId),
+    enabled: skillId.length > 0 && !authLoading,
+  })
+
+  const categoriesQuery = useQuery({
+    queryKey: skillsKeys.categories(),
+    queryFn: fetchCategories,
+    enabled: Boolean(user && !authLoading),
+  })
+
+  const locationsQuery = useQuery({
+    queryKey: skillsKeys.locations(),
+    queryFn: fetchLocations,
+    enabled: Boolean(user && !authLoading),
+  })
+
+  const updateSkillMutation = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        status,
+        imageUrl,
+      }
+
+      if (description.trim()) body.description = description.trim()
+      if (categoryId) body.categoryId = categoryId
+      if (locationId) body.locationId = locationId
+
+      const hours = parseInt(availableHours, 10)
+      if (!isNaN(hours) && hours >= 0 && hours <= 168) body.availableHours = hours
+
+      const res = await apiFetch(`/api/skills/${skillId}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      })
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        const code = json && typeof json === 'object' && 'error' in json && typeof (json as { error?: unknown }).error === 'string'
+          ? (json as { error: string }).error
+          : 'UNKNOWN_ERROR'
+        throw new Error(code)
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: skillDetailKeys.detail(skillId) })
+      await queryClient.invalidateQueries({ queryKey: skillsKeys.all })
+      await queryClient.invalidateQueries({ queryKey: mySkillsKeys.all })
+      router.replace(`/(app)/skills/${skillId}`)
+    },
+  })
+
+  const deleteSkillMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiFetch(`/api/skills/${skillId}`, { method: 'DELETE' })
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        const code = json && typeof json === 'object' && 'error' in json && typeof (json as { error?: unknown }).error === 'string'
+          ? (json as { error: string }).error
+          : 'UNKNOWN_ERROR'
+        throw new Error(code)
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: skillsKeys.all })
+      await queryClient.invalidateQueries({ queryKey: mySkillsKeys.all })
+      router.replace('/(app)/')
+    },
+  })
 
   useEffect(() => {
-    if (!id || authLoading) return
-    async function loadData() {
-      try {
-        const [skillRes, catRes, locRes] = await Promise.all([
-          apiFetch(`/api/skills/${id}`),
-          apiFetch('/api/categories'),
-          apiFetch('/api/locations'),
-        ])
+    if (!skillQuery.data || hydratedFromQuery.current) return
 
-        if (skillRes.status === 404) { setNotFound(true); return }
-        if (!skillRes.ok) {
-          Alert.alert('Error', 'Could not load skill. Please try again.')
-          router.back()
-          return
-        }
+    setTitle(skillQuery.data.title ?? '')
+    setDescription(skillQuery.data.description ?? '')
+    setAvailableHours(skillQuery.data.availableHours != null ? String(skillQuery.data.availableHours) : '')
+    setStatus(skillQuery.data.status ?? 'available')
+    setCategoryId(skillQuery.data.categoryId ?? null)
+    setLocationId(skillQuery.data.locationId ?? null)
+    setImageUrl(skillQuery.data.imageUrl ?? null)
+    hydratedFromQuery.current = true
+  }, [skillQuery.data])
 
-        const [skillJson, catJson, locJson] = await Promise.all([
-          skillRes.json(),
-          catRes.json(),
-          locRes.json(),
-        ])
-
-        const s = skillJson.data
-        // Guard: only the owner can edit
-        if (user?.id !== s.ownerId) {
-          Alert.alert('Unauthorized', 'You can only edit your own skills.')
-          router.back()
-          return
-        }
-
-        setTitle(s.title ?? '')
-        setDescription(s.description ?? '')
-        setAvailableHours(s.availableHours != null ? String(s.availableHours) : '')
-        setStatus(s.status ?? 'available')
-        setCategoryId(s.categoryId ?? null)
-        setLocationId(s.locationId ?? null)
-        setImageUrl(s.imageUrl ?? null)
-
-        if (catRes.ok) {
-          setCategories(catJson.data ?? [])
-        }
-
-        if (locRes.ok) {
-          setLocations((locJson.data ?? []).map((l: any) => ({
-            id: l.id,
-            city: l.city,
-            neighborhood: l.neighborhood,
-          })))
-        }
-      } catch {
-        Alert.alert('Error', 'Network error. Please try again.')
-        router.back()
-      } finally {
-        setLoadingData(false)
-      }
+  useEffect(() => {
+    if (!skillQuery.data || !user || ownershipChecked.current) return
+    if (skillQuery.data.ownerId !== user.id) {
+      ownershipChecked.current = true
+      Alert.alert('Unauthorized', 'You can only edit your own skills.')
+      router.back()
     }
-    loadData()
-  }, [id, user, authLoading])
+  }, [router, skillQuery.data, user])
 
   async function handleImageChange() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -148,40 +188,16 @@ export default function EditSkillScreen() {
       return
     }
 
-    setSubmitting(true)
     try {
-      const body: Record<string, unknown> = {
-        title: title.trim(),
-        status,
+      await updateSkillMutation.mutateAsync()
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
+      const msgs: Record<string, string> = {
+        VALIDATION_ERROR: 'Please check your inputs.',
+        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+        NOT_FOUND: 'Skill not found.',
       }
-      if (description.trim()) body.description = description.trim()
-      if (categoryId) body.categoryId = categoryId
-      if (locationId) body.locationId = locationId
-      body.imageUrl = imageUrl  // null clears the image, string sets it
-      const hours = parseInt(availableHours, 10)
-      if (!isNaN(hours) && hours >= 0 && hours <= 168) body.availableHours = hours
-
-      const res = await apiFetch(`/api/skills/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-      })
-      const json = await res.json()
-
-      if (!res.ok) {
-        const msgs: Record<string, string> = {
-          VALIDATION_ERROR: 'Please check your inputs.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-          NOT_FOUND: 'Skill not found.',
-        }
-        Alert.alert('Could not save', msgs[json.error] ?? 'Something went wrong.')
-        return
-      }
-
-      router.replace(`/(app)/skills/${id}`)
-    } catch {
-      Alert.alert('Error', 'Network error. Please check your connection.')
-    } finally {
-      setSubmitting(false)
+      Alert.alert('Could not save', msgs[code] ?? 'Something went wrong.')
     }
   }
 
@@ -196,12 +212,7 @@ export default function EditSkillScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const res = await apiFetch(`/api/skills/${id}`, { method: 'DELETE' })
-              if (res.ok) {
-                router.replace('/(app)/')
-              } else {
-                Alert.alert('Error', 'Could not delete skill. Please try again.')
-              }
+              await deleteSkillMutation.mutateAsync()
             } catch {
               Alert.alert('Error', 'Network error. Please try again.')
             }
@@ -210,6 +221,13 @@ export default function EditSkillScreen() {
       ]
     )
   }
+
+  const loadingData = skillQuery.isLoading || categoriesQuery.isLoading || locationsQuery.isLoading
+  const loadError = skillQuery.isError && !(skillQuery.error instanceof SkillNotFoundError)
+  const notFound = skillQuery.error instanceof SkillNotFoundError
+  const categories = categoriesQuery.data ?? []
+  const locations = locationsQuery.data ?? []
+  const submitting = updateSkillMutation.isPending
 
   if (authLoading || (!user && loadingData)) {
     return (
@@ -246,6 +264,24 @@ export default function EditSkillScreen() {
     )
   }
 
+  if (loadError || categoriesQuery.isError || locationsQuery.isError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Could not load skill. Please try again.</Text>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => {
+            void skillQuery.refetch()
+            void categoriesQuery.refetch()
+            void locationsQuery.refetch()
+          }}
+        >
+          <Text style={styles.btnText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.pageTitle}>Edit skill</Text>
@@ -273,46 +309,9 @@ export default function EditSkillScreen() {
         )}
       </View>
 
-      {/* Title */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Title <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="e.g. Guitar lessons, Python tutoring…"
-          maxLength={200}
-          returnKeyType="next"
-        />
-      </View>
-
-      {/* Description */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Describe what you offer, your experience…"
-          maxLength={2000}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-      </View>
-
-      {/* Hours / week */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Hours available / week</Text>
-        <TextInput
-          style={[styles.input, styles.inputSmall]}
-          value={availableHours}
-          onChangeText={setAvailableHours}
-          placeholder="e.g. 5"
-          keyboardType="number-pad"
-          maxLength={3}
-        />
-      </View>
+      <SkillTitleField title={title} onChangeTitle={setTitle} />
+      <SkillDescriptionField description={description} onChangeDescription={setDescription} />
+      <SkillAvailableHoursField availableHours={availableHours} onChangeAvailableHours={setAvailableHours} />
 
       {/* Status picker */}
       <View style={styles.field}>
@@ -332,51 +331,8 @@ export default function EditSkillScreen() {
         </View>
       </View>
 
-      {/* Category picker */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-          <TouchableOpacity
-            style={[styles.chip, !categoryId && styles.chipActive]}
-            onPress={() => setCategoryId(null)}
-          >
-            <Text style={[styles.chipText, !categoryId && styles.chipTextActive]}>Any</Text>
-          </TouchableOpacity>
-          {categories.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              style={[styles.chip, categoryId === c.id && styles.chipActive]}
-              onPress={() => setCategoryId(c.id)}
-            >
-              <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Location picker */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Location</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-          <TouchableOpacity
-            style={[styles.chip, !locationId && styles.chipActive]}
-            onPress={() => setLocationId(null)}
-          >
-            <Text style={[styles.chipText, !locationId && styles.chipTextActive]}>Any</Text>
-          </TouchableOpacity>
-          {locations.map((l) => (
-            <TouchableOpacity
-              key={l.id}
-              style={[styles.chip, locationId === l.id && styles.chipActive]}
-              onPress={() => setLocationId(l.id)}
-            >
-              <Text style={[styles.chipText, locationId === l.id && styles.chipTextActive]}>
-                {l.neighborhood}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      <SkillCategoryPicker categoryId={categoryId} categories={categories} onChangeCategoryId={setCategoryId} />
+      <SkillLocationPicker locationId={locationId} locations={locations} onChangeLocationId={setLocationId} />
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -408,19 +364,6 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 20 },
   field: { marginBottom: 18 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  required: { color: '#dc2626' },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
-  },
-  inputSmall: { width: 100 },
-  textarea: { minHeight: 90, paddingTop: 10 },
   statusRow: { flexDirection: 'row', gap: 8 },
   statusChip: {
     paddingHorizontal: 16,
@@ -433,19 +376,6 @@ const styles = StyleSheet.create({
   statusChipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
   statusChipText: { fontSize: 13, color: '#374151' },
   statusChipTextActive: { color: '#fff', fontWeight: '600' },
-  chipScroll: { flexDirection: 'row' },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-    marginRight: 8,
-  },
-  chipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
-  chipText: { fontSize: 13, color: '#374151' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
   actions: { gap: 10, marginTop: 8 },
   submitBtn: {
     backgroundColor: '#15803d',

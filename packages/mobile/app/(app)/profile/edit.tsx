@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -10,97 +10,96 @@ import {
   Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { apiFetch } from '../../../lib/api'
-
-interface Location { id: string; city: string; neighborhood: string }
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  fetchOwnProfile,
+  fetchProfileLocations,
+  profileKeys,
+  profileUpdateErrorMessage,
+  updateOwnProfile,
+} from '../../../lib/queries/profile'
 
 export default function EditProfileScreen() {
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [locationId, setLocationId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
+  const hydratedFromQuery = useRef(false)
 
-  const [locations, setLocations] = useState<Location[]>([])
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const profileQuery = useQuery({
+    queryKey: profileKeys.me(),
+    queryFn: fetchOwnProfile,
+  })
+
+  const locationsQuery = useQuery({
+    queryKey: profileKeys.locations(),
+    queryFn: fetchProfileLocations,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: updateOwnProfile,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: profileKeys.all })
+      router.back()
+    },
+  })
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [profileRes, locRes] = await Promise.all([
-          apiFetch('/api/profile'),
-          apiFetch('/api/locations'),
-        ])
-        const [profileJson, locJson] = await Promise.all([
-          profileRes.json(),
-          locRes.json(),
-        ])
+    if (!profileQuery.data || hydratedFromQuery.current) return
 
-        if (profileRes.ok) {
-          const d = profileJson.data
-          setName(d.name ?? '')
-          setBio(d.bio ?? '')
-          setLocationId(d.locationId ?? null)
-          setIsPublic(d.isPublic ?? true)
-        }
-
-        if (locRes.ok) {
-          setLocations((locJson.data ?? []).map((l: any) => ({
-            id: l.id,
-            city: l.city,
-            neighborhood: l.neighborhood,
-          })))
-        }
-      } catch {
-        Alert.alert('Error', 'Could not load profile. Please try again.')
-        router.back()
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadData()
-  }, [])
+    setName(profileQuery.data.name ?? '')
+    setBio(profileQuery.data.bio ?? '')
+    setLocationId(profileQuery.data.locationId ?? null)
+    setIsPublic(profileQuery.data.isPublic ?? true)
+    hydratedFromQuery.current = true
+  }, [profileQuery.data])
 
   async function handleSubmit() {
-    setSubmitting(true)
     try {
-      const body: Record<string, unknown> = {
+      await updateMutation.mutateAsync({
+        name,
+        bio,
+        locationId,
         isPublic,
-        locationId: locationId ?? '',   // '' = clear location
-      }
-      if (name.trim()) body.name = name.trim()
-      if (bio.trim()) body.bio = bio.trim()
-
-      const res = await apiFetch('/api/profile', {
-        method: 'PUT',
-        body: JSON.stringify(body),
       })
-      const json = await res.json()
-
-      if (!res.ok) {
-        const msgs: Record<string, string> = {
-          VALIDATION_ERROR:   'Please check your inputs.',
-          LOCATION_NOT_FOUND: 'Invalid location selected.',
-          TOO_MANY_REQUESTS:  'Too many attempts. Please wait.',
-        }
-        Alert.alert('Could not save', msgs[json.error] ?? 'Something went wrong.')
-        return
-      }
-
-      router.back()
-    } catch {
-      Alert.alert('Error', 'Network error. Please check your connection.')
-    } finally {
-      setSubmitting(false)
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
+      Alert.alert('Could not save', profileUpdateErrorMessage(code))
     }
   }
+
+  const loading = profileQuery.isLoading || locationsQuery.isLoading
+  const loadError = profileQuery.isError || locationsQuery.isError
+  const locations = locationsQuery.data ?? []
+  const submitting = updateMutation.isPending
 
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#15803d" />
+      </View>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Could not load profile. Please try again.</Text>
+        <TouchableOpacity
+          style={styles.submitBtn}
+          onPress={() => {
+            void profileQuery.refetch()
+            void locationsQuery.refetch()
+          }}
+        >
+          <Text style={styles.submitBtnText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+          <Text style={styles.cancelBtnText}>Go back</Text>
+        </TouchableOpacity>
       </View>
     )
   }
@@ -218,6 +217,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   content: { padding: 20, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
+  errorText: { fontSize: 14, color: '#dc2626', marginBottom: 10 },
   pageTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 20 },
   field: { marginBottom: 20 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },

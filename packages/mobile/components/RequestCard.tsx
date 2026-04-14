@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   View,
   Text,
@@ -7,29 +7,17 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
-import { apiFetch } from '../lib/api'
-
-export interface SkillRequestRow {
-  id: string
-  skillId: string
-  skillTitle: string
-  userFromId: string
-  userToId: string
-  requesterName: string | null
-  ownerName: string | null
-  scheduledStart: string
-  scheduledEnd: string
-  meetingType: string
-  meetingUrl: string | null
-  status: string
-  notes: string | null
-  cancellationReason: string | null
-}
+import {
+  getSkillRequestActionErrorMessage,
+  skillRequestsKeys,
+  type RequestAction,
+  type SkillRequestRow,
+  updateSkillRequestAction,
+} from '../lib/queries/skill-requests'
 
 interface Props {
   request: SkillRequestRow
   viewerId: string
-  onStatusChange: (id: string, newStatus: string) => void
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -51,8 +39,14 @@ function formatDate(dateStr: string): string {
   })
 }
 
-export default function RequestCard({ request, viewerId, onStatusChange }: Props) {
-  const [loading, setLoading] = useState(false)
+export default function RequestCard({ request, viewerId }: Props) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: updateSkillRequestAction,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: skillRequestsKeys.all })
+    },
+  })
 
   const isOwner = request.userToId === viewerId
   const isRequester = request.userFromId === viewerId
@@ -60,29 +54,16 @@ export default function RequestCard({ request, viewerId, onStatusChange }: Props
   const statusStyle = STATUS_COLORS[request.status] ?? STATUS_COLORS.cancelled
   const isTerminal = TERMINAL.includes(request.status)
 
-  async function performAction(action: string, cancellationReason?: string) {
-    setLoading(true)
+  async function performAction(action: RequestAction, cancellationReason?: string) {
     try {
-      const res = await apiFetch(`/api/skill-requests/${request.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ action, ...(cancellationReason ? { cancellationReason } : {}) }),
+      await mutation.mutateAsync({
+        requestId: request.id,
+        action,
+        cancellationReason,
       })
-      const json = await res.json()
-      if (!res.ok) {
-        const msgs: Record<string, string> = {
-          FORBIDDEN:                'You cannot perform this action.',
-          INVALID_TRANSITION:       'This action is no longer available.',
-          REQUEST_ALREADY_TERMINAL: 'This request is already closed.',
-          TOO_MANY_REQUESTS:        'Too many attempts. Please wait.',
-        }
-        Alert.alert('Error', msgs[json.error] ?? 'Something went wrong.')
-        return
-      }
-      onStatusChange(request.id, json.data.status)
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again.')
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      const errorCode = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
+      Alert.alert('Error', getSkillRequestActionErrorMessage(errorCode))
     }
   }
 
@@ -154,7 +135,7 @@ export default function RequestCard({ request, viewerId, onStatusChange }: Props
       ) : null}
 
       {/* Action buttons */}
-      {!isTerminal && !loading && (
+      {!isTerminal && !mutation.isPending && (
         <View style={styles.actions}>
           {isOwner && request.status === 'pending' && (
             <>
@@ -193,7 +174,7 @@ export default function RequestCard({ request, viewerId, onStatusChange }: Props
         </View>
       )}
 
-      {loading && (
+      {mutation.isPending && (
         <View style={styles.loadingRow}>
           <ActivityIndicator size="small" color="#15803d" />
         </View>

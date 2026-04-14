@@ -1,36 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   View,
   Text,
   Image,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
-
-interface SkillDetail {
-  id: string
-  title: string
-  description: string | null
-  status: string
-  availableHours: number | null
-  imageUrl: string | null
-  ownerId: string
-  ownerName: string | null
-  category: string | null
-  location: string | null
-}
-
-type FetchState =
-  | { type: 'loading' }
-  | { type: 'not_found' }
-  | { type: 'error' }
-  | { type: 'ok'; skill: SkillDetail }
+import {
+  fetchSkillDetail,
+  skillDetailKeys,
+  SkillNotFoundError,
+} from '../../../lib/queries/skill-detail'
+import {
+  SkillDetailErrorState,
+  SkillDetailLoadingState,
+  SkillDetailNotFoundState,
+} from './_components/skill-detail-states'
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   available: { bg: '#d1fae5', text: '#065f46' },
@@ -42,46 +32,20 @@ export default function SkillDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuth()
   const router = useRouter()
-  const [state, setState] = useState<FetchState>({ type: 'loading' })
 
-  useEffect(() => {
-    if (!id) return
-    async function fetchSkill() {
-      try {
-        const res = await apiFetch(`/api/skills/${id}`)
-        if (res.status === 404) {
-          setState({ type: 'not_found' })
-          return
-        }
-        if (!res.ok) {
-          setState({ type: 'error' })
-          return
-        }
-        const json = await res.json()
-        const s = json.data
-        setState({
-          type: 'ok',
-          skill: {
-            id: s.id,
-            title: s.title,
-            description: s.description ?? null,
-            status: s.status,
-            availableHours: s.availableHours ?? null,
-            imageUrl: s.imageUrl ?? null,
-            ownerId: s.ownerId,
-            ownerName: s.ownerName ?? null,
-            category: s.categoryLabel ?? null,
-            location: s.locationNeighborhood
-              ? `${s.locationNeighborhood}, ${s.locationCity ?? ''}`
-              : null,
-          },
-        })
-      } catch {
-        setState({ type: 'error' })
-      }
-    }
-    fetchSkill()
-  }, [id])
+  const skillQuery = useQuery({
+    queryKey: skillDetailKeys.detail(id ?? ''),
+    queryFn: () => fetchSkillDetail(id as string),
+    enabled: Boolean(id),
+  })
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiFetch('/api/auth/resend-verification', { method: 'POST' })
+      const json = await res.json().catch(() => null)
+      return { res, json }
+    },
+  })
 
   function handleRequest() {
     if (!user) {
@@ -102,8 +66,7 @@ export default function SkillDetailScreen() {
             text: 'Resend email',
             onPress: async () => {
               try {
-                const res = await apiFetch('/api/auth/resend-verification', { method: 'POST' })
-                const json = await res.json()
+                const { res, json } = await resendVerificationMutation.mutateAsync()
                 if (res.ok) {
                   Alert.alert('Email sent', 'Check your inbox for the verification link.')
                 } else if (json.error === 'EMAIL_ALREADY_VERIFIED') {
@@ -121,41 +84,22 @@ export default function SkillDetailScreen() {
       return
     }
 
-    router.push(`/(app)/skills/request/${skill.id}`)
+    router.push(`/(app)/skills/request/${skillQuery.data?.id}`)
   }
 
-  if (state.type === 'loading') {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#15803d" />
-      </View>
-    )
+  if (skillQuery.isLoading) {
+    return <SkillDetailLoadingState />
   }
 
-  if (state.type === 'not_found') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.notFoundTitle}>Skill not found</Text>
-        <Text style={styles.notFoundSub}>This skill may have been removed.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Go back</Text>
-        </TouchableOpacity>
-      </View>
-    )
+  if (skillQuery.error instanceof SkillNotFoundError) {
+    return <SkillDetailNotFoundState onBack={() => router.back()} />
   }
 
-  if (state.type === 'error') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Failed to load skill.</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Go back</Text>
-        </TouchableOpacity>
-      </View>
-    )
+  if (skillQuery.isError || !skillQuery.data) {
+    return <SkillDetailErrorState onBack={() => router.back()} />
   }
 
-  const { skill } = state
+  const skill = skillQuery.data
   const statusStyle = STATUS_COLORS[skill.status] ?? STATUS_COLORS.available
   const isOwner = user?.id === skill.ownerId
   const canRequest = !isOwner && skill.status === 'available'

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React from 'react'
 import {
   View,
   Text,
@@ -8,21 +8,8 @@ import {
 } from 'react-native'
 import MapView, { Circle, Callout, Marker, Region } from 'react-native-maps'
 import { useRouter } from 'expo-router'
-import { apiFetch } from '../../lib/api'
-
-interface LocationPin {
-  id: string
-  city: string
-  neighborhood: string
-  lat: string
-  lng: string
-  skillCount: number
-}
-
-type FetchState =
-  | { type: 'loading' }
-  | { type: 'error' }
-  | { type: 'ok'; locations: LocationPin[] }
+import { useQuery } from '@tanstack/react-query'
+import { fetchRadarLocations, radarKeys } from '../../lib/queries/radar'
 
 const SOFIA_REGION: Region = {
   latitude: 42.6977,
@@ -47,22 +34,12 @@ function markerRadius(count: number): number {
 
 export default function RadarScreen() {
   const router = useRouter()
-  const [state, setState] = useState<FetchState>({ type: 'loading' })
+  const locationsQuery = useQuery({
+    queryKey: radarKeys.locations(),
+    queryFn: fetchRadarLocations,
+  })
 
-  const fetchLocations = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/locations')
-      if (!res.ok) { setState({ type: 'error' }); return }
-      const json = await res.json()
-      setState({ type: 'ok', locations: json.data ?? [] })
-    } catch {
-      setState({ type: 'error' })
-    }
-  }, [])
-
-  useEffect(() => { fetchLocations() }, [fetchLocations])
-
-  if (state.type === 'loading') {
+  if (locationsQuery.isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#15803d" />
@@ -70,19 +47,21 @@ export default function RadarScreen() {
     )
   }
 
-  if (state.type === 'error') {
+  if (locationsQuery.isError) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Could not load radar data.</Text>
-        <TouchableOpacity style={styles.btn} onPress={fetchLocations}>
+        <TouchableOpacity style={styles.btn} onPress={() => void locationsQuery.refetch()}>
           <Text style={styles.btnText}>Retry</Text>
         </TouchableOpacity>
       </View>
     )
   }
 
-  const totalSkills = state.locations.reduce((sum, l) => sum + l.skillCount, 0)
-  const activeCount = state.locations.filter((l) => l.skillCount > 0).length
+  const locations = locationsQuery.data ?? []
+
+  const totalSkills = locations.reduce((sum, l) => sum + l.skillCount, 0)
+  const activeCount = locations.filter((l) => l.skillCount > 0).length
 
   return (
     <View style={styles.container}>
@@ -99,7 +78,7 @@ export default function RadarScreen() {
         initialRegion={SOFIA_REGION}
         showsUserLocation={false}
       >
-        {state.locations.map((loc) => {
+        {locations.map((loc) => {
           const lat = parseFloat(loc.lat)
           const lng = parseFloat(loc.lng)
           if (isNaN(lat) || isNaN(lng)) return null
@@ -120,7 +99,7 @@ export default function RadarScreen() {
                 <Callout
                   onPress={() => {
                     if (loc.skillCount > 0) {
-                      router.push(`/(app)/?locationId=${loc.id}`)
+                      router.push({ pathname: '/(app)/(tabs)/', params: { locationId: loc.id } })
                     }
                   }}
                 >
