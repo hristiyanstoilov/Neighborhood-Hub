@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,16 +9,14 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { apiFetch } from '../../../lib/api'
-
-interface NotificationItem {
-  id: string
-  type: string
-  entityType: string
-  entityId: string | null
-  isRead: boolean
-  createdAt: string
-}
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../../../contexts/auth'
+import {
+  fetchNotifications,
+  markNotificationRead,
+  notificationsKeys,
+  type NotificationItem,
+} from '../../../lib/queries/notifications'
 
 const TYPE_LABELS: Record<string, string> = {
   new_request:       'New skill request received',
@@ -48,52 +46,62 @@ function formatDate(iso: string): string {
 
 export default function NotificationsScreen() {
   const router = useRouter()
-  const [items, setItems] = useState<NotificationItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/notifications')
-      if (!res.ok) return
-      const json = await res.json()
-      setItems(json.data ?? [])
-    } catch {
-      // silent
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const notificationsQuery = useQuery({
+    queryKey: notificationsKeys.list(),
+    queryFn: fetchNotifications,
+    enabled: Boolean(user),
+  })
 
-  useFocusEffect(useCallback(() => {
-    setLoading(true)
-    fetchNotifications()
-  }, [fetchNotifications]))
+  const markReadMutation = useMutation({
+    mutationFn: (id?: string) => markNotificationRead(id),
+    onMutate: async (id?: string) => {
+      await queryClient.cancelQueries({ queryKey: notificationsKeys.list() })
+      const previous = queryClient.getQueryData<NotificationItem[]>(notificationsKeys.list()) ?? []
+
+      queryClient.setQueryData<NotificationItem[]>(notificationsKeys.list(), (current = []) =>
+        typeof id === 'string' ? current.filter((item) => item.id !== id) : []
+      )
+
+      return { previous }
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(notificationsKeys.list(), context.previous)
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: notificationsKeys.all })
+    },
+  })
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return
+      if (notificationsQuery.isLoading) return
+      void notificationsQuery.refetch()
+    }, [notificationsQuery.isLoading, notificationsQuery.refetch, user])
+  )
+
+  const items = notificationsQuery.data ?? []
+  const loading = notificationsQuery.isLoading
+  const refreshing = notificationsQuery.isFetching && !notificationsQuery.isLoading
 
   async function handleRefresh() {
-    setRefreshing(true)
-    await fetchNotifications()
-    setRefreshing(false)
+    await notificationsQuery.refetch()
   }
 
   async function handlePress(item: NotificationItem) {
-    setActionLoading(true)
-    // Optimistic remove
-    setItems((prev) => prev.filter((n) => n.id !== item.id))
-    await apiFetch('/api/notifications/read', {
-      method: 'PATCH',
-      body: JSON.stringify({ id: item.id }),
-    }).catch(() => {})
-    setActionLoading(false)
+    await markReadMutation.mutateAsync(item.id).catch(() => {})
     if (item.entityType === 'skill_request') {
       router.push('/(app)/(tabs)/my-requests')
     }
   }
 
   async function handleMarkAllRead() {
-    setItems([])
-    await apiFetch('/api/notifications/read', { method: 'PATCH' }).catch(() => {})
+    await markReadMutation.mutateAsync(undefined).catch(() => {})
   }
 
   if (loading) {
@@ -104,6 +112,17 @@ export default function NotificationsScreen() {
     )
   }
 
+
+  if (notificationsQuery.isError && !notificationsQuery.data) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Could not load notifications.</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => void notificationsQuery.refetch()}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -120,7 +139,7 @@ export default function NotificationsScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#15803d" />
+          <RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -133,7 +152,7 @@ export default function NotificationsScreen() {
           <TouchableOpacity
             style={styles.item}
             onPress={() => handlePress(item)}
-            disabled={actionLoading}
+            disabled={markReadMutation.isPending}
           >
             <Text style={styles.itemIcon}>{TYPE_ICONS[item.type] ?? '🔔'}</Text>
             <View style={styles.itemBody}>
@@ -189,4 +208,20 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 40 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151' },
   emptySubtitle: { fontSize: 13, color: '#9ca3af' },
+  errorText: {
+    fontSize: 14,
+    color: '#dc2626',
+    marginBottom: 12,
+  },
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#15803d',
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '500',
+    fontSize: 14,
+  },
 })

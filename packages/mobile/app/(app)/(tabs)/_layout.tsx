@@ -1,7 +1,23 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../../../contexts/auth'
+import { fetchNotifications, notificationsKeys } from '../../../lib/queries/notifications'
 
 export default function TabsLayout() {
+  const { user } = useAuth()
+
+  const { data } = useQuery({
+    queryKey: notificationsKeys.list(),
+    queryFn: fetchNotifications,
+    enabled: Boolean(user),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+
+  const unreadCount = data?.filter((n) => !n.isRead).length ?? data?.length ?? 0
+  const badge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined
+
   return (
     <Tabs
       screenOptions={{
@@ -41,6 +57,7 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: 'Notifications',
+          tabBarBadge: badge,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications-outline" size={size} color={color} />
           ),

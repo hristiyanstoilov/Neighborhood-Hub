@@ -8,62 +8,42 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
-import { apiFetch } from '../../../lib/api'
-import RequestCard, { SkillRequestRow } from '../../../components/RequestCard'
+import RequestCard from '../../../components/RequestCard'
 import { Skeleton } from '../../../components/Skeleton'
+import {
+  fetchSkillRequests,
+  skillRequestsKeys,
+  type RequestRole,
+} from '../../../lib/queries/skill-requests'
 
 type Tab = 'requester' | 'owner'
-
-type FetchState =
-  | { type: 'loading' }
-  | { type: 'error' }
-  | { type: 'ok'; rows: SkillRequestRow[] }
 
 export default function MyRequestsScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('requester')
-  const [state, setState] = useState<FetchState>({ type: 'loading' })
-  const [refreshing, setRefreshing] = useState(false)
+  const requestsQuery = useQuery({
+    queryKey: skillRequestsKeys.list(tab as RequestRole),
+    queryFn: () => fetchSkillRequests(tab as RequestRole),
+    enabled: Boolean(user),
+  })
 
-  const fetchRequests = useCallback(async (role: Tab) => {
-    if (!user) {
-      setState({ type: 'error' })
-      return
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return
+      if (requestsQuery.isLoading) return
+      void requestsQuery.refetch()
+    }, [requestsQuery.isLoading, requestsQuery.refetch, tab, user])
+  )
 
-    try {
-      const res = await apiFetch(`/api/skill-requests?role=${role}&limit=50`)
-      if (!res.ok) {
-        setState({ type: 'error' })
-        return
-      }
-      const json = await res.json()
-      setState({ type: 'ok', rows: json.data ?? [] })
-    } catch {
-      setState({ type: 'error' })
-    }
-  }, [user])
-
-  useFocusEffect(useCallback(() => {
-    if (!user) return
-    setState({ type: 'loading' })
-    fetchRequests(tab)
-  }, [tab, fetchRequests, user]))
+  const rows = requestsQuery.data ?? []
+  const isInitialLoading = requestsQuery.isFetching && !requestsQuery.data
+  const isRefreshing = requestsQuery.isFetching && !!requestsQuery.data
 
   async function handleRefresh() {
-    setRefreshing(true)
-    await fetchRequests(tab)
-    setRefreshing(false)
-  }
-
-  function handleStatusChange(id: string, newStatus: string) {
-    if (state.type !== 'ok') return
-    setState({
-      type: 'ok',
-      rows: state.rows.map((r) => r.id === id ? { ...r, status: newStatus } : r),
-    })
+    await requestsQuery.refetch()
   }
 
   if (!user) {
@@ -99,7 +79,7 @@ export default function MyRequestsScreen() {
         </TouchableOpacity>
       </View>
 
-      {state.type === 'loading' ? (
+      {isInitialLoading ? (
         <View style={styles.loadingWrap}>
           <View style={styles.loadingHeader}>
             <Skeleton width={110} height={22} />
@@ -133,22 +113,21 @@ export default function MyRequestsScreen() {
             ))}
           </View>
         </View>
-      ) : state.type === 'error' ? (
+      ) : requestsQuery.isError && !requestsQuery.data ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>Could not load requests.</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => fetchRequests(tab)}>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => void requestsQuery.refetch()}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={state.rows}
+          data={rows}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <RequestCard
               request={item}
               viewerId={user.id}
-              onStatusChange={handleStatusChange}
             />
           )}
           ListEmptyComponent={
@@ -162,7 +141,7 @@ export default function MyRequestsScreen() {
           }
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#15803d" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
           }
         />
       )}
