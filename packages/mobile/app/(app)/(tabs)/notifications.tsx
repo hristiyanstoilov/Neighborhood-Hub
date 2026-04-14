@@ -17,6 +17,7 @@ import {
   notificationsKeys,
   type NotificationItem,
 } from '../../../lib/queries/notifications'
+import { formatDateTime } from '../../../lib/format'
 
 const TYPE_LABELS: Record<string, string> = {
   new_request:       'New skill request received',
@@ -32,16 +33,6 @@ const TYPE_ICONS: Record<string, string> = {
   request_rejected:  '❌',
   request_cancelled: '🚫',
   request_completed: '🎉',
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export default function NotificationsScreen() {
@@ -157,7 +148,7 @@ export default function NotificationsScreen() {
             <Text style={styles.itemIcon}>{TYPE_ICONS[item.type] ?? '🔔'}</Text>
             <View style={styles.itemBody}>
               <Text style={styles.itemLabel}>{TYPE_LABELS[item.type] ?? 'New notification'}</Text>
-              <Text style={styles.itemDate}>{formatDate(item.createdAt)}</Text>
+              <Text style={styles.itemDate}>{formatDateTime(item.createdAt)}</Text>
             </View>
             <Text style={styles.itemChevron}>›</Text>
           </TouchableOpacity>

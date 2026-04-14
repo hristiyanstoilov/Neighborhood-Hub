@@ -21,12 +21,7 @@ import {
   SkillDetailLoadingState,
   SkillDetailNotFoundState,
 } from './_components/skill-detail-states'
-
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  available: { bg: '#d1fae5', text: '#065f46' },
-  busy: { bg: '#fef3c7', text: '#92400e' },
-  retired: { bg: '#f3f4f6', text: '#6b7280' },
-}
+import { SKILL_STATUS_COLORS } from '../../../lib/format'
 
 export default function SkillDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -100,7 +95,7 @@ export default function SkillDetailScreen() {
   }
 
   const skill = skillQuery.data
-  const statusStyle = STATUS_COLORS[skill.status] ?? STATUS_COLORS.available
+  const statusStyle = SKILL_STATUS_COLORS[skill.status] ?? SKILL_STATUS_COLORS.available
   const isOwner = user?.id === skill.ownerId
   const canRequest = !isOwner && skill.status === 'available'
 

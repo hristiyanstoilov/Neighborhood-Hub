@@ -1,4 +1,5 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
+import { SKILL_STATUS_COLORS } from '../lib/format'
 
 interface SkillCardProps {
   title: string
@@ -9,14 +10,8 @@ interface SkillCardProps {
   onPress: () => void
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  available: { bg: '#d1fae5', text: '#065f46' },
-  busy: { bg: '#fef3c7', text: '#92400e' },
-  retired: { bg: '#f3f4f6', text: '#6b7280' },
-}
-
 export default function SkillCard({ title, ownerName, category, status, imageUrl, onPress }: SkillCardProps) {
-  const statusStyle = STATUS_COLORS[status] ?? STATUS_COLORS.available
+  const statusStyle = SKILL_STATUS_COLORS[status] ?? SKILL_STATUS_COLORS.available
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>

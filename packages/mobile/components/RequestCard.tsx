@@ -15,18 +15,11 @@ import {
   updateSkillRequestAction,
 } from '../lib/queries/skill-requests'
 import { useToast } from '../lib/toast'
+import { formatDateTime, formatMeetingType, REQUEST_STATUS_COLORS } from '../lib/format'
 
 interface Props {
   request: SkillRequestRow
   viewerId: string
-}
-
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  pending:   { bg: '#fef3c7', text: '#92400e' },
-  accepted:  { bg: '#d1fae5', text: '#065f46' },
-  rejected:  { bg: '#fee2e2', text: '#991b1b' },
-  completed: { bg: '#dbeafe', text: '#1e40af' },
-  cancelled: { bg: '#f3f4f6', text: '#6b7280' },
 }
 
 const TERMINAL = ['rejected', 'completed', 'cancelled']
@@ -36,15 +29,6 @@ const ACTION_TOASTS: Record<RequestAction, string> = {
   reject:   'Request rejected',
   complete: 'Session marked as completed',
   cancel:   'Request cancelled',
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export default function RequestCard({ request, viewerId }: Props) {
@@ -60,7 +44,7 @@ export default function RequestCard({ request, viewerId }: Props) {
   const isOwner = request.userToId === viewerId
   const isRequester = request.userFromId === viewerId
   const otherName = isOwner ? request.requesterName : request.ownerName
-  const statusStyle = STATUS_COLORS[request.status] ?? STATUS_COLORS.cancelled
+  const statusStyle = REQUEST_STATUS_COLORS[request.status] ?? REQUEST_STATUS_COLORS.cancelled
   const isTerminal = TERMINAL.includes(request.status)
 
   async function performAction(action: RequestAction, cancellationReason?: string) {
@@ -129,11 +113,11 @@ export default function RequestCard({ request, viewerId }: Props) {
       {/* Details */}
       <View style={styles.details}>
         <Text style={styles.detailLabel}>Start</Text>
-        <Text style={styles.detailValue}>{formatDate(request.scheduledStart)}</Text>
+        <Text style={styles.detailValue}>{formatDateTime(request.scheduledStart)}</Text>
         <Text style={styles.detailLabel}>End</Text>
-        <Text style={styles.detailValue}>{formatDate(request.scheduledEnd)}</Text>
+        <Text style={styles.detailValue}>{formatDateTime(request.scheduledEnd)}</Text>
         <Text style={styles.detailLabel}>Meeting</Text>
-        <Text style={styles.detailValue}>{request.meetingType.replace(/_/g, ' ')}</Text>
+        <Text style={styles.detailValue}>{formatMeetingType(request.meetingType)}</Text>
       </View>
 
       {request.notes ? (

@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import type { RefObject } from 'react'
 import type { ChatConversation, ChatMessage } from '../../../lib/queries/ai-conversations'
+import { formatRelativeDate } from '../../../lib/format'
 
 const SUGGESTION_CHIPS = [
   'What skills are available near me?',
@@ -18,17 +19,6 @@ const SUGGESTION_CHIPS = [
   'How do I offer my own skill?',
   'What happens after I send a request?',
 ]
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return d.toLocaleDateString('en-GB', { weekday: 'short' })
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-}
 
 export function ChatLoggedOutState(props: { onLogin: () => void }) {
   return (
@@ -130,7 +120,7 @@ export function ChatConversationListSection(props: {
             >
               <View style={styles.convItemBody}>
                 <Text style={styles.convTitle} numberOfLines={2}>{item.title ?? 'Untitled'}</Text>
-                <Text style={styles.convDate}>{formatDate(item.updatedAt)}</Text>
+                <Text style={styles.convDate}>{formatRelativeDate(item.updatedAt)}</Text>
               </View>
               <Text style={styles.convChevron}>›</Text>
             </TouchableOpacity>
