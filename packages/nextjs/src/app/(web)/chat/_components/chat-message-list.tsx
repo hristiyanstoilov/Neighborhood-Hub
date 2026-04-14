@@ -28,7 +28,12 @@ export function ChatMessageList({
   onSuggestionClick,
 }: ChatMessageListProps) {
   return (
-    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+    <div
+      role="log"
+      aria-live="polite"
+      aria-label="Chat messages"
+      className="flex-1 overflow-y-auto p-4 flex flex-col gap-3"
+    >
       {loadingMsgs ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm text-gray-400">Loading…</p>

@@ -7,6 +7,19 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
+
+  function validateField(name: string, value: string) {
+    if (name === 'name' && !value.trim()) {
+      setFieldErrors((prev) => ({ ...prev, name: 'Name is required.' }))
+    } else if (name === 'email' && !value.includes('@')) {
+      setFieldErrors((prev) => ({ ...prev, email: 'Enter a valid email address.' }))
+    } else if (name === 'password' && value.length > 0 && value.length < 8) {
+      setFieldErrors((prev) => ({ ...prev, password: 'Password must be at least 8 characters.' }))
+    } else {
+      setFieldErrors((prev) => { const next = { ...prev }; delete next[name as keyof typeof next]; return next })
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -69,9 +82,13 @@ export default function RegisterPage() {
             type="text"
             required
             autoComplete="name"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            aria-invalid={!!fieldErrors.name}
+            aria-describedby={fieldErrors.name ? 'register-name-error' : undefined}
+            onBlur={(e) => validateField('name', e.target.value)}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${fieldErrors.name ? 'border-red-400' : 'border-gray-300'}`}
             placeholder="Your name"
           />
+          {fieldErrors.name && <p id="register-name-error" className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>}
         </div>
 
         <div>
@@ -82,9 +99,13 @@ export default function RegisterPage() {
             type="email"
             required
             autoComplete="email"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            aria-invalid={!!fieldErrors.email}
+            aria-describedby={fieldErrors.email ? 'register-email-error' : undefined}
+            onBlur={(e) => validateField('email', e.target.value)}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${fieldErrors.email ? 'border-red-400' : 'border-gray-300'}`}
             placeholder="you@example.com"
           />
+          {fieldErrors.email && <p id="register-email-error" className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
         </div>
 
         <div>
@@ -96,9 +117,13 @@ export default function RegisterPage() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            aria-invalid={!!fieldErrors.password}
+            aria-describedby={fieldErrors.password ? 'register-password-error' : undefined}
+            onBlur={(e) => validateField('password', e.target.value)}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${fieldErrors.password ? 'border-red-400' : 'border-gray-300'}`}
             placeholder="At least 8 characters"
           />
+          {fieldErrors.password && <p id="register-password-error" className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>}
         </div>
 
         {error && (

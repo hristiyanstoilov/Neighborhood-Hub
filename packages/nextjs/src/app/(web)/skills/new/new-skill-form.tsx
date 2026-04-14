@@ -23,6 +23,8 @@ export default function NewSkillForm({ categories, locations }: Props) {
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null)
+  const [titleLength, setTitleLength] = useState(0)
+  const [descLength, setDescLength] = useState(0)
 
   async function uploadImage(file: File) {
     setUploading(true)
@@ -123,9 +125,11 @@ export default function NewSkillForm({ categories, locations }: Props) {
             required
             minLength={3}
             maxLength={200}
+            onChange={(e) => setTitleLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="e.g. Guitar lessons, Python tutoring, Home repairs…"
           />
+          <p className="text-xs text-gray-400 mt-1 text-right">{titleLength}/200</p>
         </div>
 
         <div>
@@ -135,9 +139,11 @@ export default function NewSkillForm({ categories, locations }: Props) {
             name="description"
             rows={4}
             maxLength={2000}
+            onChange={(e) => setDescLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
             placeholder="Describe what you offer, your experience, and any requirements…"
           />
+          <p className="text-xs text-gray-400 mt-1 text-right">{descLength}/2000</p>
         </div>
 
         <div>

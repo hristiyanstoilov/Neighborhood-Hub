@@ -66,6 +66,8 @@ export default function LoginForm() {
             type="email"
             required
             autoComplete="email"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'login-error' : undefined}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder="you@example.com"
           />
@@ -84,12 +86,14 @@ export default function LoginForm() {
             type="password"
             required
             autoComplete="current-password"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'login-error' : undefined}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <p id="login-error" role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
           </p>
         )}

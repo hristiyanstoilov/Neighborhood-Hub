@@ -12,11 +12,21 @@ function tabClass(active: boolean) {
 
 export function RoleTabs({ role }: { role: Role }) {
   return (
-    <div className="flex gap-2 mb-6">
-      <Link href="/my-requests?role=requester" className={tabClass(role === 'requester')}>
+    <div role="tablist" aria-label="Request role" className="flex gap-2 mb-6">
+      <Link
+        href="/my-requests?role=requester"
+        role="tab"
+        aria-selected={role === 'requester'}
+        className={tabClass(role === 'requester')}
+      >
         Sent
       </Link>
-      <Link href="/my-requests?role=owner" className={tabClass(role === 'owner')}>
+      <Link
+        href="/my-requests?role=owner"
+        role="tab"
+        aria-selected={role === 'owner'}
+        className={tabClass(role === 'owner')}
+      >
         Received
       </Link>
     </div>
