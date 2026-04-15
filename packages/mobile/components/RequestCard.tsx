@@ -148,7 +148,7 @@ export default function RequestCard({ request, viewerId }: Props) {
             </>
           )}
 
-          {request.status === 'accepted' && (
+          {isRequester && request.status === 'accepted' && (
             <TouchableOpacity
               style={[styles.btn, styles.btnBlue]}
               onPress={() => confirmAction('complete')}
