@@ -74,6 +74,7 @@ neighborhood-hub/
 │   │   │       ├── email.ts     # Resend email templates
 │   │   │       ├── audit.ts     # Audit log writer
 │   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
+│   │   │       ├── format.ts    # Shared date/status formatting utilities
 │   │   │       ├── queries/     # Reusable DB query functions
 │   │   │       └── schemas/     # Zod validation schemas
 │   │   └── package.json
@@ -81,9 +82,9 @@ neighborhood-hub/
 │       ├── app/
 │       │   ├── (app)/           # Authenticated screens
 │       │   └── (auth)/          # Login / Register screens
-│       ├── components/          # Shared RN components
+│       ├── components/          # Shared RN components (Skeleton, SkeletonCard, etc.)
 │       ├── contexts/            # Auth context (mobile)
-│       └── lib/                 # API client + token storage
+│       └── lib/                 # API client, token storage, format utils, toast
 ├── AGENTS.md                    # AI agent instructions + coding rules
 └── README.md
 ```
@@ -151,7 +152,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | GET | `/api/skills` | — | List skills (search, filter, paginate) |
 | POST | `/api/skills` | JWT + verified | Create skill listing |
 | GET | `/api/skills/[id]` | — | Get skill detail |
-| PATCH | `/api/skills/[id]` | JWT + owner | Edit skill |
+| PUT | `/api/skills/[id]` | JWT + owner | Edit skill |
 | DELETE | `/api/skills/[id]` | JWT + owner | Soft delete skill |
 | PATCH | `/api/skills/[id]/status` | JWT + owner | Change skill status |
 
@@ -215,10 +216,18 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 |--------|-------|
 | Login | `/(auth)/login` |
 | Register | `/(auth)/register` |
-| Skill List (paginated) | `/(app)/index` |
+| Skill List (paginated) | `/(app)/(tabs)/index` |
 | Skill Detail + Request | `/(app)/skills/[id]` |
-| My Requests (sent/received) | `/(app)/my-requests` |
-| Profile + Avatar Upload | `/(app)/profile` |
+| Create Skill | `/(app)/skills/new` |
+| Edit Skill | `/(app)/skills/edit/[id]` |
+| Request Skill | `/(app)/skills/request/[id]` |
+| My Requests (sent/received) | `/(app)/(tabs)/my-requests` |
+| My Skills | `/(app)/my-skills` |
+| Notifications | `/(app)/(tabs)/notifications` |
+| Profile + Avatar Upload | `/(app)/(tabs)/profile` |
+| Edit Profile | `/(app)/profile/edit` |
+| Public User Profile | `/(app)/users/[id]` |
+| AI Chat | `/(app)/chat` |
 | Neighborhood Radar | `/(app)/radar` |
 
 ---
@@ -247,7 +256,7 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 ## Local Development
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 22+
 - A [Neon](https://neon.tech) PostgreSQL database
 - An [Upstash](https://upstash.com) Redis instance
 - A [Resend](https://resend.com) API key (for emails)
@@ -271,8 +280,8 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 # 4. Run DB migrations
 cd packages/nextjs && npx drizzle-kit migrate && cd ../..
 
-# 5. (Optional) Seed categories and locations
-cd packages/nextjs && npx tsx src/db/seed.ts && cd ../..
+# 5. (Optional) Seed categories, locations, and demo users/skills/requests
+cd packages/nextjs && npm run db:seed && cd ../..
 
 # 6. Install mobile dependencies
 cd packages/mobile && npm install --legacy-peer-deps && cd ../..

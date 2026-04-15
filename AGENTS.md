@@ -50,7 +50,7 @@ neighborhood-hub/
 │   │   │   ├── db/
 │   │   │   │   ├── schema.ts    # Drizzle schema (12 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
-│   │   │   │   ├── seed.ts      # Seed locations + categories
+│   │   │   │   ├── seed.ts      # Seed locations, categories, and demo users/skills/requests
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify + token helpers
@@ -68,7 +68,7 @@ neighborhood-hub/
 │       │   └── (auth)/          # Login / Register screens
 │       ├── components/          # Shared RN components
 │       ├── contexts/            # Auth context (mobile)
-│       └── lib/                 # API client + SecureStore token storage
+│       └── lib/                 # API client, SecureStore token storage, format utils, toast
 ├── docs/                        # Product documentation and roadmap
 ├── AGENTS.md
 └── README.md
@@ -183,7 +183,7 @@ Rules:
 
 ---
 
-## 6. Required Screens (minimum 5 web + 3 mobile)
+## 7. Required Screens (minimum 5 web + 3 mobile)
 
 ### Web screens (Next.js)
 
@@ -215,13 +215,21 @@ Rules:
 | Register | ✅ done |
 | Skill List (paginated) | ✅ done |
 | Skill Detail + Request | ✅ done |
+| Create Skill | ✅ done |
+| Edit Skill | ✅ done |
+| Request Skill | ✅ done |
 | My Requests (Sent / Received) | ✅ done |
+| My Skills | ✅ done |
+| Notifications | ✅ done |
 | Profile + Avatar Upload | ✅ done |
+| Edit Profile | ✅ done |
+| Public User Profile | ✅ done |
+| AI Chat | ✅ done |
 | Neighborhood Radar | ✅ done |
 
 ---
 
-## 7. Module Status
+## 8. Module Status
 
 | Version | Module | Status |
 |---------|--------|--------|
@@ -237,7 +245,7 @@ Rules:
 
 ---
 
-## 8. Coding Rules
+## 9. Coding Rules
 
 ### General
 - Use **TypeScript strictly** – no `any` unless unavoidable
@@ -295,25 +303,25 @@ Rules:
 
 ---
 
-## 9. Capstone Scoring Checklist
+## 10. Capstone Scoring Checklist
 
 | Requirement | Target | Notes |
 |-------------|--------|-------|
 | GitHub commits | 15+ | 1 per working feature |
 | Commit days | 3+ different days | Spread work over time |
-| Architecture | monorepo + client-server | packages/nextjs + packages/expo |
+| Architecture | monorepo + client-server | packages/nextjs + packages/mobile |
 | Backend API | endpoints with auth | JWT middleware on all routes |
 | DB tables | 4+ tables | users, skills, skill_requests, locations |
 | Auth & Security | JWT + roles | user / admin roles |
 | Web screens | 5+ screens | See screen list above |
 | Admin panel | /admin route | Only for admin role |
-| Mobile screens | 3+ screens | Login, Skill List, Skill Detail |
+| Mobile screens | 3+ screens | 15 screens implemented (see section 7) |
 | Deployment | Live on Netlify | With Neon DB |
 | Documentation | README.md in GitHub | Schema, setup, API docs |
 
 ---
 
-## 10. How AI Agents Should Help
+## 11. How AI Agents Should Help
 
 ### General Rule
 Do not make any changes until you have 95% confidence in what you need to build. Ask follow-up questions until you reach that confidence.
@@ -356,7 +364,7 @@ Do not make any changes until you have 95% confidence in what you need to build.
 
 ---
 
-## 11. Example Prompts
+## 12. Example Prompts
 
 ```
 "Generate Drizzle schema for the skills table with all required fields"

@@ -65,8 +65,16 @@ A community platform for neighborhood sharing in Bulgaria.
 | Login / Register | ✅ done |
 | Skill List (paginated) | ✅ done |
 | Skill Detail + Request | ✅ done |
+| Create Skill | ✅ done |
+| Edit Skill | ✅ done |
+| Request Skill | ✅ done |
 | My Requests (sent/received) | ✅ done |
+| My Skills | ✅ done |
+| Notifications | ✅ done |
 | Profile + Avatar Upload | ✅ done |
+| Edit Profile | ✅ done |
+| Public User Profile | ✅ done |
+| AI Chat | ✅ done |
 | Neighborhood Radar (map) | ✅ done |
 
 ### AI Features (v0.1 – if time allows in Week 3)
@@ -365,7 +373,7 @@ Target outcome: consistent implementation style and easier onboarding.
 
 - **Map on mobile is non-trivial** – `react-native-maps` requires separate integration, allocate extra time
 - **Location is neighborhood-level only**, not exact address – GDPR considerations
-- **Empty state** for new users – map will be empty; add seed data or onboarding text
+- **Empty state** for new users – `npm run db:seed` populates demo locations, categories, users, skills, and requests
 - **AI integration** is a course priority (Week 3), not "after all modules"
 - ~~Module 5 (Tool Library duplicate)~~ → removed, see v0.2
 - ~~Module 6 (Charity as separate module)~~ → merged into v0.3 Events as `event_type: 'charity'`
