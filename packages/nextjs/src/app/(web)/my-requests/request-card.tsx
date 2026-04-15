@@ -26,7 +26,6 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 export default function RequestCard({ request, viewerId, role }: Props) {
-  const [status, setStatus] = useState(request.status)
   const [error, setError] = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -43,7 +42,6 @@ export default function RequestCard({ request, viewerId, role }: Props) {
     role,
     cancelReason,
     onSuccessStatus: (nextStatus) => {
-      setStatus(nextStatus)
       setCancelPrompt(false)
       setCancelReason('')
       showToast({
@@ -69,8 +67,8 @@ export default function RequestCard({ request, viewerId, role }: Props) {
         skillTitle={request.skillTitle}
         isOwner={isOwner}
         otherName={otherName}
-        status={status}
-        statusClassName={STATUS_STYLES[status] ?? STATUS_STYLES.cancelled}
+        status={request.status}
+        statusClassName={STATUS_STYLES[request.status] ?? STATUS_STYLES.cancelled}
       />
 
       <RequestCardDetails request={request} />
@@ -82,7 +80,7 @@ export default function RequestCard({ request, viewerId, role }: Props) {
       )}
 
       <RequestActions
-        status={status}
+        status={request.status}
         isOwner={isOwner}
         isRequester={isRequester}
         terminalStatuses={TERMINAL}

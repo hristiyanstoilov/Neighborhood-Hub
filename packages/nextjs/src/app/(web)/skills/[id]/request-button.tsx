@@ -3,30 +3,21 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth'
-import { apiFetch } from '@/lib/api'
+import { type CreateRequestBody, useCreateRequest } from './_hooks/use-create-request'
 
 interface Props {
   skill: { id: string; ownerId: string; status: string }
-}
-
-const ERROR_MESSAGES: Record<string, string> = {
-  UNVERIFIED_EMAIL: 'Please verify your email before requesting a skill.',
-  SKILL_NOT_AVAILABLE: 'This skill is no longer available.',
-  REQUEST_ALREADY_EXISTS: 'You already have a pending or accepted request for this skill.',
-  TOO_MANY_REQUESTS: 'Too many requests. Please wait and try again.',
-  VALIDATION_ERROR: 'Please check the form and try again.',
 }
 
 export default function RequestButton({ skill }: Props) {
   const { user, loading } = useAuth()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [meetingType, setMeetingType] = useState<'in_person' | 'online' | 'hybrid'>('in_person')
   const dialogRef = useRef<HTMLDivElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const startInputRef = useRef<HTMLInputElement>(null)
+  const createRequest = useCreateRequest()
 
   useEffect(() => {
     if (!open) return
@@ -99,37 +90,21 @@ export default function RequestButton({ skill }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
-    setSubmitting(true)
+    const form = new FormData(e.currentTarget)
+    const body: CreateRequestBody = {
+      skillId: skill.id,
+      scheduledStart: new Date(form.get('scheduledStart') as string).toISOString(),
+      scheduledEnd: new Date(form.get('scheduledEnd') as string).toISOString(),
+      meetingType,
+      meetingUrl: meetingType !== 'in_person' ? (form.get('meetingUrl') as string) || undefined : undefined,
+      notes: (form.get('notes') as string) || undefined,
+    }
 
     try {
-      const form = new FormData(e.currentTarget)
-      const body = {
-        skillId: skill.id,
-        scheduledStart: new Date(form.get('scheduledStart') as string).toISOString(),
-        scheduledEnd: new Date(form.get('scheduledEnd') as string).toISOString(),
-        meetingType,
-        meetingUrl: meetingType !== 'in_person' ? (form.get('meetingUrl') as string) || undefined : undefined,
-        notes: (form.get('notes') as string) || undefined,
-      }
-
-      const res = await apiFetch('/api/skill-requests', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      })
-
-      const json = await res.json()
-
-      if (!res.ok) {
-        setError(ERROR_MESSAGES[json.error] ?? 'Something went wrong. Please try again.')
-        return
-      }
-
+      await createRequest.mutateAsync(body)
       setStep('success')
     } catch {
-      setError('Network error. Please check your connection and try again.')
-    } finally {
-      setSubmitting(false)
+      // error surfaced via createRequest.error
     }
   }
 
@@ -137,7 +112,7 @@ export default function RequestButton({ skill }: Props) {
     <>
       <button
         type="button"
-        onClick={() => { setOpen(true); setStep('form'); setError(null) }}
+        onClick={() => { setOpen(true); setStep('form'); createRequest.reset() }}
         className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
       >
         Request this skill
@@ -273,19 +248,19 @@ export default function RequestButton({ skill }: Props) {
                     />
                   </div>
 
-                  {error && (
+                  {createRequest.error && (
                     <p role="alert" aria-live="assertive" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                      {error}
+                      {createRequest.error.message}
                     </p>
                   )}
 
                   <div className="flex gap-3 pt-1">
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={createRequest.isPending}
                       className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
                     >
-                      {submitting ? 'Sending…' : 'Send request'}
+                      {createRequest.isPending ? 'Sending…' : 'Send request'}
                     </button>
                     <button
                       type="button"
