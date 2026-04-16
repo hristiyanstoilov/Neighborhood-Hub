@@ -72,7 +72,7 @@ export function MyReservationsClient({
       ) : (
         <div className="space-y-4">
           {reservations.map((r) => (
-            <ReservationCard key={r.id} reservation={r} viewerId={viewerId} role={role} />
+            <ReservationCard key={r.id} reservation={r} viewerId={viewerId} />
           ))}
         </div>
       )}

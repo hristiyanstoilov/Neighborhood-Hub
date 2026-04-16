@@ -17,11 +17,16 @@ interface NotificationRow {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  new_request:       'New skill request received',
-  request_accepted:  'Your request was accepted',
-  request_rejected:  'Your request was rejected',
-  request_cancelled: 'A request was cancelled',
-  request_completed: 'A session was marked complete',
+  new_request:           'New skill request received',
+  request_accepted:      'Your request was accepted',
+  request_rejected:      'Your request was rejected',
+  request_cancelled:     'A request was cancelled',
+  request_completed:     'A session was marked complete',
+  reservation_new:       'New tool reservation request',
+  reservation_approved:  'Your tool reservation was approved',
+  reservation_rejected:  'Your tool reservation was rejected',
+  reservation_cancelled: 'A tool reservation was cancelled',
+  reservation_returned:  'Tool marked as returned',
 }
 
 const POLL_INTERVAL_MS = 30_000
@@ -91,6 +96,8 @@ export default function NotificationsBell() {
     await markReadMutation.mutateAsync({ id: item.id }).catch(() => {})
     if (item.entityType === 'skill_request') {
       router.push('/my-requests')
+    } else if (item.entityType === 'tool_reservation') {
+      router.push('/my-reservations')
     }
   }
 

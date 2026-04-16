@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
-import { type ReservationRow, type ReservationRole, useReservationAction } from './use-reservations'
+import { type ReservationRow, useReservationAction } from './use-reservations'
 
 interface Props {
   reservation: ReservationRow
   viewerId: string
-  role: ReservationRole
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -43,7 +42,7 @@ function formatDate(dateStr: string) {
   return new Date(year, month - 1, day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default function ReservationCard({ reservation, viewerId, role }: Props) {
+export default function ReservationCard({ reservation, viewerId }: Props) {
   const [error, setError]               = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
