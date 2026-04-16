@@ -42,15 +42,17 @@ neighborhood-hub/
 │   │   │   │   │   ├── notifications/   # in-app notifications
 │   │   │   │   │   ├── profile/         # user profile
 │   │   │   │   │   ├── upload/          # Cloudflare R2 image upload
+│   │   │   │   │   ├── tools/           # CRUD tool listings
+│   │   │   │   │   ├── tool-reservations/ # reservation state machine
 │   │   │   │   │   ├── admin/           # admin users + audit log
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (12 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (14 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
-│   │   │   │   ├── seed.ts      # Seed locations, categories, and demo users/skills/requests
+│   │   │   │   ├── seed.ts      # Seed locations, categories, demo users, skills/requests, tools/reservations
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify + token helpers
@@ -76,7 +78,7 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (minimum 4 tables required)
+## 4. Database Schema (14 tables)
 
 ### Core tables (Phase 1)
 
@@ -94,12 +96,13 @@ neighborhood-hub/
 | `notifications` | In-app notifications (user_id FK, type, entity_id, is_read) |
 | `ai_conversations` | AI chat sessions (user_id FK, title) |
 | `ai_messages` | AI chat messages (conversation_id FK, role, content) |
+| `tools` | Tool listings (owner_id FK, title, condition, category_id FK, location_id FK, status, deleted_at) |
+| `tool_reservations` | Borrow requests (tool_id FK, borrower_id FK, start_date, end_date, status, cancellation_reason) |
 
 ### Extended tables (Phase 2+)
 
 | Table | Module |
 |-------|--------|
-| `tools` + `tool_reservations` | Tool Library (v0.2) |
 | `food_shares` + `food_reservations` | Food Sharing (v0.4) |
 | `events` + `event_attendees` | Neighborhood Events (v0.3) |
 
@@ -206,6 +209,11 @@ Rules:
 | Admin — Audit Log | `/admin/audit` | ✅ done |
 | AI Chat | `/chat` | ✅ done |
 | Public Profiles | `/users/[id]` | ✅ done |
+| Tool Library | `/tools` | ✅ done |
+| Tool Detail + Reserve | `/tools/[id]` | ✅ done |
+| Create Tool | `/tools/new` | ✅ done |
+| Edit Tool | `/tools/[id]/edit` | ✅ done |
+| My Reservations | `/my-reservations` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -226,6 +234,8 @@ Rules:
 | Public User Profile | ✅ done |
 | AI Chat | ✅ done |
 | Neighborhood Radar | ✅ done |
+| Tool Library | ✅ done |
+| Tool Detail + Reserve | ✅ done |
 
 ---
 
@@ -234,7 +244,7 @@ Rules:
 | Version | Module | Status |
 |---------|--------|--------|
 | 0.1 | Neighborhood Radar + Time & Skill Swap | **Active – Phase 1** |
-| 0.2 | Tool Library | Planned (after MVP) |
+| 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Charity (merged) | Planned (after MVP) |
 | 0.4 | Food Sharing | Planned (after MVP) |
 | 0.5 | Chat / Feed | Later |

@@ -59,13 +59,15 @@ neighborhood-hub/
 │   │   │   │   │   ├── skill-requests/  # booking requests state machine
 │   │   │   │   │   ├── notifications/   # in-app notifications
 │   │   │   │   │   ├── profile/         # user profile
+│   │   │   │   │   ├── tools/           # CRUD tool listings
+│   │   │   │   │   ├── tool-reservations/ # reservation state machine
 │   │   │   │   │   ├── admin/           # admin user management + audit log
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (React server components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (all 12 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (all 14 tables)
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify helpers
@@ -93,7 +95,7 @@ neighborhood-hub/
 
 ## Database Schema
 
-12 tables across 3 concern areas:
+14 tables across 4 concern areas:
 
 ### Auth & Users
 | Table | Purpose |
@@ -113,6 +115,12 @@ neighborhood-hub/
 | `skill_requests` | Booking requests — full state machine |
 | `notifications` | In-app notifications triggered by request status changes |
 
+### Tool Library
+| Table | Purpose |
+|-------|---------|
+| `tools` | Tool listings (owner_id, title, condition, category, location, status, soft delete) |
+| `tool_reservations` | Borrow requests — pending → approved → returned/rejected/cancelled |
+
 ### AI Chat
 | Table | Purpose |
 |-------|---------|
@@ -127,6 +135,16 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
    │                             └──[anyone cancels]──→ cancelled
    ├──[owner rejects]──→ rejected
    └──[requester cancels]──→ cancelled
+```
+
+### Tool Reservation State Machine
+
+```
+pending ──[owner approves]──→ approved ──[owner marks returned]──→ returned
+   │                              │
+   │                              └──[owner or borrower cancels]──→ cancelled
+   └──[owner rejects]──→ rejected
+   └──[borrower cancels]──→ cancelled
 ```
 
 ---
@@ -162,6 +180,23 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | GET | `/api/skill-requests` | JWT | List my requests (sent/received) |
 | POST | `/api/skill-requests` | JWT + verified | Create request |
 | PATCH | `/api/skill-requests/[id]` | JWT | Update status (state machine) |
+
+### Tools
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/tools` | — | List tools (search, filter by category/location/status, paginate) |
+| POST | `/api/tools` | JWT + verified | Create tool listing |
+| GET | `/api/tools/[id]` | — | Get tool detail |
+| PUT | `/api/tools/[id]` | JWT + owner | Edit tool |
+| DELETE | `/api/tools/[id]` | JWT + owner | Soft delete tool |
+| PATCH | `/api/tools/[id]/status` | JWT + owner | Change tool status |
+
+### Tool Reservations
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/tool-reservations` | JWT | List my reservations (as borrower or owner) |
+| POST | `/api/tool-reservations` | JWT + verified | Create reservation request |
+| PATCH | `/api/tool-reservations/[id]` | JWT | Update status (approve/reject/return/cancel) |
 
 ### Profile, Notifications & Uploads
 | Method | Route | Auth | Description |
@@ -209,6 +244,11 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | Admin — Users | `/admin/users` |
 | Admin — Audit Log | `/admin/audit` |
 | AI Chat | `/chat` |
+| Tool Library | `/tools` |
+| Tool Detail + Reserve | `/tools/[id]` |
+| Create Tool | `/tools/new` |
+| Edit Tool | `/tools/[id]/edit` |
+| My Reservations | `/my-reservations` |
 
 ## Mobile Screens (Expo 54)
 
@@ -229,6 +269,8 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
 | Public User Profile | `/(app)/users/[id]` |
 | AI Chat | `/(app)/chat` |
 | Neighborhood Radar | `/(app)/radar` |
+| Tool Library | `/(app)/tools` |
+| Tool Detail + Reserve | `/(app)/tools/[id]` |
 
 ---
 
@@ -280,7 +322,7 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 # 4. Run DB migrations
 cd packages/nextjs && npx drizzle-kit migrate && cd ../..
 
-# 5. (Optional) Seed categories, locations, and demo users/skills/requests
+# 5. (Optional) Seed categories, locations, demo users, skills/requests, and tools/reservations
 cd packages/nextjs && npm run db:seed && cd ../..
 
 # 6. Install mobile dependencies

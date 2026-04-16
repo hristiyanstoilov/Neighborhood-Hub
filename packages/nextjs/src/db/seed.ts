@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { eq } from 'drizzle-orm'
 import * as schema from './schema'
-import { locations, categories, users, profiles, skills, skillRequests } from './schema'
+import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations } from './schema'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
@@ -66,7 +66,34 @@ async function seed() {
     .limit(1)
 
   if (existing.length > 0) {
-    console.log('Demo users already exist — skipping demo data.')
+    // Users already seeded — check if tools exist too
+    const toolsExist = await db.select({ id: tools.id }).from(tools).limit(1)
+    if (toolsExist.length > 0) {
+      console.log('Demo data already exists — skipping.')
+      console.log('Done.')
+      process.exit(0)
+    }
+
+    // Users exist but tools don't — seed only tools + reservations
+    console.log('Demo users exist. Seeding tools and reservations only...')
+    const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+      .where(eq(users.email, 'ivan@demo.bg'))
+      .limit(1)
+    // Re-fetch all 5 demo users
+    const allDemoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+    const byEmail = (e: string) => allDemoUsers.find((u) => u.email === e)!
+    const _ivan   = byEmail('ivan@demo.bg')
+    const _maria  = byEmail('maria@demo.bg')
+    const _georgi = byEmail('georgi@demo.bg')
+    const _elena  = byEmail('elena@demo.bg')
+    const _nikola = byEmail('nikola@demo.bg')
+
+    const allLocations2 = await db.select({ id: locations.id, neighborhood: locations.neighborhood }).from(locations)
+    const allCategories2 = await db.select({ id: categories.id, slug: categories.slug }).from(categories)
+    const loc2 = (name: string) => allLocations2.find((l) => l.neighborhood === name)!.id
+    const cat2 = (slug: string) => allCategories2.find((c) => c.slug === slug)!.id
+
+    await seedTools(db, { ivan: _ivan, maria: _maria, georgi: _georgi, elena: _elena, nikola: _nikola }, loc2, cat2)
     console.log('Done.')
     process.exit(0)
   }
@@ -363,6 +390,9 @@ async function seed() {
     },
   ])
 
+  // ─── 9 + 10. Tools & Reservations ───────────────────────────────────────
+  await seedTools(db, { ivan, maria, georgi, elena, nikola }, loc, cat)
+
   console.log('\nDone! Demo accounts created:')
   console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
   console.log('  maria@demo.bg   — Maria Georgieva (Languages)')
@@ -371,6 +401,112 @@ async function seed() {
   console.log('  nikola@demo.bg  — Nikola Hristov  (Fitness)')
   console.log(`  Password for all: ${DEMO_PASSWORD}`)
   process.exit(0)
+}
+
+// ─── Tools + Reservations (extracted so it can run standalone) ──────────────
+
+async function seedTools(
+  dbInstance: typeof db,
+  userIds: { ivan: { id: string }; maria: { id: string }; georgi: { id: string }; elena: { id: string }; nikola: { id: string } },
+  loc: (name: string) => string,
+  cat: (slug: string) => string,
+) {
+  console.log('Seeding demo tools...')
+
+  const { ivan, maria, georgi, elena, nikola } = userIds
+
+  const [boschDrill, delonghiMachine, ladder, _kitchenAid, _yogaMats] = await dbInstance.insert(tools).values([
+    {
+      ownerId:     ivan.id,
+      title:       'Bosch Cordless Drill',
+      description: 'Powerful 18V cordless drill with 2 batteries. Comes with a full bit set. Perfect for wall mounting, furniture assembly, or light renovation work.',
+      categoryId:  cat('home-repair'),
+      locationId:  loc('Lozenets'),
+      condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     maria.id,
+      title:       'DeLonghi Espresso Machine',
+      description: 'Semi-automatic espresso machine. Makes excellent espresso and cappuccino. Includes a steam wand for milk frothing. Great for house parties or if your machine is broken.',
+      categoryId:  cat('other'),
+      locationId:  loc('Mladost 1'),
+      condition:   'new',
+      status:      'available',
+    },
+    {
+      ownerId:     georgi.id,
+      title:       '3m Telescopic Ladder',
+      description: 'Aluminium telescopic ladder, extends to 3 metres. Lightweight and easy to carry. Suitable for changing light bulbs, painting ceilings, or gutter cleaning.',
+      categoryId:  cat('home-repair'),
+      locationId:  loc('Sredets'),
+      condition:   'fair',
+      status:      'available',
+    },
+    {
+      ownerId:     elena.id,
+      title:       'KitchenAid Stand Mixer',
+      description: 'Classic 4.8L KitchenAid stand mixer in empire red. Includes flat beater, dough hook, and wire whip. Ideal for bread, cakes, pastry, or pasta dough.',
+      categoryId:  cat('cooking'),
+      locationId:  loc('Oborishte'),
+      condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     nikola.id,
+      title:       'Yoga Mat Set (5 mats)',
+      description: 'Set of 5 quality 6mm yoga mats in different colors. Great for group sessions, workshops, or if you have guests joining your practice. Non-slip and easy to clean.',
+      categoryId:  cat('fitness'),
+      locationId:  loc('Studentski Grad'),
+      condition:   'good',
+      status:      'available',
+    },
+  ]).returning()
+
+  console.log('Seeding demo tool reservations...')
+
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setHours(0, 0, 0, 0)
+
+  const dayAfter = (base: Date, days: number) => {
+    const d = new Date(base)
+    d.setDate(d.getDate() + days)
+    return d
+  }
+
+  await dbInstance.insert(toolReservations).values([
+    // Maria wants to borrow Ivan's drill — pending
+    {
+      toolId:     boschDrill.id,
+      borrowerId: maria.id,
+      ownerId:    ivan.id,
+      startDate:  dayAfter(tomorrow, 1),
+      endDate:    dayAfter(tomorrow, 4),
+      status:     'pending',
+      notes:      'Need it to hang some shelves in my living room. Will return clean.',
+    },
+    // Georgi borrowed the espresso machine — approved
+    {
+      toolId:     delonghiMachine.id,
+      borrowerId: georgi.id,
+      ownerId:    maria.id,
+      startDate:  dayAfter(tomorrow, 3),
+      endDate:    dayAfter(tomorrow, 5),
+      status:     'approved',
+      notes:      'Hosting a small birthday dinner, would love to make proper espressos.',
+    },
+    // Nikola borrowed the ladder last week — returned (historical)
+    {
+      toolId:     ladder.id,
+      borrowerId: nikola.id,
+      ownerId:    georgi.id,
+      startDate:  new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      endDate:    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      status:     'returned',
+      notes:      'Need to replace a smoke detector on the ceiling.',
+    },
+  ])
 }
 
 seed().catch((err) => {

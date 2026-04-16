@@ -52,3 +52,35 @@ export const REQUEST_STATUS_COLORS: Record<string, { bg: string; text: string }>
   completed: { bg: '#dbeafe', text: '#1e40af' },
   cancelled: { bg: '#f3f4f6', text: '#6b7280' },
 }
+
+/** Badge colors for tool status */
+export const TOOL_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  available: { bg: '#d1fae5', text: '#065f46' },
+  in_use:    { bg: '#fef3c7', text: '#92400e' },
+  on_loan:   { bg: '#dbeafe', text: '#1e40af' },
+}
+
+/** Human-readable tool status labels */
+export const TOOL_STATUS_LABELS: Record<string, string> = {
+  available: 'Available',
+  in_use:    'In use',
+  on_loan:   'On loan',
+}
+
+/** Badge colors for tool reservation status */
+export const RESERVATION_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  pending:   { bg: '#fef3c7', text: '#92400e' },
+  approved:  { bg: '#d1fae5', text: '#065f46' },
+  rejected:  { bg: '#fee2e2', text: '#991b1b' },
+  returned:  { bg: '#dbeafe', text: '#1e40af' },
+  cancelled: { bg: '#f3f4f6', text: '#6b7280' },
+}
+
+/** "2024-01-15T..." → "15 Jan 2024" without timezone shift */
+export function formatDateOnly(dateStr: string): string {
+  const part = dateStr.slice(0, 10)
+  const [year, month, day] = part.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  })
+}
