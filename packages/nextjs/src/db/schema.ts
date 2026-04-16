@@ -307,13 +307,90 @@ export const notifications = pgTable(
     index('notifications_unread_idx').on(t.userId, t.isRead).where(sql`${t.isRead} = false`),
     check(
       'notifications_type_check',
-      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed')`
+      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned')`
     ),
   ]
 )
 
 // ─────────────────────────────────────────────
-// 11. AI CONVERSATIONS
+// 11. TOOLS
+// ─────────────────────────────────────────────
+
+export const tools = pgTable(
+  'tools',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    categoryId: uuid('category_id').references(() => categories.id),
+    locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
+    condition: varchar('condition', { length: 20 }),
+    status: varchar('status', { length: 20 }).default('available').notNull(),
+    imageUrl: varchar('image_url', { length: 2048 }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('tools_owner_id_idx').on(t.ownerId),
+    index('tools_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
+    index('tools_category_id_idx').on(t.categoryId),
+    index('tools_location_id_idx').on(t.locationId).where(sql`${t.deletedAt} IS NULL`),
+    check('tools_status_check', sql`${t.status} IN ('available', 'in_use', 'on_loan')`),
+    check('tools_condition_check', sql`${t.condition} IS NULL OR ${t.condition} IN ('new', 'good', 'fair', 'worn')`),
+    check('tools_title_length_check', sql`char_length(${t.title}) >= 3`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 12. TOOL RESERVATIONS
+// ─────────────────────────────────────────────
+
+export const toolReservations = pgTable(
+  'tool_reservations',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    toolId: uuid('tool_id')
+      .notNull()
+      .references(() => tools.id, { onDelete: 'restrict' }),
+    borrowerId: uuid('borrower_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startDate: timestamp('start_date', { withTimezone: true }).notNull(),
+    endDate: timestamp('end_date', { withTimezone: true }).notNull(),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    notes: text('notes'),
+    cancellationReason: text('cancellation_reason'),
+    cancelledById: uuid('cancelled_by_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('tool_reservations_tool_id_idx').on(t.toolId),
+    index('tool_reservations_borrower_id_idx').on(t.borrowerId),
+    index('tool_reservations_owner_id_idx').on(t.ownerId),
+    index('tool_reservations_borrower_status_idx').on(t.borrowerId, t.status),
+    index('tool_reservations_owner_status_idx').on(t.ownerId, t.status),
+    uniqueIndex('tool_reservations_active_idx')
+      .on(t.toolId, t.borrowerId)
+      .where(sql`${t.status} IN ('pending', 'approved')`),
+    check(
+      'tool_reservations_status_check',
+      sql`${t.status} IN ('pending', 'approved', 'rejected', 'returned', 'cancelled')`
+    ),
+    check('tool_reservations_dates_check', sql`${t.endDate} >= ${t.startDate}`),
+    check('tool_reservations_self_check', sql`${t.borrowerId} != ${t.ownerId}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 13. AI CONVERSATIONS
 // ─────────────────────────────────────────────
 
 export const aiConversations = pgTable(
@@ -332,7 +409,7 @@ export const aiConversations = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 12. AI MESSAGES
+// 14. AI MESSAGES
 // ─────────────────────────────────────────────
 
 export const aiMessages = pgTable(
