@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   View,
   Text,
@@ -30,10 +29,6 @@ export default function ToolDetailScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
 
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate]     = useState('')
-  const [notes, setNotes]         = useState('')
-
   const toolQuery = useQuery({
     queryKey: toolsKeys.detail(id ?? ''),
     queryFn:  () => fetchToolDetail(id as string),
@@ -51,6 +46,7 @@ export default function ToolDetailScreen() {
         const ERROR_MESSAGES: Record<string, string> = {
           TOOL_NOT_AVAILABLE:       'This tool is no longer available.',
           CANNOT_RESERVE_OWN_TOOL:  'You cannot reserve your own tool.',
+          DUPLICATE_RESERVATION:    'You already have an active reservation for this tool.',
           UNVERIFIED_EMAIL:         'Please verify your email first.',
           VALIDATION_ERROR:         'Invalid dates. Please check your input.',
           TOO_MANY_REQUESTS:        'Too many requests. Please wait.',

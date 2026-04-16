@@ -11,12 +11,13 @@ export interface CreateReservationBody {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  TOOL_NOT_FOUND:        'This tool no longer exists.',
-  TOOL_NOT_AVAILABLE:    'This tool is not available for reservation.',
+  TOOL_NOT_FOUND:          'This tool no longer exists.',
+  TOOL_NOT_AVAILABLE:      'This tool is not available for reservation.',
   CANNOT_RESERVE_OWN_TOOL: 'You cannot reserve your own tool.',
-  UNVERIFIED_EMAIL:      'Please verify your email before making a reservation.',
-  VALIDATION_ERROR:      'Invalid dates or missing fields.',
-  TOO_MANY_REQUESTS:     'Too many requests. Please wait a moment.',
+  DUPLICATE_RESERVATION:   'You already have an active reservation for this tool.',
+  UNVERIFIED_EMAIL:        'Please verify your email before making a reservation.',
+  VALIDATION_ERROR:        'Invalid dates or missing fields.',
+  TOO_MANY_REQUESTS:       'Too many requests. Please wait a moment.',
 }
 
 export function useCreateReservation() {

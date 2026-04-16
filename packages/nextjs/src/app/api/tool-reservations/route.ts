@@ -58,14 +58,24 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     const end = new Date(endDate)
     if (end < start) return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })
 
-    const [reservation] = await db.insert(toolReservations).values({
-      toolId,
-      borrowerId: user.sub,
-      ownerId:    tool.ownerId,
-      startDate:  start,
-      endDate:    end,
-      notes:      notes ?? null,
-    }).returning()
+    let reservation
+    try {
+      ;[reservation] = await db.insert(toolReservations).values({
+        toolId,
+        borrowerId: user.sub,
+        ownerId:    tool.ownerId,
+        startDate:  start,
+        endDate:    end,
+        notes:      notes ?? null,
+      }).returning()
+    } catch (err: unknown) {
+      // Unique index: borrower already has an active (pending/approved) reservation for this tool
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('tool_reservations_active_idx')) {
+        return NextResponse.json({ error: 'DUPLICATE_RESERVATION' }, { status: 409 })
+      }
+      throw err
+    }
 
     // Notify owner
     db.insert(notifications).values({

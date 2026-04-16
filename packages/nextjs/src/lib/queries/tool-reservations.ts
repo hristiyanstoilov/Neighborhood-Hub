@@ -17,23 +17,6 @@ export const toolReservationSelect = {
   cancellationReason: toolReservations.cancellationReason,
 } as const
 
-// Alias for owner name — we need a second join on profiles, so we handle this raw in the route
-export type ToolReservationRow = {
-  id:                 string
-  toolId:             string
-  toolTitle:          string | null
-  toolImageUrl:       string | null
-  borrowerId:         string
-  borrowerName:       string | null
-  ownerId:            string
-  ownerName:          string | null
-  startDate:          Date
-  endDate:            Date
-  status:             string
-  notes:              string | null
-  cancellationReason: string | null
-}
-
 export async function queryToolReservationsForUser(userId: string, role: 'borrower' | 'owner') {
   const filterCol = role === 'borrower' ? toolReservations.borrowerId : toolReservations.ownerId
 

@@ -79,7 +79,7 @@ export default async function ToolDetailPage({
                 : 'bg-gray-100 text-gray-500'
             }`}
           >
-            {tool!.status === 'on_loan' ? 'On loan' : tool!.status}
+            {tool!.status === 'on_loan' ? 'On loan' : tool!.status === 'in_use' ? 'In use' : tool!.status}
           </span>
         </div>
 

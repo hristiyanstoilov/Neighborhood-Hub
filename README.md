@@ -187,9 +187,8 @@ pending ──[owner approves]──→ approved ──[owner marks returned]─
 | GET | `/api/tools` | — | List tools (search, filter by category/location/status, paginate) |
 | POST | `/api/tools` | JWT + verified | Create tool listing |
 | GET | `/api/tools/[id]` | — | Get tool detail |
-| PUT | `/api/tools/[id]` | JWT + owner | Edit tool |
+| PUT | `/api/tools/[id]` | JWT + owner | Edit tool (title, description, category, location, condition, status) |
 | DELETE | `/api/tools/[id]` | JWT + owner | Soft delete tool |
-| PATCH | `/api/tools/[id]/status` | JWT + owner | Change tool status |
 
 ### Tool Reservations
 | Method | Route | Auth | Description |

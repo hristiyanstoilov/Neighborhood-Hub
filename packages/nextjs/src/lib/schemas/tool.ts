@@ -14,10 +14,6 @@ export const updateToolSchema = createToolSchema.partial().extend({
   imageUrl: z.string().url().max(2048).nullable().optional(),
 })
 
-export const toolStatusSchema = z.object({
-  status: z.enum(['available', 'in_use', 'on_loan']),
-})
-
 export const listToolsSchema = z.object({
   categoryId: z.string().uuid().optional(),
   locationId: z.string().uuid().optional(),
