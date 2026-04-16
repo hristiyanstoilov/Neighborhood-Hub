@@ -36,6 +36,13 @@ export default function Nav() {
             Skills
           </Link>
           <Link
+            href="/tools"
+            aria-current={isActive('/tools') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Tools
+          </Link>
+          <Link
             href="/radar"
             aria-current={isActive('/radar') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
@@ -62,6 +69,13 @@ export default function Nav() {
                     className="text-gray-600 hover:text-green-700 transition-colors"
                   >
                     My Requests
+                  </Link>
+                  <Link
+                    href="/my-reservations"
+                    aria-current={isActive('/my-reservations') ? 'page' : undefined}
+                    className="text-gray-600 hover:text-green-700 transition-colors"
+                  >
+                    Reservations
                   </Link>
                   <Link
                     href="/chat"
