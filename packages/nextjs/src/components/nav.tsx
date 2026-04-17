@@ -43,6 +43,20 @@ export default function Nav() {
             Tools
           </Link>
           <Link
+            href="/events"
+            aria-current={isActive('/events') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Events
+          </Link>
+          <Link
+            href="/drives"
+            aria-current={isActive('/drives') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Drives
+          </Link>
+          <Link
             href="/radar"
             aria-current={isActive('/radar') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
