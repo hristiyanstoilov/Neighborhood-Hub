@@ -29,6 +29,20 @@
       "when": 1776224210510,
       "tag": "0003_massive_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776360318712,
+      "tag": "0004_tidy_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776393959577,
+      "tag": "0005_curly_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

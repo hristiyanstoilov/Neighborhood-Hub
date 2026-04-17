@@ -307,7 +307,7 @@ export const notifications = pgTable(
     index('notifications_unread_idx').on(t.userId, t.isRead).where(sql`${t.isRead} = false`),
     check(
       'notifications_type_check',
-      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned')`
+      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_completed')`
     ),
   ]
 )
@@ -390,7 +390,122 @@ export const toolReservations = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 13. AI CONVERSATIONS
+// 13. EVENTS
+// ─────────────────────────────────────────────
+
+export const events = pgTable(
+  'events',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    organizerId: uuid('organizer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
+    address: varchar('address', { length: 300 }),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    maxCapacity: integer('max_capacity'),
+    status: varchar('status', { length: 20 }).default('published').notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('events_organizer_id_idx').on(t.organizerId),
+    index('events_status_starts_at_idx').on(t.status, t.startsAt).where(sql`${t.deletedAt} IS NULL`),
+    check('events_status_check', sql`${t.status} IN ('published', 'cancelled', 'completed')`),
+    check('events_title_length_check', sql`char_length(${t.title}) >= 3`),
+    check('events_capacity_check', sql`${t.maxCapacity} IS NULL OR ${t.maxCapacity} > 0`),
+    check('events_ends_after_starts_check', sql`${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 14. EVENT ATTENDEES
+// ─────────────────────────────────────────────
+
+export const eventAttendees = pgTable(
+  'event_attendees',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: varchar('status', { length: 20 }).default('attending').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('event_attendees_event_user_idx').on(t.eventId, t.userId),
+    index('event_attendees_event_id_idx').on(t.eventId),
+    index('event_attendees_user_id_idx').on(t.userId),
+    check('event_attendees_status_check', sql`${t.status} IN ('attending', 'cancelled')`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 15. COMMUNITY DRIVES
+// ─────────────────────────────────────────────
+
+export const communityDrives = pgTable(
+  'community_drives',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    organizerId: uuid('organizer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    driveType: varchar('drive_type', { length: 20 }).notNull(),
+    goalDescription: varchar('goal_description', { length: 500 }),
+    dropOffAddress: varchar('drop_off_address', { length: 300 }),
+    deadline: timestamp('deadline', { withTimezone: true }),
+    status: varchar('status', { length: 20 }).default('open').notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('community_drives_organizer_id_idx').on(t.organizerId),
+    index('community_drives_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
+    check('community_drives_status_check', sql`${t.status} IN ('open', 'completed', 'cancelled')`),
+    check('community_drives_type_check', sql`${t.driveType} IN ('items', 'money', 'food', 'other')`),
+    check('community_drives_title_length_check', sql`char_length(${t.title}) >= 3`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 16. DRIVE PLEDGES
+// ─────────────────────────────────────────────
+
+export const drivePledges = pgTable(
+  'drive_pledges',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    driveId: uuid('drive_id')
+      .notNull()
+      .references(() => communityDrives.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    pledgeDescription: varchar('pledge_description', { length: 500 }).notNull(),
+    status: varchar('status', { length: 20 }).default('pledged').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('drive_pledges_drive_user_idx').on(t.driveId, t.userId),
+    index('drive_pledges_drive_id_idx').on(t.driveId),
+    index('drive_pledges_user_id_idx').on(t.userId),
+    check('drive_pledges_status_check', sql`${t.status} IN ('pledged', 'fulfilled', 'cancelled')`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 17. AI CONVERSATIONS
 // ─────────────────────────────────────────────
 
 export const aiConversations = pgTable(
@@ -409,7 +524,7 @@ export const aiConversations = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 14. AI MESSAGES
+// 18. AI MESSAGES
 // ─────────────────────────────────────────────
 
 export const aiMessages = pgTable(

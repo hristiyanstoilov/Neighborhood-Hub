@@ -1,0 +1,2 @@
+ALTER TABLE "notifications" DROP CONSTRAINT "notifications_type_check";--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_type_check" CHECK ("notifications"."type" IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_completed'));
