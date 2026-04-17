@@ -74,10 +74,24 @@ export default function SkillListScreen() {
   )
 
 
+  const communityRow = (
+    <View style={styles.communityRow}>
+      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/events')}>
+        <Text style={styles.communityBtnIcon}>📅</Text>
+        <Text style={styles.communityBtnLabel}>Events</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/drives')}>
+        <Text style={styles.communityBtnIcon}>🫶</Text>
+        <Text style={styles.communityBtnLabel}>Drives</Text>
+      </TouchableOpacity>
+    </View>
+  )
+
   const header = (
-    <SkillsHeader
-      userExists={Boolean(user)}
-      unreadCount={unreadCount}
+    <View>
+      <SkillsHeader
+        userExists={Boolean(user)}
+        unreadCount={unreadCount}
       showFilters={showFilters}
       activeFilterCount={activeFilterCount}
       search={search}
@@ -96,6 +110,8 @@ export default function SkillListScreen() {
       onOpenRadar={() => router.push('/(app)/radar')}
       onOpenLogin={() => router.push('/(auth)/login')}
     />
+      {communityRow}
+    </View>
   )
 
   if (isInitialLoading) {
@@ -166,6 +182,26 @@ export default function SkillListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   list: { paddingBottom: 24 },
+  communityRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  communityBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingVertical: 10,
+  },
+  communityBtnIcon:  { fontSize: 16 },
+  communityBtnLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
   loadMoreButton: {
     marginHorizontal: 16,
     marginTop: 8,
