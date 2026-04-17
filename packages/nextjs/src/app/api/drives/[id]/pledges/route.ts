@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/db'
+import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { and, eq, isNull } from 'drizzle-orm'
+import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuth } from '@/lib/middleware'
+import { createPledgeSchema } from '@/lib/schemas/drive'
+import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
+
+type Ctx = { params: Promise<{ id: string }> }
+
+// URL: /api/drives/[id]/pledges  → id is second-to-last segment
+function extractDriveId(url: string): string {
+  const parts = new URL(url).pathname.split('/').filter(Boolean)
+  return parts.at(-2) ?? ''
+}
+
+// ─── GET /api/drives/[id]/pledges — public pledge list ──────────────────────
+
+export async function GET(_req: NextRequest, { params }: Ctx) {
+  try {
+    const { id } = await params
+    const drive = await db.query.communityDrives.findFirst({
+      where: and(eq(communityDrives.id, id), isNull(communityDrives.deletedAt)),
+    })
+    if (!drive) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+
+    const pledges = await queryDrivePledges(id)
+    return NextResponse.json({ data: pledges })
+  } catch (err) {
+    console.error('[GET /api/drives/[id]/pledges]', err)
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
+  }
+}
+
+// ─── POST /api/drives/[id]/pledges — create pledge ──────────────────────────
+
+export const POST = requireAuth(async (req: NextRequest, { user }) => {
+  try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
+    const driveId = extractDriveId(req.url)
+    const drive = await db.query.communityDrives.findFirst({
+      where: and(eq(communityDrives.id, driveId), isNull(communityDrives.deletedAt)),
+    })
+    if (!drive) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+    if (drive.status !== 'open') return NextResponse.json({ error: 'DRIVE_NOT_OPEN' }, { status: 422 })
+    if (drive.organizerId === user.sub) return NextResponse.json({ error: 'CANNOT_PLEDGE_OWN_DRIVE' }, { status: 422 })
+
+    const body = await req.json().catch(() => null)
+    const parsed = createPledgeSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
+    }
+
+    // Idempotent — if already pledged return existing
+    const existing = await queryUserPledge(driveId, user.sub)
+    if (existing?.status === 'pledged') {
+      return NextResponse.json({ data: existing })
+    }
+
+    if (existing) {
+      // Re-pledging after cancelling — update description + status
+      const [updated] = await db
+        .update(drivePledges)
+        .set({ status: 'pledged', pledgeDescription: parsed.data.pledgeDescription })
+        .where(eq(drivePledges.id, existing.id))
+        .returning()
+      return NextResponse.json({ data: updated })
+    }
+
+    const [pledge] = await db.insert(drivePledges).values({
+      driveId,
+      userId:            user.sub,
+      pledgeDescription: parsed.data.pledgeDescription,
+    }).returning()
+
+    // Notify organizer
+    db.insert(notifications).values({
+      userId:     drive.organizerId,
+      type:       'drive_new_pledge' as const,
+      entityType: 'community_drive',
+      entityId:   driveId,
+    }).catch(() => {})
+
+    return NextResponse.json({ data: pledge }, { status: 201 })
+  } catch (err) {
+    console.error('[POST /api/drives/[id]/pledges]', err)
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
+  }
+})
