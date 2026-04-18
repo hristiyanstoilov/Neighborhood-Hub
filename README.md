@@ -61,13 +61,16 @@ neighborhood-hub/
 │   │   │   │   │   ├── profile/         # user profile
 │   │   │   │   │   ├── tools/           # CRUD tool listings
 │   │   │   │   │   ├── tool-reservations/ # reservation state machine
+│   │   │   │   │   ├── events/          # CRUD events + attendees (RSVP)
+│   │   │   │   │   ├── drives/          # CRUD community drives + pledges
+│   │   │   │   │   ├── food-shares/     # CRUD food listings + reservations
 │   │   │   │   │   ├── admin/           # admin user management + audit log
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (React server components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (all 14 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (all 20 tables)
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify helpers
@@ -95,7 +98,7 @@ neighborhood-hub/
 
 ## Database Schema
 
-14 tables across 4 concern areas:
+20 tables across 6 concern areas:
 
 ### Auth & Users
 | Table | Purpose |
@@ -121,6 +124,24 @@ neighborhood-hub/
 | `tools` | Tool listings (owner_id, title, condition, category, location, status, soft delete) |
 | `tool_reservations` | Borrow requests — pending → approved → returned/rejected/cancelled |
 
+### Events
+| Table | Purpose |
+|-------|---------|
+| `events` | Neighborhood events with schedule, location, status, and capacity |
+| `event_attendees` | RSVP records per user/event |
+
+### Community Drives
+| Table | Purpose |
+|-------|---------|
+| `community_drives` | Donation and community initiatives |
+| `drive_pledges` | User pledges for a drive |
+
+### Food Sharing
+| Table | Purpose |
+|-------|---------|
+| `food_shares` | Food listings with quantity, status, and pickup details |
+| `food_reservations` | Reservation workflow for shared food |
+
 ### AI Chat
 | Table | Purpose |
 |-------|---------|
@@ -145,6 +166,29 @@ pending ──[owner approves]──→ approved ──[owner marks returned]─
    │                              └──[owner or borrower cancels]──→ cancelled
    └──[owner rejects]──→ rejected
    └──[borrower cancels]──→ cancelled
+```
+
+### Food Reservation State Machine
+
+```
+pending ──[owner approves]──→ reserved ──[owner marks picked up]──→ picked_up
+   │
+   ├──[owner rejects]──→ rejected
+   └──[requester or owner cancels]──→ cancelled
+```
+
+### Event RSVP State Machine
+
+```
+going ──[user toggles]──→ not_going
+not_going ──[user toggles]──→ going
+```
+
+### Drive Pledge State Machine
+
+```
+pledged ──[organizer marks fulfilled]──→ fulfilled
+pledged ──[user or organizer cancels]──→ cancelled
 ```
 
 ---
@@ -197,6 +241,44 @@ pending ──[owner approves]──→ approved ──[owner marks returned]─
 | POST | `/api/tool-reservations` | JWT + verified | Create reservation request |
 | PATCH | `/api/tool-reservations/[id]` | JWT | Update status (approve/reject/return/cancel) |
 
+### Food Shares
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/food-shares` | — | List food shares (status/owner filters, pagination) |
+| POST | `/api/food-shares` | JWT + verified | Create food listing |
+| GET | `/api/food-shares/[id]` | — | Get food share detail |
+| PATCH | `/api/food-shares/[id]` | JWT + owner | Update food listing |
+| DELETE | `/api/food-shares/[id]` | JWT + owner | Soft delete food listing |
+
+### Food Reservations
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/food-shares/[id]/reservations` | JWT | List reservations for a food share |
+| POST | `/api/food-shares/[id]/reservations` | JWT + verified | Create reservation request |
+| PATCH | `/api/food-shares/[id]/reservations/[reservationId]` | JWT | Update reservation state |
+| GET | `/api/food-reservations` | JWT | List my food reservations |
+
+### Events
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/events` | — | List events |
+| POST | `/api/events` | JWT + verified | Create event |
+| GET | `/api/events/[id]` | — | Get event detail |
+| PATCH | `/api/events/[id]` | JWT + owner | Update event |
+| DELETE | `/api/events/[id]` | JWT + owner | Soft delete event |
+| POST | `/api/events/[id]/rsvp` | JWT | RSVP state toggle |
+
+### Community Drives
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/drives` | — | List drives |
+| POST | `/api/drives` | JWT + verified | Create drive |
+| GET | `/api/drives/[id]` | — | Get drive detail |
+| PATCH | `/api/drives/[id]` | JWT + owner | Update drive |
+| DELETE | `/api/drives/[id]` | JWT + owner | Soft delete drive |
+| POST | `/api/drives/[id]/pledges` | JWT | Create pledge |
+| PATCH | `/api/drives/[id]/pledges/[pledgeId]` | JWT | Update pledge status |
+
 ### Profile, Notifications & Uploads
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
@@ -248,6 +330,19 @@ pending ──[owner approves]──→ approved ──[owner marks returned]─
 | Create Tool | `/tools/new` |
 | Edit Tool | `/tools/[id]/edit` |
 | My Reservations | `/my-reservations` |
+| Events List + Filters | `/events` |
+| Event Detail + RSVP | `/events/[id]` |
+| Create Event | `/events/new` |
+| Edit Event | `/events/[id]/edit` |
+| Community Drives List | `/drives` |
+| Drive Detail + Pledge | `/drives/[id]` |
+| Create Drive | `/drives/new` |
+| Edit Drive | `/drives/[id]/edit` |
+| Food Shares List + Filters | `/food` |
+| Food Share Detail + Reserve | `/food/[id]` |
+| Create Food Share | `/food/new` |
+| Edit Food Share | `/food/[id]/edit` |
+| Admin — Dashboard | `/admin/dashboard` |
 
 ## Mobile Screens (Expo 54)
 
@@ -270,6 +365,31 @@ pending ──[owner approves]──→ approved ──[owner marks returned]─
 | Neighborhood Radar | `/(app)/radar` |
 | Tool Library | `/(app)/tools` |
 | Tool Detail + Reserve | `/(app)/tools/[id]` |
+| Create Tool | `/(app)/tools/new` |
+| Events List (paginated) | `/(app)/events` |
+| Event Detail + RSVP | `/(app)/events/[id]` |
+| Create Event | `/(app)/events/new` |
+| Community Drives List (paginated) | `/(app)/drives` |
+| Drive Detail + Pledge | `/(app)/drives/[id]` |
+| Create Drive | `/(app)/drives/new` |
+| Food Shares List (paginated) | `/(app)/food` |
+| Food Share Detail + Reserve | `/(app)/food/[id]` |
+| Create Food Share | `/(app)/food/new` |
+| My Food Reservations | `/(app)/food/reservations` |
+| Edit Food Share | `/(app)/food/edit/[id]` |
+| Forgot Password | `/(auth)/forgot-password` |
+
+---
+
+## Module Status
+
+| Version | Module | Status |
+|---------|--------|--------|
+| 0.1 | Neighborhood Radar + Time & Skill Swap | Done |
+| 0.2 | Tool Library | Done |
+| 0.3 | Events + Community Drives | Done |
+| 0.4 | Food Sharing | Done |
+| 0.5 | Chat / Feed | Planned |
 
 ---
 
@@ -395,3 +515,4 @@ npx drizzle-kit migrate    # applies to DB
 ## Contributing
 
 See [AGENTS.md](AGENTS.md) for architecture decisions, coding rules, and business logic.
+
