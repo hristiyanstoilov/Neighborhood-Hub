@@ -1,7 +1,7 @@
 # Neighborhood Hub - QA Regression Pack
 
-Version: 1.0  
-Last updated: April 9, 2026  
+Version: 1.1  
+Last updated: April 18, 2026  
 Status: Active
 
 ---
@@ -18,13 +18,14 @@ This pack is mandatory for production-polish and post-MVP maintenance work.
 
 Included:
 
-1. Auth: register, login, logout, protected redirects, rate-limit behavior.
+1. Auth: register, login, logout, protected redirects, rate-limit behavior, password reset, email verification.
 2. Skills: list, filters, detail, create/edit, unverified restrictions.
 3. Requests: lifecycle transitions, sent/received tabs, cancellation requirements, notifications.
 4. Chat/AI: conversation CRUD, message send, recommendations, failure fallback.
 5. Profile: view/edit/avatar flow and visibility behavior.
 6. Admin access control: non-admin guard and admin route sanity checks.
 7. Mobile parity: loading, error, empty states on key screens.
+8. Food Sharing: create/list, reservation lifecycle, ownership guards, duplicate prevention.
 
 Excluded:
 
@@ -101,6 +102,26 @@ Execute all critical flows by test ID (section 4).
 2. MOB-02 My Requests loading/error/empty behavior.
 3. MOB-03 Profile loading/error/empty behavior.
 
+### Food Sharing
+
+1. FOOD-01 Create food share as verified user → 201, food object returned.
+2. FOOD-02 List food shares (public, no auth) → 200, paginated list.
+3. FOOD-03 Create reservation as requester → 201, status = pending.
+4. FOOD-04 Duplicate active reservation blocked → 409 DUPLICATE_RESERVATION.
+5. FOOD-05 Owner approves reservation → 200, reservation status = reserved.
+6. FOOD-06 Owner marks picked up → 200, reservation status = picked_up, food status = picked_up.
+7. FOOD-07 Requester cancels reservation → 200, status = cancelled.
+8. FOOD-08 Non-owner cannot approve/reject/mark picked up → 403 FORBIDDEN.
+
+### Auth — Password Reset & Email Verification
+
+6. AUTH-06 `POST /api/auth/forgot-password` with any email format → always 200 (no enumeration).
+7. AUTH-07 `POST /api/auth/reset-password` with valid DB-seeded token → 200, password updated, all refresh tokens revoked.
+8. AUTH-08 `POST /api/auth/reset-password` with expired token → 400 TOKEN_EXPIRED.
+9. AUTH-09 `POST /api/auth/reset-password` with already-used token → 400 INVALID_TOKEN (single-use enforced).
+10. AUTH-10 `POST /api/auth/verify-email` with valid token → 200, emailVerifiedAt set, token cleared from DB.
+11. AUTH-11 `POST /api/auth/verify-email` with expired/invalid token → 400 TOKEN_EXPIRED / INVALID_TOKEN.
+
 ---
 
 ## 5. Test Data Requirements
@@ -111,13 +132,16 @@ Execute all critical flows by test ID (section 4).
 4. At least two skills in different categories/locations.
 5. At least one request per key status where possible.
 6. At least one existing AI conversation for delete tests.
+7. At least one food share in status `available` owned by the verified user.
+8. At least one food reservation in status `pending` made by a second verified user.
+9. A password reset token can be seeded directly via SQL for AUTH-07..09 tests (see `scripts/smoke-password-reset.mjs` for the pattern).
 
 ---
 
 ## 6. Execution Protocol
 
 1. Start with build check.
-2. Execute by module order: Auth -> Skills -> Requests -> Chat -> Profile -> Admin -> Mobile.
+2. Execute by module order: Auth → Skills → Requests → Chat → Profile → Admin → Mobile → Food.
 3. Record each test ID as PASS / FAIL / BLOCKED.
 4. For every FAIL: include exact reproduction steps and expected vs actual behavior.
 5. End with Go/No-Go release decision.
