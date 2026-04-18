@@ -56,27 +56,32 @@ export default function ResetPasswordForm() {
 
     setLoading(true)
 
-    const res = await fetch('/api/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, password }),
-    })
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      })
 
-    const json = await res.json()
-    setLoading(false)
+      const json = await res.json()
 
-    if (!res.ok) {
-      const msg: Record<string, string> = {
-        INVALID_TOKEN: 'This reset link is invalid.',
-        TOKEN_EXPIRED: 'This link has expired. Please request a new one.',
-        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-        VALIDATION_ERROR: 'Password must be at least 8 characters.',
+      if (!res.ok) {
+        const msg: Record<string, string> = {
+          INVALID_TOKEN: 'This reset link is invalid.',
+          TOKEN_EXPIRED: 'This link has expired. Please request a new one.',
+          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+          VALIDATION_ERROR: 'Password must be at least 8 characters.',
+        }
+        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        return
       }
-      setError(msg[json.error] ?? 'Something went wrong. Please try again.')
-      return
-    }
 
-    setSuccess(true)
+      setSuccess(true)
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
