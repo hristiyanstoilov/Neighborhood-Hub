@@ -29,8 +29,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="w-44 shrink-0">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Admin</p>
         <nav className="space-y-1">
-          {navLink('/admin/users', 'Users')}
-          {navLink('/admin/audit', 'Audit Log')}
+          {navLink('/admin/dashboard', 'Dashboard')}
+          {navLink('/admin/users',     'Users')}
+          {navLink('/admin/audit',     'Audit Log')}
         </nav>
       </aside>
 
