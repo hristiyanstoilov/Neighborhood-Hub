@@ -29,9 +29,9 @@ export interface DrivePledge {
 
 export const drivesKeys = {
   all:     ['drives'] as const,
-  list:    (status: string, driveType: string | null, page: number) =>
-    [...drivesKeys.all, 'list', status, driveType ?? '', page] as const,
-  detail:  (id: string)     => [...drivesKeys.all, 'detail', id] as const,
+  list:    (status: string, driveType: string | null) =>
+    [...drivesKeys.all, 'list', status, driveType ?? ''] as const,
+  detail:  (id: string)      => [...drivesKeys.all, 'detail', id] as const,
   pledges: (driveId: string) => [...drivesKeys.all, 'pledges', driveId] as const,
 }
 

@@ -26,8 +26,8 @@ export type EventsFilters = {
 
 export const eventsKeys = {
   all:    ['events'] as const,
-  list:   (status: string, page: number) => [...eventsKeys.all, 'list', status, page] as const,
-  detail: (id: string)                   => [...eventsKeys.all, 'detail', id] as const,
+  list:   (status: string) => [...eventsKeys.all, 'list', status] as const,
+  detail: (id: string)     => [...eventsKeys.all, 'detail', id] as const,
 }
 
 function readErrorCode(json: unknown): string {

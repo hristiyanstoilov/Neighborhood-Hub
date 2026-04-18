@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   ScrollView,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchDrivesList, drivesKeys, type DriveListItem } from '../../../lib/queries/drives'
 import { formatDateOnly } from '../../../lib/format'
+
+const PAGE_SIZE = 20
 
 const STATUS_TABS = [
   { key: 'open',      label: 'Open' },
@@ -45,25 +47,46 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 export default function DrivesListScreen() {
   const { user } = useAuth()
   const router   = useRouter()
-  const [status, setStatus]       = useState('open')
+  const [status,    setStatus]    = useState('open')
   const [driveType, setDriveType] = useState<string | null>(null)
 
-  const drivesQuery = useQuery({
-    queryKey: drivesKeys.list(status, driveType, 1),
-    queryFn:  () => fetchDrivesList({ status, driveType, page: 1, limit: 30 }),
+  const drivesQuery = useInfiniteQuery({
+    queryKey:         drivesKeys.list(status, driveType),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchDrivesList({ status, driveType, page: pageParam, limit: PAGE_SIZE }),
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((sum, p) => sum + p.data.length, 0)
+      return loaded < lastPage.total ? pages.length + 1 : undefined
+    },
     staleTime: 60_000,
   })
 
   useFocusEffect(
     useCallback(() => {
-      if (drivesQuery.isLoading) return
+      if (drivesQuery.isFetching) return
       void drivesQuery.refetch()
-    }, [drivesQuery.isLoading, drivesQuery.refetch, status, driveType])
+    }, [drivesQuery.isFetching, drivesQuery.refetch, status, driveType])
   )
 
-  const drives    = drivesQuery.data?.data ?? []
-  const isLoading = drivesQuery.isFetching && !drivesQuery.data
-  const isRefreshing = drivesQuery.isFetching && !!drivesQuery.data
+  const drives = useMemo(
+    () => drivesQuery.data?.pages.flatMap((p) => p.data) ?? [],
+    [drivesQuery.data]
+  )
+  const total        = drivesQuery.data?.pages[0]?.total ?? 0
+  const isInitial    = drivesQuery.isFetching && !drivesQuery.data
+  const isRefreshing = drivesQuery.isRefetching && !!drivesQuery.data
+  const hasMore      = drives.length < total
+
+  function handleStatusChange(newStatus: string) {
+    if (newStatus === status) return
+    setStatus(newStatus)
+  }
+
+  function handleTypeChange(newType: string | null) {
+    if (newType === driveType) return
+    setDriveType(newType)
+  }
 
   function renderDrive({ item }: { item: DriveListItem }) {
     const sc = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
@@ -127,7 +150,7 @@ export default function DrivesListScreen() {
             <TouchableOpacity
               key={tab.key}
               style={[styles.chip, status === tab.key && styles.chipActive]}
-              onPress={() => setStatus(tab.key)}
+              onPress={() => handleStatusChange(tab.key)}
             >
               <Text style={[styles.chipText, status === tab.key && styles.chipTextActive]}>{tab.label}</Text>
             </TouchableOpacity>
@@ -142,7 +165,7 @@ export default function DrivesListScreen() {
             <TouchableOpacity
               key={chip.key ?? 'all'}
               style={[styles.chipSmall, driveType === chip.key && styles.chipSmallActive]}
-              onPress={() => setDriveType(chip.key)}
+              onPress={() => handleTypeChange(chip.key)}
             >
               <Text style={[styles.chipSmallText, driveType === chip.key && styles.chipSmallTextActive]}>
                 {chip.label}
@@ -152,7 +175,7 @@ export default function DrivesListScreen() {
         </ScrollView>
       </View>
 
-      {isLoading ? (
+      {isInitial ? (
         <View style={styles.center}>
           <ActivityIndicator color="#15803d" />
         </View>
@@ -185,6 +208,20 @@ export default function DrivesListScreen() {
                 </TouchableOpacity>
               )}
             </View>
+          }
+          ListFooterComponent={
+            hasMore ? (
+              <TouchableOpacity
+                style={styles.loadMoreBtn}
+                onPress={() => void drivesQuery.fetchNextPage()}
+                disabled={drivesQuery.isFetchingNextPage}
+              >
+                {drivesQuery.isFetchingNextPage
+                  ? <ActivityIndicator color="#15803d" />
+                  : <Text style={styles.loadMoreText}>Load more</Text>
+                }
+              </TouchableOpacity>
+            ) : null
           }
         />
       )}
@@ -221,10 +258,10 @@ const styles = StyleSheet.create({
   chipActive:    { backgroundColor: '#15803d', borderColor: '#15803d' },
   chipText:      { fontSize: 13, color: '#374151' },
   chipTextActive:{ color: '#fff', fontWeight: '600' },
-  chipSmall:     { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 99, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb' },
-  chipSmallActive:     { backgroundColor: '#111827', borderColor: '#111827' },
-  chipSmallText:       { fontSize: 12, color: '#6b7280' },
-  chipSmallTextActive: { color: '#fff', fontWeight: '600' },
+  chipSmall:          { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 99, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb' },
+  chipSmallActive:    { backgroundColor: '#111827', borderColor: '#111827' },
+  chipSmallText:      { fontSize: 12, color: '#6b7280' },
+  chipSmallTextActive:{ color: '#fff', fontWeight: '600' },
   list:          { paddingBottom: 100 },
   emptyContainer:{ flex: 1 },
   card: {
@@ -251,6 +288,18 @@ const styles = StyleSheet.create({
   deadline:   { fontSize: 11, color: '#9ca3af' },
   statusBadge:{ borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
   statusText: { fontSize: 10, fontWeight: '600' },
+  loadMoreBtn: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
   errorText:  { fontSize: 14, color: '#6b7280', textAlign: 'center' },
   emptyText:  { fontSize: 15, color: '#9ca3af' },

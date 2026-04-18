@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   ScrollView,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchEventsList, eventsKeys, type EventListItem } from '../../../lib/queries/events'
 import { formatDateTime } from '../../../lib/format'
+
+const PAGE_SIZE = 20
 
 const STATUS_TABS = [
   { key: 'published', label: 'Upcoming' },
@@ -32,22 +34,38 @@ export default function EventsListScreen() {
   const router = useRouter()
   const [status, setStatus] = useState('published')
 
-  const eventsQuery = useQuery({
-    queryKey: eventsKeys.list(status, 1),
-    queryFn:  () => fetchEventsList({ status, page: 1, limit: 30 }),
+  const eventsQuery = useInfiniteQuery({
+    queryKey:        eventsKeys.list(status),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchEventsList({ status, page: pageParam, limit: PAGE_SIZE }),
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((sum, p) => sum + p.data.length, 0)
+      return loaded < lastPage.total ? pages.length + 1 : undefined
+    },
     staleTime: 60_000,
   })
 
   useFocusEffect(
     useCallback(() => {
-      if (eventsQuery.isLoading) return
+      if (eventsQuery.isFetching) return
       void eventsQuery.refetch()
-    }, [eventsQuery.isLoading, eventsQuery.refetch, status])
+    }, [eventsQuery.isFetching, eventsQuery.refetch, status])
   )
 
-  const events   = eventsQuery.data?.data ?? []
-  const isLoading = eventsQuery.isFetching && !eventsQuery.data
-  const isRefreshing = eventsQuery.isFetching && !!eventsQuery.data
+  const events = useMemo(
+    () => eventsQuery.data?.pages.flatMap((p) => p.data) ?? [],
+    [eventsQuery.data]
+  )
+  const total       = eventsQuery.data?.pages[0]?.total ?? 0
+  const isInitial   = eventsQuery.isFetching && !eventsQuery.data
+  const isRefreshing = eventsQuery.isRefetching && !!eventsQuery.data
+  const hasMore     = events.length < total
+
+  function handleStatusChange(newStatus: string) {
+    if (newStatus === status) return
+    setStatus(newStatus)
+  }
 
   function renderEvent({ item }: { item: EventListItem }) {
     const sc = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
@@ -100,7 +118,7 @@ export default function EventsListScreen() {
             <TouchableOpacity
               key={tab.key}
               style={[styles.chip, status === tab.key && styles.chipActive]}
-              onPress={() => setStatus(tab.key)}
+              onPress={() => handleStatusChange(tab.key)}
             >
               <Text style={[styles.chipText, status === tab.key && styles.chipTextActive]}>
                 {tab.label}
@@ -110,7 +128,7 @@ export default function EventsListScreen() {
         </ScrollView>
       </View>
 
-      {isLoading ? (
+      {isInitial ? (
         <View style={styles.center}>
           <ActivityIndicator color="#15803d" />
         </View>
@@ -143,6 +161,20 @@ export default function EventsListScreen() {
                 </TouchableOpacity>
               )}
             </View>
+          }
+          ListFooterComponent={
+            hasMore ? (
+              <TouchableOpacity
+                style={styles.loadMoreBtn}
+                onPress={() => void eventsQuery.fetchNextPage()}
+                disabled={eventsQuery.isFetchingNextPage}
+              >
+                {eventsQuery.isFetchingNextPage
+                  ? <ActivityIndicator color="#15803d" />
+                  : <Text style={styles.loadMoreText}>Load more</Text>
+                }
+              </TouchableOpacity>
+            ) : null
           }
         />
       )}
@@ -213,6 +245,18 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 13, color: '#15803d', fontWeight: '500', marginBottom: 3 },
   locationText: { fontSize: 12, color: '#6b7280', marginBottom: 3 },
   organizer: { fontSize: 12, color: '#9ca3af' },
+  loadMoreBtn: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
   errorText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
   emptyText: { fontSize: 15, color: '#9ca3af' },
