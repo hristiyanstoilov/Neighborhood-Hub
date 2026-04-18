@@ -57,7 +57,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { title, description, driveType, goalDescription, dropOffAddress, deadline } = parsed.data
+    const { title, description, driveType, goalDescription, dropOffAddress, deadline, imageUrl } = parsed.data
 
     const [drive] = await db.insert(communityDrives).values({
       organizerId:     user.sub,
@@ -67,6 +67,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       goalDescription: goalDescription ?? null,
       dropOffAddress:  dropOffAddress ?? null,
       deadline:        deadline ? new Date(deadline) : null,
+      imageUrl:        imageUrl ?? null,
     }).returning()
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'community_drives', entityId: drive.id, ipAddress: ip })

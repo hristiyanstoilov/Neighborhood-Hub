@@ -57,7 +57,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { title, description, locationId, address, startsAt, endsAt, maxCapacity } = parsed.data
+    const { title, description, locationId, address, startsAt, endsAt, maxCapacity, imageUrl } = parsed.data
 
     if (endsAt && new Date(endsAt) <= new Date(startsAt)) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: 'endsAt must be after startsAt' }, { status: 400 })
@@ -72,6 +72,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       startsAt:     new Date(startsAt),
       endsAt:       endsAt ? new Date(endsAt) : null,
       maxCapacity:  maxCapacity ?? null,
+      imageUrl:     imageUrl ?? null,
     }).returning()
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'events', entityId: event.id, ipAddress: ip })

@@ -7,6 +7,7 @@ export const eventSelect = {
   title:                events.title,
   description:          events.description,
   address:              events.address,
+  imageUrl:             events.imageUrl,
   startsAt:             events.startsAt,
   endsAt:               events.endsAt,
   maxCapacity:          events.maxCapacity,

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { queryEventById, queryUserRsvp } from '@/lib/queries/events'
@@ -6,6 +7,18 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RsvpButton from './rsvp-button'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  try {
+    const event = await queryEventById(id)
+    if (!event) return {}
+    return {
+      title: event.title,
+      description: event.description ?? `Join this community event on Neighborhood Hub.`,
+    }
+  } catch { return {} }
+}
 
 function formatDate(d: Date) {
   return new Date(d).toLocaleDateString('en-GB', {
@@ -68,7 +81,18 @@ export default async function EventDetailPage({
         ← Back to Events
       </Link>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {event!.imageUrl && (
+          <Image
+            src={event!.imageUrl}
+            alt={event!.title}
+            width={1200}
+            height={500}
+            unoptimized
+            className="w-full max-h-64 object-cover"
+          />
+        )}
+        <div className="p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold leading-snug">{event!.title}</h1>
           <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
@@ -136,6 +160,7 @@ export default async function EventDetailPage({
           status={event!.status}
           initialRsvpStatus={rsvpStatus}
         />
+        </div>
       </div>
     </div>
   )

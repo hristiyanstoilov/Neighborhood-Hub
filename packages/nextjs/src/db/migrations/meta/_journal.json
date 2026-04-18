@@ -43,6 +43,13 @@
       "when": 1776393959577,
       "tag": "0005_curly_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776447318002,
+      "tag": "0006_massive_starjammers",
+      "breakpoints": true
     }
   ]
 }

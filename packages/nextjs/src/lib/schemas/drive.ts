@@ -7,6 +7,7 @@ export const createDriveSchema = z.object({
   goalDescription:  z.string().max(500).optional(),
   dropOffAddress:   z.string().max(300).optional(),
   deadline:         z.string().datetime().optional(),
+  imageUrl:         z.string().url().max(2048).optional(),
 })
 
 export const updateDriveSchema = z.object({
@@ -16,6 +17,7 @@ export const updateDriveSchema = z.object({
   goalDescription:  z.string().max(500).nullable().optional(),
   dropOffAddress:   z.string().max(300).nullable().optional(),
   deadline:         z.string().datetime().nullable().optional(),
+  imageUrl:         z.string().url().max(2048).nullable().optional(),
   status:           z.enum(['open', 'completed', 'cancelled']).optional(),
 })
 

@@ -8,6 +8,7 @@ export const createEventSchema = z.object({
   startsAt:    z.string().datetime(),
   endsAt:      z.string().datetime().optional(),
   maxCapacity: z.coerce.number().int().min(1).optional(),
+  imageUrl:    z.string().url().max(2048).optional(),
 })
 
 export const updateEventSchema = z.object({
@@ -18,6 +19,7 @@ export const updateEventSchema = z.object({
   startsAt:    z.string().datetime().optional(),
   endsAt:      z.string().datetime().nullable().optional(),
   maxCapacity: z.coerce.number().int().min(1).nullable().optional(),
+  imageUrl:    z.string().url().max(2048).nullable().optional(),
   status:      z.enum(['published', 'cancelled', 'completed']).optional(),
 })
 

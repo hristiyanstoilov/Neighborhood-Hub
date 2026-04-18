@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { queryDriveById, queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
@@ -6,6 +7,18 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import PledgeSection from './pledge-section'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  try {
+    const drive = await queryDriveById(id)
+    if (!drive) return {}
+    return {
+      title: drive.title,
+      description: drive.description ?? `Support this community drive on Neighborhood Hub.`,
+    }
+  } catch { return {} }
+}
 
 const TYPE_LABELS: Record<string, string> = {
   items: 'Items',
@@ -82,7 +95,18 @@ export default async function DriveDetailPage({
         ← Back to Drives
       </Link>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {drive!.imageUrl && (
+          <Image
+            src={drive!.imageUrl}
+            alt={drive!.title}
+            width={1200}
+            height={500}
+            unoptimized
+            className="w-full max-h-64 object-cover"
+          />
+        )}
+        <div className="p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold leading-snug">{drive!.title}</h1>
           <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
@@ -144,6 +168,7 @@ export default async function DriveDetailPage({
           initialPledge={userPledge}
           pledges={pledges as never}
         />
+        </div>
       </div>
     </div>
   )

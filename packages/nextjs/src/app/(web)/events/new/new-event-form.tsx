@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
@@ -11,6 +12,40 @@ export default function NewEventForm() {
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [titleLength, setTitleLength] = useState(0)
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null)
+
+  async function uploadImage(file: File) {
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) {
+        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        return false
+      }
+      setImageUrl(json.data.url)
+      setPendingImageFile(null)
+      return true
+    } catch {
+      setUploadError('Upload failed. Please try again.')
+      return false
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPendingImageFile(file)
+    void uploadImage(file)
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,6 +71,7 @@ export default function NewEventForm() {
         startsAt:    new Date(startsAt).toISOString(),
         endsAt:      endsAt ? new Date(endsAt).toISOString() : undefined,
         maxCapacity: maxCapacityRaw ? parseInt(maxCapacityRaw, 10) : undefined,
+        imageUrl:    imageUrl || undefined,
       }
 
       const res = await apiFetch('/api/events', { method: 'POST', body: JSON.stringify(body) })
@@ -93,6 +129,37 @@ export default function NewEventForm() {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
             placeholder="Tell people what to expect, what to bring, and any other details…"
           />
+        </div>
+
+        <div>
+          <label htmlFor="event-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          {imageUrl && (
+            <Image
+              src={imageUrl}
+              alt="Event image preview"
+              width={1200}
+              height={600}
+              unoptimized
+              className="w-full max-h-48 object-cover rounded-md mb-2 border border-gray-200"
+            />
+          )}
+          <input
+            id="event-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleImageChange}
+            disabled={uploading}
+            className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
+          />
+          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
+          <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
+          {uploadError && <p role="alert" className="mt-1 text-xs text-red-600">{uploadError}</p>}
+          {uploadError && pendingImageFile && (
+            <button type="button" onClick={() => void uploadImage(pendingImageFile)} disabled={uploading}
+              className="mt-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50">
+              Retry upload
+            </button>
+          )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">

@@ -10,6 +10,7 @@ export const driveSelect = {
   goalDescription: communityDrives.goalDescription,
   dropOffAddress:  communityDrives.dropOffAddress,
   deadline:        communityDrives.deadline,
+  imageUrl:        communityDrives.imageUrl,
   status:          communityDrives.status,
   createdAt:       communityDrives.createdAt,
   updatedAt:       communityDrives.updatedAt,
