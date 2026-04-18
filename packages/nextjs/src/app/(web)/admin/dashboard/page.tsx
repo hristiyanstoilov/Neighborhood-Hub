@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { users, skills, skillRequests, tools, toolReservations, events, communityDrives } from '@/db/schema'
+import { users, skills, skillRequests, tools, toolReservations, events, communityDrives, foodShares, foodReservations } from '@/db/schema'
 import { count, eq, gte, isNull, and, sql } from 'drizzle-orm'
 import { AdminPageHeader } from '../_components/admin-page-header'
 
@@ -62,6 +62,8 @@ export default async function AdminDashboardPage() {
     [{ newUsers }],
     [{ upcomingEvents }],
     [{ openDrives }],
+    [{ availableFood }],
+    [{ activeFoodReservations }],
     requestsByStatus,
     registrationsByDay,
   ] = await Promise.all([
@@ -74,6 +76,8 @@ export default async function AdminDashboardPage() {
     db.select({ newUsers: count() }).from(users).where(and(isNull(users.deletedAt), gte(users.createdAt, sevenDaysAgo))),
     db.select({ upcomingEvents: count() }).from(events).where(eq(events.status, 'published')),
     db.select({ openDrives: count() }).from(communityDrives).where(eq(communityDrives.status, 'open')),
+    db.select({ availableFood: count() }).from(foodShares).where(and(isNull(foodShares.deletedAt), eq(foodShares.status, 'available'))),
+    db.select({ activeFoodReservations: count() }).from(foodReservations).where(sql`${foodReservations.status} IN ('pending', 'reserved')`),
     db.select({ status: skillRequests.status, total: count() })
       .from(skillRequests)
       .groupBy(skillRequests.status),
@@ -128,6 +132,8 @@ export default async function AdminDashboardPage() {
         <StatCard label="New Users (7d)"       value={newUsers}           sub="last 7 days" accent={newUsers > 0} />
         <StatCard label="Upcoming Events"      value={upcomingEvents}     sub="published" />
         <StatCard label="Open Drives"          value={openDrives}         sub="accepting pledges" />
+        <StatCard label="Available Food"       value={availableFood}      sub="ready to reserve" />
+        <StatCard label="Food Reservations"    value={activeFoodReservations} sub="pending + reserved" />
       </div>
 
       {/* Charts */}

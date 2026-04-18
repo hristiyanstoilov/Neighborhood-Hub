@@ -23,6 +23,12 @@ const FEATURES = [
     description:
       'Coordinate clothing donations, food collections, and neighborhood initiatives — all in one place.',
   },
+  {
+    icon: '🍲',
+    title: 'Food Sharing',
+    description:
+      'Share surplus meals and produce before it goes to waste, with neighborhood pickup coordination.',
+  },
 ]
 
 export function FeaturesSection() {
@@ -32,10 +38,10 @@ export function FeaturesSection() {
         Everything your neighborhood needs
       </h2>
       <p className="text-center text-gray-500 mb-10 text-sm max-w-md mx-auto">
-        One platform for skills, tools, and community action — no money, no strangers, just neighbors.
+        One platform for skills, tools, food, and community action — no money, no strangers, just neighbors.
       </p>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {FEATURES.map((f) => (
           <div
             key={f.title}

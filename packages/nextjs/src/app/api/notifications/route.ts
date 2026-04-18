@@ -5,7 +5,7 @@ import { eq, and, desc } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 
-// ─── GET /api/notifications — list unread notifications for current user ──────
+// ─── GET /api/notifications — list notifications for current user ─────────────
 
 export const GET = requireAuth(async (req: NextRequest, { user }) => {
   try {
@@ -24,14 +24,9 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
         createdAt:  notifications.createdAt,
       })
       .from(notifications)
-      .where(
-        and(
-          eq(notifications.userId, user.sub),
-          eq(notifications.isRead, false)
-        )
-      )
+      .where(eq(notifications.userId, user.sub))
       .orderBy(desc(notifications.createdAt))
-      .limit(20)
+      .limit(100)
 
     return NextResponse.json({ data: rows })
   } catch (err) {

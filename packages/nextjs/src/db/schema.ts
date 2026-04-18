@@ -307,7 +307,7 @@ export const notifications = pgTable(
     index('notifications_unread_idx').on(t.userId, t.isRead).where(sql`${t.isRead} = false`),
     check(
       'notifications_type_check',
-      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_completed')`
+      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_completed', 'food_reservation_new', 'food_reservation_approved', 'food_reservation_rejected', 'food_reservation_cancelled', 'food_reservation_picked_up')`
     ),
   ]
 )
@@ -507,7 +507,85 @@ export const drivePledges = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 17. AI CONVERSATIONS
+// 17. FOOD SHARES
+// ─────────────────────────────────────────────
+
+export const foodShares = pgTable(
+  'food_shares',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    quantity: integer('quantity').notNull(),
+    locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
+    availableUntil: timestamp('available_until', { withTimezone: true }),
+    pickupInstructions: varchar('pickup_instructions', { length: 500 }),
+    imageUrl: varchar('image_url', { length: 2048 }),
+    status: varchar('status', { length: 20 }).default('available').notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('food_shares_owner_id_idx').on(t.ownerId),
+    index('food_shares_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
+    index('food_shares_location_id_idx').on(t.locationId).where(sql`${t.deletedAt} IS NULL`),
+    check('food_shares_status_check', sql`${t.status} IN ('available', 'reserved', 'picked_up')`),
+    check('food_shares_quantity_check', sql`${t.quantity} > 0`),
+    check('food_shares_title_length_check', sql`char_length(${t.title}) >= 3`),
+    check('food_shares_available_until_check', sql`${t.availableUntil} IS NULL OR ${t.availableUntil} > ${t.createdAt}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 18. FOOD RESERVATIONS
+// ─────────────────────────────────────────────
+
+export const foodReservations = pgTable(
+  'food_reservations',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    foodShareId: uuid('food_share_id')
+      .notNull()
+      .references(() => foodShares.id, { onDelete: 'restrict' }),
+    requesterId: uuid('requester_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    pickupAt: timestamp('pickup_at', { withTimezone: true }).notNull(),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    notes: text('notes'),
+    cancellationReason: text('cancellation_reason'),
+    cancelledById: uuid('cancelled_by_id').references(() => users.id, { onDelete: 'set null' }),
+    pickedUpAt: timestamp('picked_up_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('food_reservations_food_share_id_idx').on(t.foodShareId),
+    index('food_reservations_requester_id_idx').on(t.requesterId),
+    index('food_reservations_owner_id_idx').on(t.ownerId),
+    index('food_reservations_requester_status_idx').on(t.requesterId, t.status),
+    index('food_reservations_owner_status_idx').on(t.ownerId, t.status),
+    uniqueIndex('food_reservations_active_idx')
+      .on(t.foodShareId, t.requesterId)
+      .where(sql`${t.status} IN ('pending', 'reserved')`),
+    check(
+      'food_reservations_status_check',
+      sql`${t.status} IN ('pending', 'reserved', 'picked_up', 'rejected', 'cancelled')`
+    ),
+    check('food_reservations_pickup_check', sql`${t.pickupAt} >= ${t.createdAt}`),
+    check('food_reservations_self_check', sql`${t.requesterId} != ${t.ownerId}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 19. AI CONVERSATIONS
 // ─────────────────────────────────────────────
 
 export const aiConversations = pgTable(

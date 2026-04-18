@@ -25,6 +25,21 @@ const TYPE_LABELS: Record<string, string> = {
   request_rejected:  'Your request was rejected',
   request_cancelled: 'A request was cancelled',
   request_completed: 'A session was marked complete',
+  reservation_new: 'New tool reservation request',
+  reservation_approved: 'Your tool reservation was approved',
+  reservation_rejected: 'Your tool reservation was rejected',
+  reservation_cancelled: 'A tool reservation was cancelled',
+  reservation_returned: 'Tool marked as returned',
+  food_reservation_new: 'New food reservation request',
+  food_reservation_approved: 'Your food reservation was approved',
+  food_reservation_rejected: 'Your food reservation was rejected',
+  food_reservation_cancelled: 'A food reservation was cancelled',
+  food_reservation_picked_up: 'Food was marked as picked up',
+  event_new_rsvp: 'New RSVP for your event',
+  event_cancelled: 'An event was cancelled',
+  drive_new_pledge: 'New pledge for your drive',
+  drive_pledge_fulfilled: 'A pledge was fulfilled',
+  drive_completed: 'A drive was completed',
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -33,6 +48,29 @@ const TYPE_ICONS: Record<string, string> = {
   request_rejected:  '❌',
   request_cancelled: '🚫',
   request_completed: '🎉',
+  reservation_new: '🧰',
+  reservation_approved: '✅',
+  reservation_rejected: '❌',
+  reservation_cancelled: '🚫',
+  reservation_returned: '↩️',
+  food_reservation_new: '🍲',
+  food_reservation_approved: '✅',
+  food_reservation_rejected: '❌',
+  food_reservation_cancelled: '🚫',
+  food_reservation_picked_up: '🥡',
+  event_new_rsvp: '📅',
+  event_cancelled: '🚫',
+  drive_new_pledge: '🫶',
+  drive_pledge_fulfilled: '🎯',
+  drive_completed: '🏁',
+}
+
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  skill_request: 'Skill Request',
+  tool_reservation: 'Tool Reservation',
+  food_reservation: 'Food Reservation',
+  drive_pledge: 'Drive Pledge',
+  event_rsvp: 'Event RSVP',
 }
 
 export default function NotificationsScreen() {
@@ -88,7 +126,30 @@ export default function NotificationsScreen() {
     await markReadMutation.mutateAsync(item.id).catch(() => {})
     if (item.entityType === 'skill_request') {
       router.push('/(app)/(tabs)/my-requests')
+      return
     }
+
+    if (item.entityType === 'food_reservation') {
+      router.push('/(app)/food')
+      return
+    }
+
+    if (item.entityType === 'tool_reservation') {
+      router.push('/(app)/tools')
+      return
+    }
+
+    if (item.entityType === 'drive_pledge' && item.entityId) {
+      router.push(`/(app)/drives/${item.entityId}`)
+      return
+    }
+
+    if (item.entityType === 'event_rsvp' && item.entityId) {
+      router.push(`/(app)/events/${item.entityId}`)
+      return
+    }
+
+    router.push('/(app)/(tabs)/index')
   }
 
   async function handleMarkAllRead() {
@@ -148,6 +209,7 @@ export default function NotificationsScreen() {
             <Text style={styles.itemIcon}>{TYPE_ICONS[item.type] ?? '🔔'}</Text>
             <View style={styles.itemBody}>
               <Text style={styles.itemLabel}>{TYPE_LABELS[item.type] ?? 'New notification'}</Text>
+              <Text style={styles.itemEntity}>{ENTITY_TYPE_LABELS[item.entityType] ?? item.entityType}</Text>
               <Text style={styles.itemDate}>{formatDateTime(item.createdAt)}</Text>
             </View>
             <Text style={styles.itemChevron}>›</Text>
@@ -186,6 +248,7 @@ const styles = StyleSheet.create({
   itemIcon: { fontSize: 20, width: 28, textAlign: 'center' },
   itemBody: { flex: 1 },
   itemLabel: { fontSize: 14, fontWeight: '500', color: '#111827', lineHeight: 20 },
+  itemEntity: { fontSize: 11, color: '#6b7280', marginTop: 2 },
   itemDate: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
   itemChevron: { fontSize: 20, color: '#d1d5db' },
   separator: { height: 1, backgroundColor: '#f3f4f6' },

@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Neighborhood Hub — Share Skills, Tools & Time',
-  description: 'Connect with your neighbors to share skills, borrow tools, join events, and support community drives.',
+  description: 'Connect with your neighbors to share skills, borrow tools, join events, share food, and support community drives.',
 }
 
 type SkillPreview = {
@@ -63,7 +63,7 @@ export default async function HomePage() {
             Share skills with your<br />neighborhood
           </h1>
           <p className="text-lg text-gray-500 mb-8 max-w-md mx-auto">
-            Offer what you know. Find what you need. Connect with people nearby.
+            Offer what you know. Find what you need. Share food. Connect with people nearby.
           </p>
           <div className="flex gap-3 justify-center">
             <Link

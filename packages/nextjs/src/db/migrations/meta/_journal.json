@@ -50,6 +50,13 @@
       "when": 1776447318002,
       "tag": "0006_massive_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776478984365,
+      "tag": "0007_overconfident_corsair",
+      "breakpoints": true
     }
   ]
 }

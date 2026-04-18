@@ -19,6 +19,11 @@ export default function AppLayout() {
       <Stack.Screen name="drives/index" options={{ title: 'Drives' }} />
       <Stack.Screen name="drives/[id]"  options={{ title: 'Drive Detail' }} />
       <Stack.Screen name="drives/new"   options={{ title: 'New Drive' }} />
+      <Stack.Screen name="food/index" options={{ title: 'Food Sharing' }} />
+      <Stack.Screen name="food/[id]"  options={{ title: 'Food Detail' }} />
+      <Stack.Screen name="food/new"   options={{ title: 'Share Food' }} />
+      <Stack.Screen name="food/reservations" options={{ title: 'Food Reservations' }} />
+      <Stack.Screen name="food/edit/[id]" options={{ title: 'Edit Food' }} />
     </Stack>
   )
 }

@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { eq } from 'drizzle-orm'
 import * as schema from './schema'
-import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations } from './schema'
+import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations } from './schema'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
@@ -59,6 +59,12 @@ async function seed() {
     { slug: 'other',          label: 'Other',                 icon: 'star' },
   ]).onConflictDoNothing()
 
+  if (process.argv.includes('--food')) {
+    await seedFood()
+    console.log('Done.')
+    process.exit(0)
+  }
+
   // ─── 3. Guard: skip demo data if it already exists ───────────────────────
   const existing = await db.select({ id: users.id })
     .from(users)
@@ -94,6 +100,7 @@ async function seed() {
     const cat2 = (slug: string) => allCategories2.find((c) => c.slug === slug)!.id
 
     await seedTools(db, { ivan: _ivan, maria: _maria, georgi: _georgi, elena: _elena, nikola: _nikola }, loc2, cat2)
+    await seedFood()
     console.log('Done.')
     process.exit(0)
   }
@@ -392,6 +399,7 @@ async function seed() {
 
   // ─── 9 + 10. Tools & Reservations ───────────────────────────────────────
   await seedTools(db, { ivan, maria, georgi, elena, nikola }, loc, cat)
+  await seedFood()
 
   console.log('\nDone! Demo accounts created:')
   console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
@@ -505,6 +513,121 @@ async function seedTools(
       endDate:    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       status:     'returned',
       notes:      'Need to replace a smoke detector on the ceiling.',
+    },
+  ])
+}
+
+async function seedFood() {
+  const existing = await db.select({ id: foodShares.id }).from(foodShares).limit(1)
+  if (existing.length > 0) {
+    console.log('Food already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo food shares...')
+
+  const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+  const allLocations = await db.select({ id: locations.id, neighborhood: locations.neighborhood }).from(locations)
+
+  const byEmail = (email: string) => {
+    const found = demoUsers.find((user) => user.email === email)
+    if (!found) throw new Error(`Demo user not found: ${email}`)
+    return found
+  }
+
+  const locId = (neighborhood: string) => {
+    const found = allLocations.find((location) => location.neighborhood === neighborhood)
+    if (!found) throw new Error(`Location not found: ${neighborhood}`)
+    return found.id
+  }
+
+  const elena = byEmail('elena@demo.bg')
+  const ivan = byEmail('ivan@demo.bg')
+  const maria = byEmail('maria@demo.bg')
+  const georgi = byEmail('georgi@demo.bg')
+  const nikola = byEmail('nikola@demo.bg')
+
+  const [banitsa, bread, lyutenitsa, cake, soup] = await db.insert(foodShares).values([
+    {
+      ownerId: elena.id,
+      title: 'Домашна баница — 6 порции',
+      description: 'Прясно изпечена баница със сирене. Подходяща за семейна закуска.',
+      quantity: 6,
+      locationId: locId('Oborishte'),
+      availableUntil: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане след 18:30, звъннете на входа.',
+      status: 'available',
+    },
+    {
+      ownerId: ivan.id,
+      title: 'Кисело тесто хляб',
+      description: 'Домашен квасен хляб, печен тази сутрин.',
+      quantity: 2,
+      locationId: locId('Lozenets'),
+      availableUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане вечер след 19:00.',
+      status: 'available',
+    },
+    {
+      ownerId: maria.id,
+      title: 'Домашна лютеница — буркан',
+      description: 'Домашна лютеница в буркани по ~500 мл.',
+      quantity: 3,
+      locationId: locId('Mladost 1'),
+      availableUntil: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Може и сутрин преди работа.',
+      status: 'available',
+    },
+    {
+      ownerId: georgi.id,
+      title: 'Овощна торта — 8 парчета',
+      description: 'Лека торта с сезонни плодове, подходяща за събиране с приятели.',
+      quantity: 8,
+      locationId: locId('Sredets'),
+      availableUntil: new Date(Date.now() + 36 * 60 * 60 * 1000),
+      pickupInstructions: 'Моля носете кутия за пренасяне.',
+      status: 'available',
+    },
+    {
+      ownerId: nikola.id,
+      title: 'Постна чорба — 4 порции',
+      description: 'Зеленчукова постна чорба, готова за сервиране.',
+      quantity: 4,
+      locationId: locId('Studentski Grad'),
+      availableUntil: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане между 12:00 и 20:00.',
+      status: 'reserved',
+    },
+  ]).returning({ id: foodShares.id })
+
+  console.log('Seeding demo food reservations...')
+
+  await db.insert(foodReservations).values([
+    {
+      foodShareId: banitsa.id,
+      requesterId: ivan.id,
+      ownerId: elena.id,
+      pickupAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      status: 'pending',
+      notes: 'Ще мина след работа около 19:30.',
+    },
+    {
+      foodShareId: soup.id,
+      requesterId: maria.id,
+      ownerId: nikola.id,
+      pickupAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      status: 'reserved',
+      notes: 'Подходящо е след 18:00.',
+    },
+    {
+      foodShareId: bread.id,
+      requesterId: georgi.id,
+      ownerId: ivan.id,
+      pickupAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      status: 'cancelled',
+      cancellationReason: 'Cancelled by requester',
+      cancelledById: georgi.id,
+      notes: 'Отменено поради промяна в графика.',
     },
   ])
 }

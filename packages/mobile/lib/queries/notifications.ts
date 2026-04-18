@@ -35,7 +35,7 @@ export async function fetchNotifications(): Promise<NotificationItem[]> {
 
 export async function markNotificationRead(id?: string): Promise<void> {
   const res = await apiFetch('/api/notifications/read', {
-    method: 'PATCH',
+    method: 'POST',
     body: id ? JSON.stringify({ id }) : undefined,
   })
   const json = await res.json().catch(() => null)

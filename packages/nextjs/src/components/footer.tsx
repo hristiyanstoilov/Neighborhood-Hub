@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { href: '/tools',   label: 'Tools'   },
   { href: '/events',  label: 'Events'  },
   { href: '/drives',  label: 'Drives'  },
+  { href: '/food',    label: 'Food'    },
   { href: '/register', label: 'Sign up' },
 ]
 

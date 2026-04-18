@@ -84,6 +84,10 @@ export default function SkillListScreen() {
         <Text style={styles.communityBtnIcon}>🫶</Text>
         <Text style={styles.communityBtnLabel}>Drives</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/food')}>
+        <Text style={styles.communityBtnIcon}>🍲</Text>
+        <Text style={styles.communityBtnLabel}>Food</Text>
+      </TouchableOpacity>
     </View>
   )
 

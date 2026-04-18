@@ -57,6 +57,13 @@ export default function Nav() {
             Drives
           </Link>
           <Link
+            href="/food"
+            aria-current={isActive('/food') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Food
+          </Link>
+          <Link
             href="/radar"
             aria-current={isActive('/radar') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
@@ -90,6 +97,13 @@ export default function Nav() {
                     className="text-gray-600 hover:text-green-700 transition-colors"
                   >
                     Reservations
+                  </Link>
+                  <Link
+                    href="/food/reservations"
+                    aria-current={isActive('/food/reservations') ? 'page' : undefined}
+                    className="text-gray-600 hover:text-green-700 transition-colors"
+                  >
+                    My Food
                   </Link>
                   <Link
                     href="/chat"
