@@ -46,13 +46,15 @@ neighborhood-hub/
 │   │   │   │   │   ├── tool-reservations/ # reservation state machine
 │   │   │   │   │   ├── events/          # CRUD events + attendees (RSVP)
 │   │   │   │   │   ├── drives/          # CRUD community drives + pledges
+│   │   │   │   │   ├── food-shares/     # CRUD food listings + reservations state machine
+│   │   │   │   │   ├── food-reservations/ # list user reservations across all food shares
 │   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (14 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (20 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
 │   │   │   │   ├── seed.ts      # Seed locations, categories, demo users, skills/requests, tools/reservations
 │   │   │   │   └── migrations/  # SQL migration files
@@ -80,7 +82,7 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (18 tables)
+## 4. Database Schema (20 tables)
 
 ### Core tables (all built)
 
@@ -104,12 +106,8 @@ neighborhood-hub/
 | `event_attendees` | RSVP records (event_id FK, user_id FK, status) |
 | `community_drives` | Charity/donation drives (organizer_id FK, title, description, drive_type, status, deadline, goal_description, drop_off_address, image_url, deleted_at) |
 | `drive_pledges` | Pledge records (drive_id FK, user_id FK, pledge_description, status) |
-
-### Extended tables (Phase 2+)
-
-| Table | Module |
-|-------|--------|
-| `food_shares` + `food_reservations` | Food Sharing (v0.4) |
+| `food_shares` | Food listings (owner_id FK, title, quantity, location_id FK, available_until, pickup_instructions, image_url, status, deleted_at) |
+| `food_reservations` | Food reservations (food_share_id FK, requester_id FK, pickup_time, notes, status, picked_up_at) |
 
 **Rules:**
 - Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
@@ -228,6 +226,12 @@ Rules:
 | Create Drive | `/drives/new` | ✅ done |
 | Edit Drive | `/drives/[id]/edit` | ✅ done |
 | Admin — Dashboard | `/admin/dashboard` | ✅ done |
+| Food List + Search | `/food` | ✅ done |
+| Food Detail + Reserve | `/food/[id]` | ✅ done |
+| Create Food Share | `/food/new` | ✅ done |
+| Edit Food Share | `/food/[id]/edit` | ✅ done |
+| My Food Reservations | `/food/reservations` | ✅ done |
+| Notifications | `/notifications` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -257,6 +261,11 @@ Rules:
 | Drive Detail + Pledge | ✅ done |
 | Create Drive | ✅ done |
 | Forgot Password | ✅ done |
+| Food List (paginated) | ✅ done |
+| Food Detail + Reserve | ✅ done |
+| Create Food Share | ✅ done |
+| Edit Food Share | ✅ done |
+| My Food Reservations | ✅ done |
 
 ---
 
@@ -267,12 +276,12 @@ Rules:
 | 0.1 | Neighborhood Radar + Time & Skill Swap | ✅ Done |
 | 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Community Drives (Charity) | ✅ Done |
-| 0.4 | Food Sharing | Planned |
+| 0.4 | Food Sharing | ✅ Done |
 | 0.5 | Chat / Feed | Later |
 
 > **Community Drives are NOT "charity events"** — they are a separate module with their own tables (`community_drives`, `drive_pledges`), API routes (`/api/drives`), and screens.
 > Events have their own tables (`events`, `event_attendees`), API routes (`/api/events`), and screens.
-> Food Sharing (v0.4) is the next planned module.
+> Food Sharing (v0.4) has its own tables (`food_shares`, `food_reservations`), API routes (`/api/food-shares`, `/api/food-reservations`), and screens.
 
 ---
 
