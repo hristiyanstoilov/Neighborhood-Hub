@@ -103,18 +103,8 @@ async function login(email, password, label) {
 // ─── Tool bootstrap ───────────────────────────────────────────────────────────
 
 async function getOrCreateOwnerTool(ownerToken, ownerId) {
-  // Try to reuse an existing available tool owned by this user
-  const res = await fetch(fullUrl('/api/tools?status=available&limit=50'))
-  if (!res.ok) fail(`Failed to fetch tools list: ${res.status}`)
-  const body = await res.json().catch(() => null)
-  const existing = (body?.data ?? []).find((t) => t.ownerId === ownerId)
-  if (existing) {
-    console.log(`  Using existing tool: ${existing.id} (${existing.title})`)
-    return existing
-  }
-
-  // Create a new tool as fallback
-  console.log('  No available owner tool found — creating fallback tool for smoke run...')
+  // Always create a fresh tool to keep smoke runs isolated from stale reservations.
+  console.log('  Creating fresh owner tool for this smoke run...')
   const unique = Date.now()
   const create = await fetch(fullUrl('/api/tools'), {
     method:  'POST',
@@ -129,7 +119,7 @@ async function getOrCreateOwnerTool(ownerToken, ownerId) {
   if (!create.ok) fail(`Failed to create fallback tool: ${create.status} ${createBody?.error ?? ''}`)
   const tool = createBody?.data
   if (!tool?.id) fail('Fallback tool created but id is missing')
-  console.log(`  Created fallback tool: ${tool.id} (${tool.title})`)
+  console.log(`  Created fresh tool: ${tool.id} (${tool.title})`)
   return tool
 }
 

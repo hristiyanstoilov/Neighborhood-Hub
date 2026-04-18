@@ -13,7 +13,8 @@
     "smoke:auth:browser": "node scripts/smoke-auth-browser.mjs",
     "smoke:skill-requests:transitions": "node scripts/smoke-skill-requests-transitions.mjs",
     "smoke:tool-reservations:transitions": "node scripts/smoke-tool-reservations.mjs",
-    "test:contract": "node --test scripts/skill-requests-contract.test.mjs scripts/skills-contract.test.mjs"
+    "smoke:food-reservations:transitions": "node scripts/smoke-food-reservations.mjs",
+    "test:contract": "node --experimental-strip-types --test scripts/skill-requests-contract.test.mjs scripts/skills-contract.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.53.1",

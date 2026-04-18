@@ -8,6 +8,33 @@ import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { z } from 'zod'
 
+function isUniqueViolation(err: unknown, indexHint: string): boolean {
+  const visited = new Set<unknown>()
+  const queue: unknown[] = [err]
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (!current || visited.has(current)) continue
+    visited.add(current)
+
+    if (typeof current === 'object') {
+      const obj = current as { code?: unknown; message?: unknown; cause?: unknown }
+      if (typeof obj.code === 'string' && obj.code === '23505') return true
+
+      const message = typeof obj.message === 'string' ? obj.message.toLowerCase() : ''
+      if (message.includes(indexHint.toLowerCase()) || message.includes('duplicate key value')) return true
+
+      if ('cause' in obj) queue.push(obj.cause)
+    }
+
+    if (current instanceof Error && current.cause) {
+      queue.push(current.cause)
+    }
+  }
+
+  return false
+}
+
 // ─── GET /api/tool-reservations — my reservations ───────────────────────────
 
 export const GET = requireAuth(async (req: NextRequest, { user }) => {
@@ -70,8 +97,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       }).returning()
     } catch (err: unknown) {
       // Unique index: borrower already has an active (pending/approved) reservation for this tool
-      const msg = err instanceof Error ? err.message : ''
-      if (msg.includes('tool_reservations_active_idx')) {
+      if (isUniqueViolation(err, 'tool_reservations_active_idx')) {
         return NextResponse.json({ error: 'DUPLICATE_RESERVATION' }, { status: 409 })
       }
       throw err

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { skillListQueryKey, buildSkillsHref } from '../packages/nextjs/src/app/(web)/skills/_hooks/skills-contract.js'
+import { skillListQueryKey, buildSkillsHref } from '../packages/nextjs/src/app/(web)/skills/_hooks/skills-contract.ts'
 
 test('skillListQueryKey is stable and filter-scoped', () => {
   assert.deepEqual(
