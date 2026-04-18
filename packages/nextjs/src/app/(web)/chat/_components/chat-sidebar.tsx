@@ -23,6 +23,7 @@ type ChatSidebarProps = {
   loadingRecommendations: boolean
   recommendationsError: string | null
   recommendations: RecommendedSkill[]
+  aiSummary: string | null
   onStartNewConversation: () => void
   onSelectConversation: (id: string) => void
   onRequestDeleteConversation: (conversation: Conversation) => void
@@ -35,6 +36,7 @@ export function ChatSidebar({
   loadingRecommendations,
   recommendationsError,
   recommendations,
+  aiSummary,
   onStartNewConversation,
   onSelectConversation,
   onRequestDeleteConversation,
@@ -76,6 +78,13 @@ export function ChatSidebar({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {aiSummary && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-green-700 mb-1.5">AI insight</p>
+          <p className="text-xs text-green-800 leading-relaxed">{aiSummary}</p>
         </div>
       )}
 

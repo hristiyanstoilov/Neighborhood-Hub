@@ -28,6 +28,7 @@ export const chatKeys = {
   all: ['ai'] as const,
   conversations: (userId: string) => [...chatKeys.all, 'conversations', userId] as const,
   recommendations: (userId: string) => [...chatKeys.all, 'recommendations', userId] as const,
+  summary: (userId: string) => [...chatKeys.all, 'summary', userId] as const,
   messages: (conversationId: string) => [...chatKeys.all, 'messages', conversationId] as const,
 }
 
@@ -53,6 +54,13 @@ export async function fetchChatRecommendations(): Promise<RecommendedSkill[]> {
   }
 
   return Array.isArray(json?.data) ? json.data : []
+}
+
+export async function fetchAiSummary(): Promise<string | null> {
+  const res = await apiFetch('/api/ai/summary')
+  const json = await res.json().catch(() => null)
+  if (!res.ok) return null
+  return json?.data?.summary ?? null
 }
 
 export async function fetchConversationMessages(conversationId: string): Promise<ChatMessage[]> {

@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/toast'
 import {
   chatKeys,
   deleteChatConversation,
+  fetchAiSummary,
   fetchChatConversations,
   fetchChatRecommendations,
   fetchConversationMessages,
@@ -35,6 +36,7 @@ export default function ChatClient() {
   const viewerId = user?.id ?? 'anonymous'
   const conversationsQueryKey = chatKeys.conversations(viewerId)
   const recommendationsQueryKey = chatKeys.recommendations(viewerId)
+  const summaryQueryKey = chatKeys.summary(viewerId)
 
   const {
     data: conversations = [],
@@ -55,6 +57,14 @@ export default function ChatClient() {
     staleTime: 60_000,
     retry: 0,
     queryFn: fetchChatRecommendations,
+  })
+
+  const { data: aiSummary = null } = useQuery<string | null>({
+    queryKey: summaryQueryKey,
+    enabled: !loading && !!user,
+    staleTime: 5 * 60_000,
+    retry: 0,
+    queryFn: fetchAiSummary,
   })
 
   const messagesQuery = useQuery<ChatMessage[]>({
@@ -226,6 +236,7 @@ export default function ChatClient() {
         loadingRecommendations={loadingRecommendations}
         recommendationsError={recommendationsError}
         recommendations={recommendations}
+        aiSummary={aiSummary}
         onStartNewConversation={startNewConversation}
         onSelectConversation={loadConversation}
         onRequestDeleteConversation={setDeleteTarget}
