@@ -10,6 +10,19 @@ import ToolOwnerActions from './tool-owner-actions'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  if (!uuidSchema.safeParse(id).success) return {}
+  try {
+    const tool = await queryToolById(id)
+    if (!tool) return {}
+    return {
+      title: tool.title,
+      description: tool.description ?? `Borrow this tool from a neighbor on Neighborhood Hub.`,
+    }
+  } catch { return {} }
+}
+
 const conditionLabel: Record<string, string> = {
   new: 'New',
   good: 'Good',

@@ -6,6 +6,11 @@ import type { SkillsPage } from './_hooks/use-skills-list'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Browse Skills',
+  description: 'Find neighbors willing to share their skills and expertise with the community.',
+}
+
 export default async function SkillsPage({
   searchParams,
 }: {

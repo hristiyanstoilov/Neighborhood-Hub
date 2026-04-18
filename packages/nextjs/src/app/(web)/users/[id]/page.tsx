@@ -11,6 +11,25 @@ import { PrivateProfileState } from './_components/private-profile-state'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  if (!uuidSchema.safeParse(id).success) return {}
+  try {
+    const [r] = await db
+      .select({ name: profiles.name, bio: profiles.bio })
+      .from(users)
+      .innerJoin(profiles, eq(profiles.userId, users.id))
+      .where(and(eq(users.id, id), isNull(users.deletedAt)))
+      .limit(1)
+    if (!r) return {}
+    const name = r.name ?? 'Neighbor'
+    return {
+      title: `${name}'s Profile`,
+      description: r.bio ?? `View ${name}'s skills and profile on Neighborhood Hub.`,
+    }
+  } catch { return {} }
+}
+
 type Props = { params: Promise<{ id: string }> }
 
 export default async function PublicProfilePage({ params }: Props) {

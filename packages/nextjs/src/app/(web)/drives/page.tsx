@@ -5,6 +5,11 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Community Drives',
+  description: 'Support local collection drives and help neighbors in need.',
+}
+
 const STATUS_LABELS: Record<string, string> = {
   open:      'Open',
   completed: 'Completed',

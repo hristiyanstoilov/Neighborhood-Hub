@@ -6,6 +6,11 @@ import type { ToolsPage } from './_hooks/use-tools-list'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Borrow Tools',
+  description: 'Borrow tools and equipment from neighbors in your community.',
+}
+
 export default async function ToolsPage({
   searchParams,
 }: {

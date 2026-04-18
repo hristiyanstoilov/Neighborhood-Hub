@@ -7,8 +7,15 @@ import { queryRadarLocations } from '@/lib/queries/locations'
 import { db } from '@/db'
 import { skills } from '@/db/schema'
 import { isNull, sql } from 'drizzle-orm'
+import { FeaturesSection } from '@/components/landing/features-section'
+import { HowItWorks } from '@/components/landing/how-it-works'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'Neighborhood Hub — Share Skills, Tools & Time',
+  description: 'Connect with your neighbors to share skills, borrow tools, join events, and support community drives.',
+}
 
 type SkillPreview = {
   id: string
@@ -80,6 +87,12 @@ export default async function HomePage() {
             <span className="font-semibold text-gray-700">{skillCount}</span> skill{skillCount !== 1 ? 's' : ''} available in your community
           </p>
         </div>
+
+        {/* Features */}
+        <FeaturesSection />
+
+        {/* How it works */}
+        <HowItWorks />
 
         {/* Recent skills preview */}
         {recentSkills.length > 0 && (

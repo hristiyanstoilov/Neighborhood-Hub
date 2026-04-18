@@ -5,6 +5,11 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Community Events',
+  description: 'Discover and join local events organised by your neighbors.',
+}
+
 const STATUS_LABELS: Record<string, string> = {
   published: 'Upcoming',
   completed: 'Completed',

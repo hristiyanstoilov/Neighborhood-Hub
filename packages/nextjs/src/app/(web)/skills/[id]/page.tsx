@@ -10,6 +10,19 @@ import SkillOwnerActions from './skill-owner-actions'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  if (!uuidSchema.safeParse(id).success) return {}
+  try {
+    const skill = await querySkillById(id)
+    if (!skill) return {}
+    return {
+      title: skill.title,
+      description: skill.description ?? `${skill.ownerName ?? 'A neighbor'} is offering this skill on Neighborhood Hub.`,
+    }
+  } catch { return {} }
+}
+
 export default async function SkillDetailPage({
   params,
 }: {
