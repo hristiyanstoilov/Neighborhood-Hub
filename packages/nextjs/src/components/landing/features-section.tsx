@@ -12,6 +12,12 @@ const FEATURES = [
       'Borrow a drill, ladder, or espresso machine from someone nearby. No need to buy something you\'ll use once.',
   },
   {
+    icon: '📅',
+    title: 'Local Events',
+    description:
+      'Discover and attend events organised by your neighbors — clean-ups, block parties, skill swaps, and more.',
+  },
+  {
     icon: '🫶',
     title: 'Community Drives',
     description:
@@ -29,7 +35,7 @@ export function FeaturesSection() {
         One platform for skills, tools, and community action — no money, no strangers, just neighbors.
       </p>
 
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((f) => (
           <div
             key={f.title}

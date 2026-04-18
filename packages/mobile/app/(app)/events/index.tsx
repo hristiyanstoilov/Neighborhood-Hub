@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -46,11 +46,15 @@ export default function EventsListScreen() {
     staleTime: 60_000,
   })
 
+  // Use a ref so isFetching doesn't become a useCallback dep (would cause infinite refetch loop)
+  const isFetchingRef = useRef(eventsQuery.isFetching)
+  isFetchingRef.current = eventsQuery.isFetching
+
   useFocusEffect(
     useCallback(() => {
-      if (eventsQuery.isFetching) return
+      if (isFetchingRef.current) return
       void eventsQuery.refetch()
-    }, [eventsQuery.isFetching, eventsQuery.refetch, status])
+    }, [eventsQuery.refetch, status])
   )
 
   const events = useMemo(

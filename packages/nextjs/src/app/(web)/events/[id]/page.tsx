@@ -93,73 +93,73 @@ export default async function EventDetailPage({
           />
         )}
         <div className="p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold leading-snug">{event!.title}</h1>
-          <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
-            event!.status === 'published'
-              ? 'bg-green-100 text-green-700'
-              : event!.status === 'cancelled'
-              ? 'bg-red-100 text-red-600'
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {event!.status === 'published' ? 'Upcoming' : event!.status}
-          </span>
-        </div>
-
-        {event!.description && (
-          <p className="text-gray-600 mb-6 leading-relaxed">{event!.description}</p>
-        )}
-
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Starts</dt>
-            <dd className="font-medium">{formatDate(event!.startsAt)}</dd>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h1 className="text-2xl font-bold leading-snug">{event!.title}</h1>
+            <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
+              event!.status === 'published'
+                ? 'bg-green-100 text-green-700'
+                : event!.status === 'cancelled'
+                ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              {event!.status === 'published' ? 'Upcoming' : event!.status}
+            </span>
           </div>
-          {event!.endsAt && (
-            <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Ends</dt>
-              <dd className="font-medium">{formatDate(event!.endsAt)}</dd>
-            </div>
+
+          {event!.description && (
+            <p className="text-gray-600 mb-6 leading-relaxed">{event!.description}</p>
           )}
-          {(event!.locationNeighborhood || event!.address) && (
+
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Starts</dt>
+              <dd className="font-medium">{formatDate(event!.startsAt)}</dd>
+            </div>
+            {event!.endsAt && (
+              <div>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Ends</dt>
+                <dd className="font-medium">{formatDate(event!.endsAt)}</dd>
+              </div>
+            )}
+            {(event!.locationNeighborhood || event!.address) && (
+              <div>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+                <dd className="font-medium">
+                  {event!.locationNeighborhood
+                    ? `${event!.locationNeighborhood}, ${event!.locationCity}`
+                    : event!.address}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
               <dd className="font-medium">
-                {event!.locationNeighborhood
-                  ? `${event!.locationNeighborhood}, ${event!.locationCity}`
-                  : event!.address}
+                <Link href={`/users/${event!.organizerId}`} className="hover:text-green-700 hover:underline">
+                  {event!.organizerName ?? 'Anonymous'}
+                </Link>
               </dd>
             </div>
+            <div>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Attendees</dt>
+              <dd className="font-medium">
+                {event!.attendeeCount}
+                {event!.maxCapacity ? ` / ${event!.maxCapacity}` : ''}
+              </dd>
+            </div>
+          </dl>
+
+          {isOrganizer && event!.status === 'published' && (
+            <p className="text-xs text-gray-400 text-center mb-4">
+              You are the organiser — manage this event from your profile.
+            </p>
           )}
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
-            <dd className="font-medium">
-              <Link href={`/users/${event!.organizerId}`} className="hover:text-green-700 hover:underline">
-                {event!.organizerName ?? 'Anonymous'}
-              </Link>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Attendees</dt>
-            <dd className="font-medium">
-              {event!.attendeeCount}
-              {event!.maxCapacity ? ` / ${event!.maxCapacity}` : ''}
-            </dd>
-          </div>
-        </dl>
 
-        {isOrganizer && event!.status === 'published' && (
-          <p className="text-xs text-gray-400 text-center mb-4">
-            You are the organiser — manage this event from your profile.
-          </p>
-        )}
-
-        <RsvpButton
-          eventId={event!.id}
-          organizerId={event!.organizerId}
-          status={event!.status}
-          initialRsvpStatus={rsvpStatus}
-        />
+          <RsvpButton
+            eventId={event!.id}
+            organizerId={event!.organizerId}
+            status={event!.status}
+            initialRsvpStatus={rsvpStatus}
+          />
         </div>
       </div>
     </div>

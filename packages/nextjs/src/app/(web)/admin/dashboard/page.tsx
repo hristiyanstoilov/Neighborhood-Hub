@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { users, skills, skillRequests, tools, toolReservations } from '@/db/schema'
+import { users, skills, skillRequests, tools, toolReservations, events, communityDrives } from '@/db/schema'
 import { count, eq, gte, isNull, and, sql } from 'drizzle-orm'
 import { AdminPageHeader } from '../_components/admin-page-header'
 
@@ -60,16 +60,20 @@ export default async function AdminDashboardPage() {
     [{ availableTools }],
     [{ activeReservations }],
     [{ newUsers }],
+    [{ upcomingEvents }],
+    [{ openDrives }],
     requestsByStatus,
     registrationsByDay,
   ] = await Promise.all([
-    db.select({ totalUsers: count() }).from(users),
+    db.select({ totalUsers: count() }).from(users).where(isNull(users.deletedAt)),
     db.select({ activeSkills: count() }).from(skills).where(isNull(skills.deletedAt)),
     db.select({ pendingRequests: count() }).from(skillRequests).where(eq(skillRequests.status, 'pending')),
     db.select({ availableTools: count() }).from(tools).where(and(isNull(tools.deletedAt), eq(tools.status, 'available'))),
     db.select({ activeReservations: count() }).from(toolReservations)
       .where(sql`${toolReservations.status} IN ('pending', 'approved')`),
-    db.select({ newUsers: count() }).from(users).where(gte(users.createdAt, sevenDaysAgo)),
+    db.select({ newUsers: count() }).from(users).where(and(isNull(users.deletedAt), gte(users.createdAt, sevenDaysAgo))),
+    db.select({ upcomingEvents: count() }).from(events).where(eq(events.status, 'published')),
+    db.select({ openDrives: count() }).from(communityDrives).where(eq(communityDrives.status, 'open')),
     db.select({ status: skillRequests.status, total: count() })
       .from(skillRequests)
       .groupBy(skillRequests.status),
@@ -116,12 +120,14 @@ export default async function AdminDashboardPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        <StatCard label="Total Users"         value={totalUsers}         sub="all time" />
+        <StatCard label="Total Users"         value={totalUsers}         sub="active accounts" />
         <StatCard label="Active Skills"        value={activeSkills}       sub="not deleted" />
         <StatCard label="Pending Requests"     value={pendingRequests}    sub="awaiting response" accent={pendingRequests > 0} />
         <StatCard label="Available Tools"      value={availableTools}     sub="ready to borrow" />
         <StatCard label="Active Reservations"  value={activeReservations} sub="pending + approved" />
         <StatCard label="New Users (7d)"       value={newUsers}           sub="last 7 days" accent={newUsers > 0} />
+        <StatCard label="Upcoming Events"      value={upcomingEvents}     sub="published" />
+        <StatCard label="Open Drives"          value={openDrives}         sub="accepting pledges" />
       </div>
 
       {/* Charts */}

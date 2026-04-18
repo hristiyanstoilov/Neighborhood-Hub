@@ -107,67 +107,67 @@ export default async function DriveDetailPage({
           />
         )}
         <div className="p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold leading-snug">{drive!.title}</h1>
-          <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
-            drive!.status === 'open'
-              ? 'bg-green-100 text-green-700'
-              : drive!.status === 'cancelled'
-              ? 'bg-red-100 text-red-600'
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {STATUS_LABELS[drive!.status] ?? drive!.status}
-          </span>
-        </div>
-
-        {drive!.description && (
-          <p className="text-gray-600 mb-6 leading-relaxed">{drive!.description}</p>
-        )}
-
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Type</dt>
-            <dd className="font-medium">{TYPE_LABELS[drive!.driveType] ?? drive!.driveType}</dd>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h1 className="text-2xl font-bold leading-snug">{drive!.title}</h1>
+            <span className={`shrink-0 text-sm px-3 py-1 rounded-full font-medium ${
+              drive!.status === 'open'
+                ? 'bg-green-100 text-green-700'
+                : drive!.status === 'cancelled'
+                ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              {STATUS_LABELS[drive!.status] ?? drive!.status}
+            </span>
           </div>
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
-            <dd className="font-medium">
-              <Link href={`/users/${drive!.organizerId}`} className="hover:text-green-700 hover:underline">
-                {drive!.organizerName ?? 'Anonymous'}
-              </Link>
-            </dd>
-          </div>
-          {drive!.goalDescription && (
-            <div className="col-span-2">
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Goal</dt>
-              <dd className="font-medium">{drive!.goalDescription}</dd>
-            </div>
+
+          {drive!.description && (
+            <p className="text-gray-600 mb-6 leading-relaxed">{drive!.description}</p>
           )}
-          {drive!.dropOffAddress && (
-            <div className="col-span-2">
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Drop-off address</dt>
-              <dd className="font-medium">{drive!.dropOffAddress}</dd>
-            </div>
-          )}
-          {drive!.deadline && (
+
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Deadline</dt>
-              <dd className="font-medium">{formatDeadline(drive!.deadline)}</dd>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Type</dt>
+              <dd className="font-medium">{TYPE_LABELS[drive!.driveType] ?? drive!.driveType}</dd>
             </div>
-          )}
-          <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Pledges</dt>
-            <dd className="font-medium">{drive!.pledgeCount}</dd>
-          </div>
-        </dl>
+            <div>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
+              <dd className="font-medium">
+                <Link href={`/users/${drive!.organizerId}`} className="hover:text-green-700 hover:underline">
+                  {drive!.organizerName ?? 'Anonymous'}
+                </Link>
+              </dd>
+            </div>
+            {drive!.goalDescription && (
+              <div className="col-span-2">
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Goal</dt>
+                <dd className="font-medium">{drive!.goalDescription}</dd>
+              </div>
+            )}
+            {drive!.dropOffAddress && (
+              <div className="col-span-2">
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Drop-off address</dt>
+                <dd className="font-medium">{drive!.dropOffAddress}</dd>
+              </div>
+            )}
+            {drive!.deadline && (
+              <div>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Deadline</dt>
+                <dd className="font-medium">{formatDeadline(drive!.deadline)}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Pledges</dt>
+              <dd className="font-medium">{drive!.pledgeCount}</dd>
+            </div>
+          </dl>
 
-        <PledgeSection
-          driveId={drive!.id}
-          organizerId={drive!.organizerId}
-          driveStatus={drive!.status}
-          initialPledge={userPledge}
-          pledges={pledges as never}
-        />
+          <PledgeSection
+            driveId={drive!.id}
+            organizerId={drive!.organizerId}
+            driveStatus={drive!.status}
+            initialPledge={userPledge}
+            pledges={pledges as never}
+          />
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
 import Link from 'next/link'
 
 const NAV_LINKS = [
-  { href: '/skills', label: 'Skills' },
-  { href: '/tools',  label: 'Tools'  },
-  { href: '/radar',  label: 'Radar'  },
+  { href: '/skills',  label: 'Skills'  },
+  { href: '/tools',   label: 'Tools'   },
+  { href: '/events',  label: 'Events'  },
+  { href: '/drives',  label: 'Drives'  },
   { href: '/register', label: 'Sign up' },
 ]
 

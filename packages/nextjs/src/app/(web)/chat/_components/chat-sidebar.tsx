@@ -1,19 +1,10 @@
 import Link from 'next/link'
+import type { RecommendedSkill } from '../_lib/chat-queries'
 
 export type Conversation = {
   id: string
   title: string | null
   updatedAt: string
-}
-
-export type RecommendedSkill = {
-  id: string
-  title: string
-  categoryLabel: string | null
-  locationNeighborhood: string | null
-  locationCity: string | null
-  ownerName: string | null
-  reason: string
 }
 
 type ChatSidebarProps = {
