@@ -15,8 +15,7 @@ export default function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
-        <h1 className="text-2xl font-bold mb-3 text-red-600">Invalid link</h1>
-        <p className="text-gray-600 mb-6">This password reset link is invalid or has expired.</p>
+        <h1 className="text-2xl font-bold mb-3 text-red-600">Invalid or missing reset link.</h1>
         <Link href="/forgot-password" className="text-green-700 hover:underline text-sm">
           Request a new link
         </Link>
@@ -27,15 +26,9 @@ export default function ResetPasswordForm() {
   if (success) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
-        <h1 className="text-2xl font-bold mb-3 text-green-600">Password updated!</h1>
-        <p className="text-gray-600 mb-6">
-          Your password has been changed. You have been logged out of all devices.
-        </p>
-        <Link
-          href="/login"
-          className="bg-green-700 text-white px-4 py-2 rounded-md text-sm hover:bg-green-800 transition-colors"
-        >
-          Log in
+        <h1 className="text-2xl font-bold mb-3 text-green-600">Password changed successfully.</h1>
+        <Link href="/login" className="text-green-700 hover:underline text-sm">
+          Log in →
         </Link>
       </div>
     )
@@ -48,6 +41,11 @@ export default function ResetPasswordForm() {
     const form = new FormData(e.currentTarget)
     const password = (form.get('password') as string).trim()
     const confirm = (form.get('confirm') as string).trim()
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
 
     if (password !== confirm) {
       setError('Passwords do not match.')
@@ -67,12 +65,11 @@ export default function ResetPasswordForm() {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          INVALID_TOKEN: 'This reset link is invalid.',
-          TOKEN_EXPIRED: 'This link has expired. Please request a new one.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+          INVALID_TOKEN: 'Invalid reset link. Please request a new one.',
+          TOKEN_EXPIRED: 'This reset link has expired. Please request a new one.',
           VALIDATION_ERROR: 'Password must be at least 8 characters.',
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setError(msg[json.error] ?? 'Something went wrong.')
         return
       }
 

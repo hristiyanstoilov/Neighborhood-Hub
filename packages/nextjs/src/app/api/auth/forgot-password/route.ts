@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null)
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
+      // Always 200 — don't leak whether an email format was invalid vs not found
+      return NextResponse.json({
+        data: { message: 'If that email exists, a reset link has been sent.' },
+      })
     }
 
     const { email } = parsed.data

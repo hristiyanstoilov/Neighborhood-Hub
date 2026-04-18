@@ -21,15 +21,8 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email: form.get('email') as string }),
       })
 
-      if (!res.ok) {
-        const json = await res.json()
-        if (json.error === 'TOO_MANY_REQUESTS') {
-          setError('Too many attempts. Please wait and try again.')
-          return
-        }
-      }
+      await res.json().catch(() => null)
 
-      // Always show success — never reveal whether the email exists
       setSubmitted(true)
     } catch {
       setError('Network error. Please check your connection and try again.')
@@ -43,11 +36,10 @@ export default function ForgotPasswordPage() {
       <div className="max-w-md mx-auto text-center py-16">
         <h1 className="text-2xl font-bold mb-3">Check your email</h1>
         <p className="text-gray-600 mb-6">
-          If an account with that email exists, we sent a password reset link.
-          The link expires in 1 hour.
+          If an account with that email exists, we&apos;ve sent a reset link. Check your inbox.
         </p>
         <Link href="/login" className="text-green-700 hover:underline text-sm">
-          Back to login
+          Log in
         </Link>
       </div>
     )

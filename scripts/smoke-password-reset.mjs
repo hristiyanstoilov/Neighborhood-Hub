@@ -149,16 +149,16 @@ async function testForgotPasswordNoEnumeration() {
     fail('existing email → expected 200', `got ${r2.status}`)
   }
 
-  // Invalid body → 400
-  const { res: r3 } = await api('/api/auth/forgot-password', {
+  // Invalid email format → 200 (same as not-found — never leak format vs not-found distinction)
+  const { res: r3, json: j3 } = await api('/api/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email: 'not-an-email' }),
     headers: { 'x-forwarded-for': '10.3.3.3' },
   })
-  if (r3.status === 400) {
-    ok('invalid email format → 400 VALIDATION_ERROR')
+  if (r3.status === 200 && j3?.data?.message) {
+    ok('invalid email format → 200 (no enumeration oracle)')
   } else {
-    fail('invalid email format → expected 400', `got ${r3.status}`)
+    fail('invalid email format → expected 200 (enumeration prevention)', `got ${r3.status}`)
   }
 }
 

@@ -8,6 +8,12 @@ const BASE_BACKOFF_MS = 250
 
 let _accessToken: string | null = null
 
+class OfflineResponse extends Response {
+  get status() {
+    return 0
+  }
+}
+
 export function setAccessToken(token: string | null) {
   _accessToken = token
 }
@@ -106,8 +112,8 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
     return res
   } catch {
     // Network error — return a synthetic offline response
-    return new Response(JSON.stringify({ error: 'NETWORK_ERROR' }), {
-      status: 0,
+    return new OfflineResponse(JSON.stringify({ error: 'NETWORK_ERROR' }), {
+      status: 503,
       headers: { 'Content-Type': 'application/json' },
     })
   }
