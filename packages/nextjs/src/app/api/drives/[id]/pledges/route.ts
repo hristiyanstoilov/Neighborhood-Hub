@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { communityDrives, drivePledges, notifications } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 
@@ -17,8 +17,12 @@ function extractDriveId(url: string): string {
 
 // ─── GET /api/drives/[id]/pledges — public pledge list ──────────────────────
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, { params }: Ctx) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const { id } = await params
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, id), isNull(communityDrives.deletedAt)),

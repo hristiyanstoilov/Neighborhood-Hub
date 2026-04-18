@@ -16,8 +16,12 @@ function extractId(url: string): string {
 
 // ─── GET /api/drives/[id] — public detail ───────────────────────────────────
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, { params }: Ctx) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const { id } = await params
     const drive = await queryDriveById(id)
     if (!drive) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -86,6 +90,10 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
 export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const id = extractId(req.url)
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, id), isNull(communityDrives.deletedAt)),
@@ -94,6 +102,8 @@ export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
     if (drive.organizerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     await db.update(communityDrives).set({ deletedAt: new Date() }).where(eq(communityDrives.id, id))
+    await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'community_drives', entityId: id, ipAddress: ip })
+
     return NextResponse.json({ data: { success: true } })
   } catch (err) {
     console.error('[DELETE /api/drives/[id]]', err)

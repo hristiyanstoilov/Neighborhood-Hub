@@ -16,8 +16,12 @@ function extractId(url: string): string {
 
 // ─── GET /api/events/[id] — public detail ───────────────────────────────────
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, { params }: Ctx) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const { id } = await params
     const event = await queryEventById(id)
     if (!event) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -45,6 +49,12 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     const parsed = updateEventSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
+    }
+
+    // Validate endsAt > startsAt when either is being updated
+    const effectiveStartsAt = parsed.data.startsAt ? new Date(parsed.data.startsAt) : event.startsAt
+    if (parsed.data.endsAt && new Date(parsed.data.endsAt) <= effectiveStartsAt) {
+      return NextResponse.json({ error: 'VALIDATION_ERROR', details: 'endsAt must be after startsAt' }, { status: 400 })
     }
 
     const updates: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() }
@@ -85,12 +95,18 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
 export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const id = extractId(req.url)
     const event = await db.query.events.findFirst({ where: and(eq(events.id, id), isNull(events.deletedAt)) })
     if (!event) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (event.organizerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     await db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, id))
+    await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'events', entityId: id, ipAddress: ip })
+
     return NextResponse.json({ data: { success: true } })
   } catch (err) {
     console.error('[DELETE /api/events/[id]]', err)
