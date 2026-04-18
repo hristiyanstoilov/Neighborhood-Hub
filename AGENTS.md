@@ -44,7 +44,9 @@ neighborhood-hub/
 │   │   │   │   │   ├── upload/          # Cloudflare R2 image upload
 │   │   │   │   │   ├── tools/           # CRUD tool listings
 │   │   │   │   │   ├── tool-reservations/ # reservation state machine
-│   │   │   │   │   ├── admin/           # admin users + audit log
+│   │   │   │   │   ├── events/          # CRUD events + attendees (RSVP)
+│   │   │   │   │   ├── drives/          # CRUD community drives + pledges
+│   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
@@ -78,9 +80,9 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (14 tables)
+## 4. Database Schema (18 tables)
 
-### Core tables (Phase 1)
+### Core tables (all built)
 
 | Table | Purpose |
 |-------|---------|
@@ -90,21 +92,24 @@ neighborhood-hub/
 | `audit_log` | Admin action log (user_id FK, action, entity, entity_id, metadata jsonb, ip_address) |
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
 | `user_consents` | GDPR consent tracking (user_id FK, consent_type, granted, granted_at, revoked_at, version) |
-| `skills` | Skill listings (owner_id FK, title, category_id FK, available_hours, status, location_id FK, deleted_at) |
+| `skills` | Skill listings (owner_id FK, title, category_id FK, available_hours, status, image_url, location_id FK, deleted_at) |
 | `skill_requests` | Booking requests (user_from_id FK, user_to_id FK, skill_id FK, scheduled_start, scheduled_end, meeting_type, meeting_url, status) |
 | `locations` | Geo data for radar map (city, neighborhood, lat, lng – neighborhood centroid only, country_code, type) |
-| `notifications` | In-app notifications (user_id FK, type, entity_id, is_read) |
+| `notifications` | In-app notifications (user_id FK, type, entity_type, entity_id, is_read) |
 | `ai_conversations` | AI chat sessions (user_id FK, title) |
 | `ai_messages` | AI chat messages (conversation_id FK, role, content) |
 | `tools` | Tool listings (owner_id FK, title, condition, category_id FK, location_id FK, status, deleted_at) |
 | `tool_reservations` | Borrow requests (tool_id FK, borrower_id FK, start_date, end_date, status, cancellation_reason) |
+| `events` | Neighborhood events (organizer_id FK, title, description, status, starts_at, ends_at, address, image_url, max_capacity, location_id FK, deleted_at) |
+| `event_attendees` | RSVP records (event_id FK, user_id FK, status) |
+| `community_drives` | Charity/donation drives (organizer_id FK, title, description, drive_type, status, deadline, goal_description, drop_off_address, image_url, deleted_at) |
+| `drive_pledges` | Pledge records (drive_id FK, user_id FK, pledge_description, status) |
 
 ### Extended tables (Phase 2+)
 
 | Table | Module |
 |-------|--------|
 | `food_shares` + `food_reservations` | Food Sharing (v0.4) |
-| `events` + `event_attendees` | Neighborhood Events (v0.3) |
 
 **Rules:**
 - Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
@@ -214,6 +219,15 @@ Rules:
 | Create Tool | `/tools/new` | ✅ done |
 | Edit Tool | `/tools/[id]/edit` | ✅ done |
 | My Reservations | `/my-reservations` | ✅ done |
+| Events List + Filters | `/events` | ✅ done |
+| Event Detail + RSVP | `/events/[id]` | ✅ done |
+| Create Event | `/events/new` | ✅ done |
+| Edit Event | `/events/[id]/edit` | ✅ done |
+| Community Drives List | `/drives` | ✅ done |
+| Drive Detail + Pledge | `/drives/[id]` | ✅ done |
+| Create Drive | `/drives/new` | ✅ done |
+| Edit Drive | `/drives/[id]/edit` | ✅ done |
+| Admin — Dashboard | `/admin/dashboard` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -236,6 +250,13 @@ Rules:
 | Neighborhood Radar | ✅ done |
 | Tool Library | ✅ done |
 | Tool Detail + Reserve | ✅ done |
+| Events List (paginated) | ✅ done |
+| Event Detail + RSVP | ✅ done |
+| Create Event | ✅ done |
+| Drives List (paginated) | ✅ done |
+| Drive Detail + Pledge | ✅ done |
+| Create Drive | ✅ done |
+| Forgot Password | ✅ done |
 
 ---
 
@@ -243,15 +264,15 @@ Rules:
 
 | Version | Module | Status |
 |---------|--------|--------|
-| 0.1 | Neighborhood Radar + Time & Skill Swap | **Active – Phase 1** |
+| 0.1 | Neighborhood Radar + Time & Skill Swap | ✅ Done |
 | 0.2 | Tool Library | ✅ Done |
-| 0.3 | Events + Charity (merged) | Planned (after MVP) |
-| 0.4 | Food Sharing | Planned (after MVP) |
+| 0.3 | Events + Community Drives (Charity) | ✅ Done |
+| 0.4 | Food Sharing | Planned |
 | 0.5 | Chat / Feed | Later |
 
-> **Focus all code generation on v0.1 unless explicitly told otherwise.**
-> Charity is NOT a separate module – it's `event_type: 'charity'` in the events table.
-> Tool Library v0.5 was a duplicate of v0.2 and has been removed.
+> **Community Drives are NOT "charity events"** — they are a separate module with their own tables (`community_drives`, `drive_pledges`), API routes (`/api/drives`), and screens.
+> Events have their own tables (`events`, `event_attendees`), API routes (`/api/events`), and screens.
+> Food Sharing (v0.4) is the next planned module.
 
 ---
 
