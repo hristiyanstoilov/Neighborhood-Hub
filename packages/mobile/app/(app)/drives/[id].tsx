@@ -27,6 +27,10 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   cancelled: { bg: '#fee2e2', text: '#991b1b' },
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  open: 'Open', completed: 'Completed', cancelled: 'Cancelled',
+}
+
 const TYPE_LABELS: Record<string, string> = {
   items: 'Items', food: 'Food', money: 'Money', other: 'Other',
 }
@@ -147,7 +151,7 @@ export default function DriveDetailScreen() {
       <View style={styles.titleRow}>
         <Text style={styles.title}>{drive.title}</Text>
         <View style={[styles.badge, { backgroundColor: sc.bg }]}>
-          <Text style={[styles.badgeText, { color: sc.text }]}>{drive.status}</Text>
+          <Text style={[styles.badgeText, { color: sc.text }]}>{STATUS_LABELS[drive.status] ?? drive.status}</Text>
         </View>
       </View>
 

@@ -64,6 +64,10 @@ export default function NewSkillForm({ categories, locations }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (uploading) {
+      setSubmitError('Please wait for the image to finish uploading.')
+      return
+    }
     setSubmitError(null)
     setLoading(true)
 
@@ -237,7 +241,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Publishing…' : 'Publish skill'}

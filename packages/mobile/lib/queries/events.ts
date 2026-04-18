@@ -7,6 +7,7 @@ export interface EventListItem {
   startsAt: string
   endsAt: string | null
   address: string | null
+  imageUrl: string | null
   maxCapacity: number | null
   organizerName: string | null
   organizerId: string

@@ -8,6 +8,7 @@ export interface DriveListItem {
   status: string
   deadline: string | null
   goalDescription: string | null
+  imageUrl: string | null
   organizerName: string | null
   organizerId: string
 }
