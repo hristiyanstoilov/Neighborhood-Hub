@@ -91,7 +91,7 @@ export default function ToolDetailScreen() {
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Next',
-            onPress: (start) => {
+            onPress: (start: string | undefined) => {
               if (!start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
                 Alert.alert('Invalid date', 'Please use YYYY-MM-DD format.')
                 return
@@ -103,7 +103,7 @@ export default function ToolDetailScreen() {
                   { text: 'Cancel', style: 'cancel' },
                   {
                     text: 'Reserve',
-                    onPress: (end) => {
+                    onPress: (end: string | undefined) => {
                       if (!end || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
                         Alert.alert('Invalid date', 'Please use YYYY-MM-DD format.')
                         return

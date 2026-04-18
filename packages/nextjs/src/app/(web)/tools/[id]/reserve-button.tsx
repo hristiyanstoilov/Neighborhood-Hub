@@ -26,6 +26,17 @@ export default function ReserveButton({
   const [notes, setNotes]       = useState('')
   const reservation             = useCreateReservation()
 
+  const handleClose = () => setOpen(false)
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') handleClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
   if (isOwner) return null
   if (!isAvailable) {
     return (
@@ -43,17 +54,6 @@ export default function ReserveButton({
       </button>
     )
   }
-
-  const handleClose = () => setOpen(false)
-
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') handleClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open])
 
   const handleOpen = () => {
     setStart('')
