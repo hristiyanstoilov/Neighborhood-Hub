@@ -5,11 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../../lib/api'
 import { fetchFoodDetail, foodKeys } from '../../../../lib/queries/food'
+import { useToast } from '../../../../lib/toast'
 
 export default function EditFoodScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const foodQuery = useQuery({
     queryKey: foodKeys.detail(id ?? ''),
@@ -52,6 +54,7 @@ export default function EditFoodScreen() {
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: foodKeys.all })
+      showToast({ message: 'Listing updated.', variant: 'success' })
       router.replace(`/(app)/food/${data.id}`)
     },
     onError: (err) => {
@@ -68,6 +71,7 @@ export default function EditFoodScreen() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: foodKeys.all })
+      showToast({ message: 'Listing deleted.', variant: 'success' })
       router.replace('/(app)/food')
     },
     onError: () => {

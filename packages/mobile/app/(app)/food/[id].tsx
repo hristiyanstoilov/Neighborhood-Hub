@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
 import { fetchFoodDetail, fetchFoodReservations, foodKeys, type FoodReservation } from '../../../lib/queries/food'
 import { formatDateOnly, formatDateTime } from '../../../lib/format'
+import { useToast } from '../../../lib/toast'
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   available: { bg: '#d1fae5', text: '#065f46' },
@@ -26,6 +27,7 @@ export default function FoodDetailScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [pickupAtDate, setPickupAtDate] = useState<Date | null>(null)
   const [showIosPicker, setShowIosPicker] = useState(false)
   const [notes, setNotes] = useState('')
@@ -67,6 +69,7 @@ export default function FoodDetailScreen() {
       setPickupAtDate(null)
       setShowIosPicker(false)
       setNotes('')
+      showToast({ message: 'Reservation requested!', variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: foodKeys.all })
       void foodQuery.refetch()
       void reservationsQuery.refetch()
@@ -93,7 +96,14 @@ export default function FoodDetailScreen() {
       if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
       return json.data as FoodReservation
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const toastMessages: Record<string, string> = {
+        approve: 'Reservation approved.',
+        reject: 'Reservation declined.',
+        cancel: 'Reservation cancelled.',
+        picked_up: 'Marked as picked up.',
+      }
+      showToast({ message: toastMessages[variables.action] ?? 'Done.', variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: foodKeys.all })
       void foodQuery.refetch()
       void reservationsQuery.refetch()

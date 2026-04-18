@@ -5,10 +5,12 @@ import { useRouter } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../lib/api'
 import { foodKeys } from '../../../lib/queries/food'
+import { useToast } from '../../../lib/toast'
 
 export default function NewFoodScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('1')
@@ -33,6 +35,7 @@ export default function NewFoodScreen() {
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: foodKeys.all })
+      showToast({ message: 'Food share created!', variant: 'success' })
       router.replace(`/(app)/food/${data.id}`)
     },
     onError: (err) => {

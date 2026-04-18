@@ -5,11 +5,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { toIsoStringFromLocalInput } from '@/lib/format'
+import { useToast } from '@/components/ui/toast'
 
 type LocationOption = { id: string; city: string; neighborhood: string }
 
 export default function NewFoodForm({ locations }: { locations: LocationOption[] }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('1')
@@ -39,6 +41,7 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
       const res = await apiFetch('/api/food-shares', { method: 'POST', body: JSON.stringify(body) })
       const json = await res.json().catch(() => null)
       if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      showToast({ title: 'Food share created!', variant: 'success' })
       router.push(`/food/${json.data.id}`)
     } catch (err) {
       const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR'
