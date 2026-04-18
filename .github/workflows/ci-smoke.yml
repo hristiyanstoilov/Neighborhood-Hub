@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Deterministic CI placeholders to avoid build-time env crashes.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
       JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
@@ -88,6 +89,7 @@ jobs:
     timeout-minutes: 15
     needs: quality-and-smoke
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
       JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
@@ -163,6 +165,7 @@ jobs:
     timeout-minutes: 20
     needs: authenticated-smoke
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
       JWT_SECRET: ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci-ci
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
