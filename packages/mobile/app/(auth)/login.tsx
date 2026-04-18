@@ -9,7 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
 import { useAuth } from '../../contexts/auth'
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -21,6 +21,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export default function LoginScreen() {
   const { login } = useAuth()
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -92,6 +93,13 @@ export default function LoginScreen() {
             ? <ActivityIndicator color="#fff" />
             : <Text style={styles.buttonText}>Sign in</Text>
           }
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.forgotRow}
+          onPress={() => router.push('/(auth)/forgot-password')}
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
         </TouchableOpacity>
 
         <Link href="/(auth)/register" asChild>
@@ -177,6 +185,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 15,
+  },
+  forgotRow: {
+    marginTop: 10,
+    alignItems: 'flex-end',
+  },
+  forgotText: {
+    color: '#15803d',
+    fontSize: 13,
+    fontWeight: '500',
   },
   linkRow: {
     marginTop: 16,
