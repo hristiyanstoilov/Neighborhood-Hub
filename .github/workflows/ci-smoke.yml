@@ -36,16 +36,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            packages/nextjs/package-lock.json
-            packages/mobile/package-lock.json
+          cache-dependency-path: packages/nextjs/package-lock.json
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm install
           npm ci --prefix packages/nextjs
-          npm ci --prefix packages/mobile --legacy-peer-deps
+          npm install --prefix packages/mobile --legacy-peer-deps
 
       - name: Build web
         run: npm run build:web
@@ -116,14 +113,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            packages/nextjs/package-lock.json
-            packages/mobile/package-lock.json
+          cache-dependency-path: packages/nextjs/package-lock.json
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm install
           npm ci --prefix packages/nextjs
 
       - name: Build web
@@ -192,14 +186,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            packages/nextjs/package-lock.json
-            packages/mobile/package-lock.json
+          cache-dependency-path: packages/nextjs/package-lock.json
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm install
           npm ci --prefix packages/nextjs
 
       - name: Install Playwright browser
