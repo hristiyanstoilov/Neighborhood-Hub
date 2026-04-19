@@ -15,7 +15,6 @@ const DRIVE_COLORS: Record<string, { bg: string; text: string }> = {
   open: { bg: '#d1fae5', text: '#065f46' },
   completed: { bg: '#dbeafe', text: '#1e40af' },
   cancelled: { bg: '#fee2e2', text: '#991b1b' },
-  closed: { bg: '#f3f4f6', text: '#6b7280' },
 }
 
 export default function MyPledgesScreen() {

@@ -16,7 +16,6 @@ const PLEDGE_STATUS_STYLES: Record<string, string> = {
 
 const DRIVE_STATUS_STYLES: Record<string, string> = {
   open:      'bg-green-50 text-green-700',
-  closed:    'bg-gray-100 text-gray-500',
   completed: 'bg-blue-50 text-blue-700',
   cancelled: 'bg-red-50 text-red-600',
 }
