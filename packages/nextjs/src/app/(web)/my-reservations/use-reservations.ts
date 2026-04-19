@@ -65,7 +65,9 @@ export function useReservationAction(viewerId: string) {
       return json.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tools.myReservations(viewerId, role) })
+      // Invalidate both borrower + owner views — an action (approve/return/cancel)
+      // affects the reservation in both roles' lists
+      queryClient.invalidateQueries({ queryKey: queryKeys.tools.all })
     },
   })
 }
