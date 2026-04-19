@@ -21,6 +21,19 @@ export interface EventDetail extends EventListItem {
   updatedAt: string
 }
 
+export interface UserRsvpItem {
+  rsvpId: string
+  rsvpStatus: string
+  eventId: string
+  eventTitle: string
+  eventStartsAt: string
+  eventEndsAt: string | null
+  eventStatus: string
+  eventAddress: string | null
+  locationNeighborhood: string | null
+  locationCity: string | null
+}
+
 export type EventsFilters = {
   status: string
 }
@@ -29,6 +42,7 @@ export const eventsKeys = {
   all:    ['events'] as const,
   list:   (status: string) => [...eventsKeys.all, 'list', status] as const,
   detail: (id: string)     => [...eventsKeys.all, 'detail', id] as const,
+  myRsvps: () => [...eventsKeys.all, 'my-rsvps'] as const,
 }
 
 function readErrorCode(json: unknown): string {
@@ -65,6 +79,13 @@ export async function fetchEventDetail(id: string): Promise<EventDetail> {
   const json = await res.json()
   if (!res.ok) throw new Error(readErrorCode(json))
   return json.data as EventDetail
+}
+
+export async function fetchUserRsvps(): Promise<UserRsvpItem[]> {
+  const res = await apiFetch('/api/events/rsvps')
+  const json = await res.json()
+  if (!res.ok) throw new Error(readErrorCode(json))
+  return (json.data ?? []) as UserRsvpItem[]
 }
 
 export class EventNotFoundError extends Error {

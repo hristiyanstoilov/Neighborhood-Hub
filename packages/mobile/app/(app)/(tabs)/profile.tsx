@@ -135,6 +135,8 @@ export default function ProfileScreen() {
         onMySkills={() => router.push('/(app)/my-skills')}
         onOfferSkill={() => router.push('/(app)/skills/new')}
         onMyRequests={() => router.push('/(app)/(tabs)/my-requests')}
+        onMyEvents={() => router.push('/(app)/events/my-rsvps')}
+        onMyPledges={() => router.push('/(app)/drives/my-pledges')}
         onLogout={handleLogout}
       />
     </ScrollView>

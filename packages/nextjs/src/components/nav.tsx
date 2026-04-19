@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import Logo from '@/components/logo'
@@ -10,10 +11,23 @@ export default function Nav() {
   const { user, loading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   function isActive(path: string) {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
+
+  useEffect(() => {
+    function handleMouseDown(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [])
 
   async function handleLogout() {
     await logout()
@@ -84,27 +98,62 @@ export default function Nav() {
                       Admin
                     </Link>
                   )}
-                  <Link
-                    href="/my-requests"
-                    aria-current={isActive('/my-requests') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    My Requests
-                  </Link>
-                  <Link
-                    href="/my-reservations"
-                    aria-current={isActive('/my-reservations') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    Reservations
-                  </Link>
-                  <Link
-                    href="/food/reservations"
-                    aria-current={isActive('/food/reservations') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    My Food
-                  </Link>
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setDropdownOpen((open) => !open)}
+                      className="text-gray-600 hover:text-green-700 transition-colors flex items-center gap-1 text-sm"
+                      aria-haspopup="menu"
+                      aria-expanded={dropdownOpen}
+                    >
+                      My Activity
+                      <span aria-hidden="true">▾</span>
+                    </button>
+                    {dropdownOpen && (
+                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]">
+                        <Link
+                          href="/my-requests"
+                          aria-current={isActive('/my-requests') ? 'page' : undefined}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-requests') ? 'text-green-700' : 'text-gray-700'}`}
+                        >
+                          My Requests
+                        </Link>
+                        <Link
+                          href="/my-reservations"
+                          aria-current={isActive('/my-reservations') ? 'page' : undefined}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-reservations') ? 'text-green-700' : 'text-gray-700'}`}
+                        >
+                          My Tool Reservations
+                        </Link>
+                        <Link
+                          href="/food/reservations"
+                          aria-current={isActive('/food/reservations') ? 'page' : undefined}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/food/reservations') ? 'text-green-700' : 'text-gray-700'}`}
+                        >
+                          My Food Reservations
+                        </Link>
+                        <Link
+                          href="/my-events"
+                          aria-current={isActive('/my-events') ? 'page' : undefined}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-events') ? 'text-green-700' : 'text-gray-700'}`}
+                        >
+                          My Events
+                        </Link>
+                        <Link
+                          href="/my-drives"
+                          aria-current={isActive('/my-drives') ? 'page' : undefined}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-drives') ? 'text-green-700' : 'text-gray-700'}`}
+                        >
+                          My Pledges
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                   <Link
                     href="/chat"
                     aria-current={isActive('/chat') ? 'page' : undefined}

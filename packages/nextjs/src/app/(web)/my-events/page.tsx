@@ -9,8 +9,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'My Events — Neighborhood Hub' }
 
 const STATUS_LABELS: Record<string, string> = {
-  upcoming:  'Upcoming',
-  ongoing:   'Ongoing',
+  published: 'Upcoming',
   completed: 'Completed',
   cancelled: 'Cancelled',
 }
@@ -61,7 +60,7 @@ export default async function MyEventsPage() {
                     {RSVP_LABELS[rsvp.rsvpStatus] ?? rsvp.rsvpStatus}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    rsvp.eventStatus === 'upcoming' ? 'bg-blue-50 text-blue-700'
+                    rsvp.eventStatus === 'published' ? 'bg-blue-50 text-blue-700'
                     : rsvp.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600'
                     : 'bg-gray-100 text-gray-500'
                   }`}>

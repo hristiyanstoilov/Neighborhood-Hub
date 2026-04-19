@@ -82,6 +82,8 @@ export function ProfileActions(props: {
   onMySkills: () => void
   onOfferSkill: () => void
   onMyRequests: () => void
+  onMyEvents: () => void
+  onMyPledges: () => void
   onLogout: () => void
 }) {
   return (
@@ -100,6 +102,14 @@ export function ProfileActions(props: {
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyRequests}>
         <Text style={styles.secondaryBtnText}>My Requests</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyEvents}>
+        <Text style={styles.secondaryBtnText}>My Events</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyPledges}>
+        <Text style={styles.secondaryBtnText}>My Pledges</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.dangerBtn} onPress={props.onLogout}>

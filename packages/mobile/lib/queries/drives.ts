@@ -28,12 +28,26 @@ export interface DrivePledge {
   userName: string | null
 }
 
+export interface UserPledgeItem {
+  pledgeId: string
+  pledgeStatus: string
+  pledgeDescription: string
+  createdAt: string
+  driveId: string
+  driveTitle: string
+  driveStatus: string
+  driveType: string
+  deadline: string | null
+  organizerName: string | null
+}
+
 export const drivesKeys = {
   all:     ['drives'] as const,
   list:    (status: string, driveType: string | null) =>
     [...drivesKeys.all, 'list', status, driveType ?? ''] as const,
   detail:  (id: string)      => [...drivesKeys.all, 'detail', id] as const,
   pledges: (driveId: string) => [...drivesKeys.all, 'pledges', driveId] as const,
+  myPledges: () => [...drivesKeys.all, 'my-pledges'] as const,
 }
 
 function readErrorCode(json: unknown): string {
@@ -79,4 +93,11 @@ export async function fetchDrivePledges(driveId: string): Promise<DrivePledge[]>
   const json = await res.json()
   if (!res.ok) throw new Error(readErrorCode(json))
   return (json.data ?? []) as DrivePledge[]
+}
+
+export async function fetchUserPledges(): Promise<UserPledgeItem[]> {
+  const res = await apiFetch('/api/drives/pledges')
+  const json = await res.json()
+  if (!res.ok) throw new Error(readErrorCode(json))
+  return (json.data ?? []) as UserPledgeItem[]
 }
