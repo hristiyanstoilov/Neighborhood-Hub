@@ -38,10 +38,13 @@ export interface UserReservationItem {
   toolId: string
   toolTitle: string | null
   toolImageUrl: string | null
+  borrowerId: string
+  ownerId: string
   startDate: string
   endDate: string
   status: string
   notes: string | null
+  cancellationReason: string | null
 }
 
 export const toolsKeys = {

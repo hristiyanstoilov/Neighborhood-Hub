@@ -111,8 +111,10 @@ export default function MyToolReservationsScreen() {
 
 function ReservationCard({ item, onOpen }: { item: UserReservationItem; onOpen: () => void }) {
   const color = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
-  const start = new Date(item.startDate).toLocaleDateString('en-GB')
-  const end = new Date(item.endDate).toLocaleDateString('en-GB')
+  // Dates are plain date strings (YYYY-MM-DD) — avoid UTC-to-local shift by splitting directly
+  const fmt = (d: string) => d.split('T')[0].split('-').reverse().join('/')
+  const start = fmt(item.startDate)
+  const end = fmt(item.endDate)
 
   return (
     <TouchableOpacity style={styles.card} onPress={onOpen} activeOpacity={0.75}>
@@ -124,6 +126,7 @@ function ReservationCard({ item, onOpen }: { item: UserReservationItem; onOpen: 
       </View>
       <Text style={styles.metaText}>{start} – {end}</Text>
       {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
+      {item.cancellationReason ? <Text style={styles.notes} numberOfLines={1}>Reason: {item.cancellationReason}</Text> : null}
     </TouchableOpacity>
   )
 }
