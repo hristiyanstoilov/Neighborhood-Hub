@@ -59,7 +59,7 @@ The `netlify.toml` already configures this:
   package = "@netlify/plugin-nextjs"
 ```
 
-> The `rm -rf src/app/admin` strips the admin routes from the production bundle.
+> Note: the strip command targets `src/app/admin` but admin lives at `src/app/(web)/admin` (route group). Admin routes **do deploy** to production — they are protected by `requireAdmin` middleware, which is sufficient for this project.
 
 ---
 

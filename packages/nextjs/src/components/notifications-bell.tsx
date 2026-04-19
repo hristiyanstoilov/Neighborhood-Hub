@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
+import { queryKeys } from '@/lib/query-keys'
 
 interface NotificationRow {
   id: string
@@ -19,10 +20,8 @@ const POLL_INTERVAL_MS = 30_000
 export default function NotificationsBell() {
   const { user, loading } = useAuth()
 
-  const notificationsQueryKey = ['notifications', 'unread', user?.id ?? 'anonymous']
-
   const { data: items = [] } = useQuery<NotificationRow[]>({
-    queryKey: notificationsQueryKey,
+    queryKey: queryKeys.notifications.unread(user?.id ?? 'anonymous'),
     enabled: !loading && !!user,
     refetchInterval: POLL_INTERVAL_MS,
     retry: 2,

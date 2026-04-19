@@ -1,7 +1,8 @@
 import type { RequestsRole } from './use-skill-requests'
+import { queryKeys } from '@/lib/query-keys'
 
 export function skillRequestsQueryKey(viewerId: string, role: RequestsRole) {
-  return ['skill-requests', viewerId, role] as const
+  return queryKeys.skillRequests.list(viewerId, role)
 }
 
 export function requestActionErrorMessage(error: string): string {

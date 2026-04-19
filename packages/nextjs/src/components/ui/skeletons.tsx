@@ -126,6 +126,41 @@ function ChatSkeleton() {
   )
 }
 
+function GenericCardSkeleton() {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <Skeleton className="h-4 w-2/3 rounded-md" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+      <Skeleton className="h-3 w-full rounded-md" />
+      <Skeleton className="h-3 w-4/5 rounded-md" />
+      <Skeleton className="h-3 w-24 rounded-md" />
+    </div>
+  )
+}
+
+export function ListPageSkeleton({ title = true }: { title?: boolean }) {
+  return (
+    <div>
+      {title && (
+        <div className="flex items-center justify-between mb-6">
+          <Skeleton className="h-8 w-40 rounded-md" />
+          <Skeleton className="h-10 w-32 rounded-md" />
+        </div>
+      )}
+      <div className="space-y-3 mb-6">
+        <Skeleton className="h-11 w-full rounded-xl" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <GenericCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function SkillsPageSkeleton() {
   return (
     <div>

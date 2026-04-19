@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 
 export type ReservationRole = 'borrower' | 'owner'
 
@@ -28,7 +29,7 @@ async function fetchReservations(viewerId: string, role: ReservationRole): Promi
 
 export function useReservations(viewerId: string, role: ReservationRole) {
   return useQuery<ReservationRow[]>({
-    queryKey: ['my-reservations', viewerId, role],
+    queryKey: queryKeys.tools.myReservations(viewerId, role),
     queryFn: () => fetchReservations(viewerId, role),
     staleTime: 10_000,
   })
@@ -64,7 +65,7 @@ export function useReservationAction(viewerId: string) {
       return json.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-reservations', viewerId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tools.myReservations(viewerId, role) })
     },
   })
 }
