@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { queryUserRsvps } from '@/lib/queries/events'
-import { formatEventStatus, eventStatusClass, rsvpStatusClass, humanizeValue } from '@/lib/format'
+import { formatEventStatus, eventStatusClass, rsvpStatusClass, humanizeValue, formatDateTime } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +53,7 @@ export default async function MyEventsPage() {
                 </div>
               </div>
               <p className="text-sm text-gray-500">
-                {new Date(rsvp.eventStartsAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {formatDateTime(rsvp.eventStartsAt)}
                 {rsvp.locationNeighborhood ? ` · ${rsvp.locationNeighborhood}` : ''}
                 {rsvp.eventAddress ? ` · ${rsvp.eventAddress}` : ''}
               </p>

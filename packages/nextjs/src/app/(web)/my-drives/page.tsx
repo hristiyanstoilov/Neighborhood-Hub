@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { queryUserPledges } from '@/lib/queries/drives'
-import { pledgeStatusClass, driveStatusClass, humanizeValue } from '@/lib/format'
+import { pledgeStatusClass, driveStatusClass, humanizeValue, formatDate } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +55,7 @@ export default async function MyDrivesPage() {
               <p className="text-sm text-gray-600 mb-1 line-clamp-2">{pledge.pledgeDescription}</p>
               <p className="text-xs text-gray-400">
                 {pledge.organizerName ? `Organised by ${pledge.organizerName}` : ''}
-                {pledge.deadline ? ` · Deadline: ${new Date(pledge.deadline).toLocaleDateString('en-GB')}` : ''}
+                {pledge.deadline ? ` · Deadline: ${formatDate(pledge.deadline)}` : ''}
               </p>
             </Link>
           ))}
