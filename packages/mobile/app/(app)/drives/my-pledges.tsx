@@ -4,18 +4,7 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchUserPledges, drivesKeys, type UserPledgeItem } from '../../../lib/queries/drives'
-
-const PLEDGE_COLORS: Record<string, { bg: string; text: string }> = {
-  pledged: { bg: '#d1fae5', text: '#065f46' },
-  fulfilled: { bg: '#dbeafe', text: '#1e40af' },
-  cancelled: { bg: '#f3f4f6', text: '#6b7280' },
-}
-
-const DRIVE_COLORS: Record<string, { bg: string; text: string }> = {
-  open: { bg: '#d1fae5', text: '#065f46' },
-  completed: { bg: '#dbeafe', text: '#1e40af' },
-  cancelled: { bg: '#fee2e2', text: '#991b1b' },
-}
+import { PLEDGE_STATUS_COLORS, DRIVE_STATUS_COLORS, humanizeValue } from '../../../lib/format'
 
 export default function MyPledgesScreen() {
   const router = useRouter()
@@ -98,8 +87,8 @@ export default function MyPledgesScreen() {
 }
 
 function PledgeCard({ item, onOpenDrive }: { item: UserPledgeItem; onOpenDrive: () => void }) {
-  const pledgeColor = PLEDGE_COLORS[item.pledgeStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
-  const driveColor = DRIVE_COLORS[item.driveStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const pledgeColor = PLEDGE_STATUS_COLORS[item.pledgeStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const driveColor = DRIVE_STATUS_COLORS[item.driveStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
   const deadlineText = item.deadline ? ` · Deadline: ${new Date(item.deadline).toLocaleDateString('en-GB')}` : ''
 
   return (
@@ -110,10 +99,10 @@ function PledgeCard({ item, onOpenDrive }: { item: UserPledgeItem; onOpenDrive: 
 
       <View style={styles.badgeRow}>
         <View style={[styles.badge, { backgroundColor: pledgeColor.bg }]}>
-          <Text style={[styles.badgeText, { color: pledgeColor.text }]}>{item.pledgeStatus.replace('_', ' ')}</Text>
+          <Text style={[styles.badgeText, { color: pledgeColor.text }]}>{humanizeValue(item.pledgeStatus)}</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: driveColor.bg }]}>
-          <Text style={[styles.badgeText, { color: driveColor.text }]}>{item.driveStatus.replace('_', ' ')}</Text>
+          <Text style={[styles.badgeText, { color: driveColor.text }]}>{humanizeValue(item.driveStatus)}</Text>
         </View>
       </View>
 

@@ -20,9 +20,11 @@ A multi-platform full-stack app for Bulgarian neighborhoods — skill sharing, t
 
 Neighbors can:
 - **Share skills** — offer and request help (repairs, cooking, tutoring, gardening, etc.)
+- **Borrow tools** — reserve tools from neighbors with a date range
+- **Join events** — RSVP to neighborhood events and community meetups
+- **Support drives** — pledge to charity and donation initiatives
+- **Share food** — list surplus food; neighbors request and pick up
 - **Browse and filter listings** — by category, location, status, keyword search
-- **Book skill sessions** — request with date, time and format (in-person / online / hybrid)
-- **Manage requests** — accept, reject, complete, or cancel with real-time notifications
 - **Chat with an AI assistant** — get help navigating the platform
 - **Admin panel** — manage users, lock accounts, audit all actions
 
@@ -343,6 +345,11 @@ pledged ──[user or organizer cancels]──→ cancelled
 | Create Food Share | `/food/new` |
 | Edit Food Share | `/food/[id]/edit` |
 | Admin — Dashboard | `/admin/dashboard` |
+| My Events (RSVPs) | `/my-events` |
+| My Pledges (Drives) | `/my-drives` |
+| My Food Reservations | `/food/reservations` |
+| Notifications | `/notifications` |
+| Public Profiles | `/users/[id]` |
 
 ## Mobile Screens (Expo 54)
 
@@ -377,6 +384,12 @@ pledged ──[user or organizer cancels]──→ cancelled
 | Create Food Share | `/(app)/food/new` |
 | My Food Reservations | `/(app)/food/reservations` |
 | Edit Food Share | `/(app)/food/edit/[id]` |
+| Edit Tool | `/(app)/tools/edit/[id]` |
+| Edit Event | `/(app)/events/edit/[id]` |
+| Edit Drive | `/(app)/drives/edit/[id]` |
+| My Tool Reservations | `/(app)/tools/my-reservations` |
+| My Events (RSVPs) | `/(app)/events/my-rsvps` |
+| My Pledges (Drives) | `/(app)/drives/my-pledges` |
 | Forgot Password | `/(auth)/forgot-password` |
 
 ---
@@ -385,10 +398,10 @@ pledged ──[user or organizer cancels]──→ cancelled
 
 | Version | Module | Status |
 |---------|--------|--------|
-| 0.1 | Neighborhood Radar + Time & Skill Swap | Done |
-| 0.2 | Tool Library | Done |
-| 0.3 | Events + Community Drives | Done |
-| 0.4 | Food Sharing | Done |
+| 0.1 | Neighborhood Radar + Time & Skill Swap | ✅ Done |
+| 0.2 | Tool Library | ✅ Done |
+| 0.3 | Events + Community Drives | ✅ Done |
+| 0.4 | Food Sharing | ✅ Done |
 | 0.5 | Chat / Feed | Planned |
 
 ---

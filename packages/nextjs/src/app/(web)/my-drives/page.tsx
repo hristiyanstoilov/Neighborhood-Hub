@@ -3,22 +3,11 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { queryUserPledges } from '@/lib/queries/drives'
+import { pledgeStatusClass, driveStatusClass, humanizeValue } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = { title: 'My Drives — Neighborhood Hub' }
-
-const PLEDGE_STATUS_STYLES: Record<string, string> = {
-  pledged:   'bg-green-100 text-green-700',
-  fulfilled: 'bg-blue-50 text-blue-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-}
-
-const DRIVE_STATUS_STYLES: Record<string, string> = {
-  open:      'bg-green-50 text-green-700',
-  completed: 'bg-blue-50 text-blue-700',
-  cancelled: 'bg-red-50 text-red-600',
-}
 
 export default async function MyDrivesPage() {
   const cookieStore = await cookies()
@@ -55,11 +44,11 @@ export default async function MyDrivesPage() {
               <div className="flex items-start justify-between gap-3 mb-1">
                 <p className="font-semibold text-gray-900 line-clamp-1">{pledge.driveTitle}</p>
                 <div className="flex gap-1.5 shrink-0">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PLEDGE_STATUS_STYLES[pledge.pledgeStatus] ?? 'bg-gray-100 text-gray-500'}`}>
-                    {pledge.pledgeStatus.charAt(0).toUpperCase() + pledge.pledgeStatus.slice(1)}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${pledgeStatusClass(pledge.pledgeStatus)}`}>
+                    {humanizeValue(pledge.pledgeStatus)}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DRIVE_STATUS_STYLES[pledge.driveStatus] ?? 'bg-gray-100 text-gray-500'}`}>
-                    {pledge.driveStatus.charAt(0).toUpperCase() + pledge.driveStatus.slice(1)}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${driveStatusClass(pledge.driveStatus)}`}>
+                    {humanizeValue(pledge.driveStatus)}
                   </span>
                 </div>
               </div>

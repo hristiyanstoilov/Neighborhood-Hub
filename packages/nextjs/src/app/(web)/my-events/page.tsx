@@ -3,21 +3,11 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { queryUserRsvps } from '@/lib/queries/events'
+import { formatEventStatus, eventStatusClass, rsvpStatusClass, humanizeValue } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = { title: 'My Events — Neighborhood Hub' }
-
-const STATUS_LABELS: Record<string, string> = {
-  published: 'Upcoming',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
-
-const RSVP_LABELS: Record<string, string> = {
-  attending:  'Attending',
-  cancelled:  'Cancelled',
-}
 
 export default async function MyEventsPage() {
   const cookieStore = await cookies()
@@ -54,17 +44,11 @@ export default async function MyEventsPage() {
               <div className="flex items-start justify-between gap-3 mb-1">
                 <p className="font-semibold text-gray-900 line-clamp-1">{rsvp.eventTitle}</p>
                 <div className="flex gap-1.5 shrink-0">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    rsvp.rsvpStatus === 'attending' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {RSVP_LABELS[rsvp.rsvpStatus] ?? rsvp.rsvpStatus}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${rsvpStatusClass(rsvp.rsvpStatus)}`}>
+                    {humanizeValue(rsvp.rsvpStatus)}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    rsvp.eventStatus === 'published' ? 'bg-blue-50 text-blue-700'
-                    : rsvp.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600'
-                    : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {STATUS_LABELS[rsvp.eventStatus] ?? rsvp.eventStatus}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${eventStatusClass(rsvp.eventStatus)}`}>
+                    {formatEventStatus(rsvp.eventStatus)}
                   </span>
                 </div>
               </div>

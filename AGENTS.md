@@ -337,6 +337,8 @@ Rules:
 - Refactors for modularization must preserve existing behavior (structure-only improvement, no hidden logic changes unless explicitly requested).
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
+- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; keys are always arrays starting with a domain string; user-scoped keys include `userId`; default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
+- Status formatting: use helpers from `src/lib/format.ts` (`eventStatusClass`, `rsvpStatusClass`, `driveStatusClass`, `pledgeStatusClass`, `formatEventStatus`, `humanizeValue`) — do not add inline status color maps to screens
 
 ### Mobile (Expo 54)
 - Screens in `packages/mobile/app/(app)/` (authenticated) and `packages/mobile/app/(auth)/` (login/register)

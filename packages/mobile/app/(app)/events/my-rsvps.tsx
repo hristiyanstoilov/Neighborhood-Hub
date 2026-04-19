@@ -4,23 +4,7 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchUserRsvps, eventsKeys, type UserRsvpItem } from '../../../lib/queries/events'
-
-const RSVP_COLORS: Record<string, { bg: string; text: string }> = {
-  attending: { bg: '#d1fae5', text: '#065f46' },
-  cancelled: { bg: '#f3f4f6', text: '#6b7280' },
-}
-
-const EVENT_COLORS: Record<string, { bg: string; text: string }> = {
-  published: { bg: '#dbeafe', text: '#1e40af' },
-  completed: { bg: '#f3f4f6', text: '#6b7280' },
-  cancelled: { bg: '#f3f4f6', text: '#6b7280' },
-}
-
-const EVENT_LABELS: Record<string, string> = {
-  published: 'Upcoming',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
+import { RSVP_STATUS_COLORS, EVENT_STATUS_COLORS, EVENT_STATUS_LABELS, humanizeValue } from '../../../lib/format'
 
 export default function MyRsvpsScreen() {
   const router = useRouter()
@@ -103,8 +87,8 @@ export default function MyRsvpsScreen() {
 }
 
 function RsvpCard({ item, onOpenEvent }: { item: UserRsvpItem; onOpenEvent: () => void }) {
-  const rsvpColor = RSVP_COLORS[item.rsvpStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
-  const eventColor = EVENT_COLORS[item.eventStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const rsvpColor = RSVP_STATUS_COLORS[item.rsvpStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const eventColor = EVENT_STATUS_COLORS[item.eventStatus] ?? { bg: '#f3f4f6', text: '#6b7280' }
   const dateText = new Date(item.eventStartsAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
 
   return (
@@ -115,10 +99,10 @@ function RsvpCard({ item, onOpenEvent }: { item: UserRsvpItem; onOpenEvent: () =
 
       <View style={styles.badgeRow}>
         <View style={[styles.badge, { backgroundColor: rsvpColor.bg }]}>
-          <Text style={[styles.badgeText, { color: rsvpColor.text }]}>{item.rsvpStatus.replace('_', ' ')}</Text>
+          <Text style={[styles.badgeText, { color: rsvpColor.text }]}>{humanizeValue(item.rsvpStatus)}</Text>
         </View>
         <View style={[styles.badge, { backgroundColor: eventColor.bg }]}>
-          <Text style={[styles.badgeText, { color: eventColor.text }]}>{EVENT_LABELS[item.eventStatus] ?? item.eventStatus.replace('_', ' ')}</Text>
+          <Text style={[styles.badgeText, { color: eventColor.text }]}>{EVENT_STATUS_LABELS[item.eventStatus] ?? humanizeValue(item.eventStatus)}</Text>
         </View>
       </View>
 

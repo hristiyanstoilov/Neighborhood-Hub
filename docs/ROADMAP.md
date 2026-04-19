@@ -266,13 +266,11 @@ Status: ✅ Done.
 - `notifications.tsx` — `useQuery` + `useMutation` for mark-read
 - All module list/detail screens use `useQuery` from TanStack
 
-#### Wave E (P2) — Shared query conventions and guardrails
+#### Wave E (P2) — Shared query conventions and guardrails ✅ Done
 
-1. Introduce shared query key helpers by domain.
-2. Define default retry/stale policies per endpoint type.
-3. Add developer docs for when to use query vs server rendering.
-
-Target outcome: consistent implementation style and easier onboarding.
+- `src/lib/query-keys.ts` — central registry for all TanStack Query key namespaces
+- `web-ui-provider.tsx` — default `staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`
+- Convention documented in AGENTS.md
 
 ### Refactor Quality Gates (Mandatory per Wave)
 
