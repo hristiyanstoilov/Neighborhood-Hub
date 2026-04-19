@@ -247,35 +247,24 @@ This is a **parallel** track to MVP stabilization and must avoid aggressive rewr
 2. Migrate notifications and chat sidebar data loading to TanStack Query.
 3. Ensure query keys are user-scoped to avoid cache bleed.
 
-Status: ✅ in progress/completed in recent commits.
+Status: ✅ Done.
 
-#### Wave B (P0) — My Requests flow (Web)
+#### Wave B (P0) — My Requests flow (Web) ✅ Done
 
-1. Split page logic into focused components:
-	- role tabs and header
-	- requests list container
-	- request item action panel
-2. Move requests list fetching to `useQuery` in client layer where practical.
-3. Convert request actions (`accept/reject/complete/cancel`) to `useMutation` with deterministic `invalidateQueries`.
-4. Keep business rules in API routes only; UI must only mirror allowed actions.
+- `my-requests/_hooks/use-skill-requests.ts` — `useQuery` with stable keys
+- `my-requests/_hooks/use-request-actions.ts` — `useMutation` with `invalidateQueries`
+- Page split into focused components under `_components/`
 
-Target outcome: less local state juggling in request cards and predictable list consistency after actions.
+#### Wave C (P1) — Skills list/search/filter (Web) ✅ Done
 
-#### Wave C (P1) — Skills list/search/filter (Web)
+- `skills/_hooks/use-skills-list.ts` — `useQuery` with category/location/search/page keys
+- Filters drive query key; pagination handled in hook
 
-1. Extract filters + list data orchestration into query-driven hooks.
-2. Add stable query keys for `category/location/search/page`.
-3. Remove duplicated fetch-on-change logic and simplify pagination transitions.
+#### Wave D (P1) — Mobile high-churn screens ✅ Done
 
-Target outcome: cleaner filter UX and fewer race/stale states.
-
-#### Wave D (P1) — Mobile high-churn screens
-
-1. Apply the same pattern to mobile `my-requests`, `notifications`, and `chat` conversation list.
-2. Keep Expo Router navigation unchanged; only data layer and component boundaries evolve.
-3. Reuse query key conventions from web when domain matches.
-
-Target outcome: parity of data reliability and lower code duplication across platforms.
+- `my-requests.tsx` — `useQuery` for requests list
+- `notifications.tsx` — `useQuery` + `useMutation` for mark-read
+- All module list/detail screens use `useQuery` from TanStack
 
 #### Wave E (P2) — Shared query conventions and guardrails
 

@@ -33,11 +33,23 @@ export type ToolsPage = {
   limit: number
 }
 
+export interface UserReservationItem {
+  id: string
+  toolId: string
+  toolTitle: string | null
+  toolImageUrl: string | null
+  startDate: string
+  endDate: string
+  status: string
+  notes: string | null
+}
+
 export const toolsKeys = {
-  all:    ['tools'] as const,
-  list:   (filters: ToolsFilters, page: number, limit: number) =>
+  all:            ['tools'] as const,
+  list:           (filters: ToolsFilters, page: number, limit: number) =>
     [...toolsKeys.all, 'list', filters.search, filters.categoryId ?? '', filters.locationId ?? '', filters.status ?? '', page, limit] as const,
-  detail: (id: string) => [...toolsKeys.all, 'detail', id] as const,
+  detail:         (id: string)     => [...toolsKeys.all, 'detail', id] as const,
+  myReservations: (role: string)   => [...toolsKeys.all, 'my-reservations', role] as const,
 }
 
 function readErrorCode(json: unknown): string {
@@ -82,6 +94,13 @@ export async function fetchToolDetail(id: string): Promise<ToolDetail> {
   const json = await res.json()
   if (!res.ok) throw new Error(readErrorCode(json))
   return json.data as ToolDetail
+}
+
+export async function fetchUserToolReservations(role: 'borrower' | 'owner'): Promise<UserReservationItem[]> {
+  const res = await apiFetch(`/api/tool-reservations?role=${role}`)
+  const json = await res.json()
+  if (!res.ok) throw new Error(readErrorCode(json))
+  return (json.data ?? []) as UserReservationItem[]
 }
 
 export class ToolNotFoundError extends Error {

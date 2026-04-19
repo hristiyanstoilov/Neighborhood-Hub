@@ -82,6 +82,8 @@ export function ProfileActions(props: {
   onMySkills: () => void
   onOfferSkill: () => void
   onMyRequests: () => void
+  onMyToolReservations: () => void
+  onMyFoodReservations: () => void
   onMyEvents: () => void
   onMyPledges: () => void
   onLogout: () => void
@@ -102,6 +104,14 @@ export function ProfileActions(props: {
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyRequests}>
         <Text style={styles.secondaryBtnText}>My Requests</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyToolReservations}>
+        <Text style={styles.secondaryBtnText}>My Tool Reservations</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyFoodReservations}>
+        <Text style={styles.secondaryBtnText}>My Food Reservations</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMyEvents}>

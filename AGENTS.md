@@ -232,6 +232,8 @@ Rules:
 | Edit Food Share | `/food/[id]/edit` | ✅ done |
 | My Food Reservations | `/food/reservations` | ✅ done |
 | Notifications | `/notifications` | ✅ done |
+| My Events (RSVPs) | `/my-events` | ✅ done |
+| My Pledges (Drives) | `/my-drives` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -265,7 +267,10 @@ Rules:
 | Food Detail + Reserve | ✅ done |
 | Create Food Share | ✅ done |
 | Edit Food Share | ✅ done |
+| My Tool Reservations | ✅ done |
 | My Food Reservations | ✅ done |
+| My Events (RSVPs) | ✅ done |
+| My Pledges (Drives) | ✅ done |
 
 ---
 
