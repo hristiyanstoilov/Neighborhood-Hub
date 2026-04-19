@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { formatDateTimeLocalInput, toIsoStringFromLocalInput } from '@/lib/format'
+import { useToast } from '@/components/ui/toast'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 type LocationOption = { id: string; city: string; neighborhood: string }
 
@@ -21,6 +23,7 @@ type FoodShare = {
 
 export default function EditFoodForm({ foodShare, locations }: { foodShare: FoodShare; locations: LocationOption[] }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [title, setTitle] = useState(foodShare.title)
   const [description, setDescription] = useState(foodShare.description ?? '')
   const [quantity, setQuantity] = useState(String(foodShare.quantity))
@@ -31,6 +34,7 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -51,6 +55,7 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
       const res = await apiFetch(`/api/food-shares/${foodShare.id}`, { method: 'PATCH', body: JSON.stringify(body) })
       const json = await res.json().catch(() => null)
       if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      showToast({ title: 'Listing updated.', variant: 'success' })
       router.push(`/food/${json.data.id}`)
     } catch (err) {
       const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR'
@@ -60,14 +65,15 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
     }
   }
 
-  async function handleDelete() {
-    if (!confirm('Delete this food listing?')) return
+  async function runDelete() {
+    setConfirmDelete(false)
     setDeleting(true)
     setError('')
     try {
       const res = await apiFetch(`/api/food-shares/${foodShare.id}`, { method: 'DELETE' })
       const json = await res.json().catch(() => null)
       if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      showToast({ title: 'Listing deleted.', variant: 'success' })
       router.push('/food')
     } catch {
       setError('Could not delete this listing.')
@@ -77,6 +83,17 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={confirmDelete}
+      title="Delete listing?"
+      description="This will permanently remove the food listing."
+      confirmLabel="Delete"
+      confirmVariant="danger"
+      busy={deleting}
+      onConfirm={() => void runDelete()}
+      onCancel={() => setConfirmDelete(false)}
+    />
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Edit Food Listing</h1>
 
@@ -115,10 +132,11 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
           <button type="submit" disabled={saving} className="flex-1 bg-green-700 text-white py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors disabled:opacity-50">{saving ? 'Saving…' : 'Save changes'}</button>
         </div>
 
-        <button type="button" onClick={handleDelete} disabled={deleting} className="w-full border border-red-300 text-red-600 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50">{deleting ? 'Deleting…' : 'Delete listing'}</button>
+        <button type="button" onClick={() => setConfirmDelete(true)} disabled={deleting} className="w-full border border-red-300 text-red-600 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50">{deleting ? 'Deleting…' : 'Delete listing'}</button>
       </form>
 
     </div>
+    </>
   )
 }
 
