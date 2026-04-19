@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 type ProfileSummaryCardProps = {
   user: {
@@ -62,6 +63,24 @@ export function ProfileSummaryCard({ user }: ProfileSummaryCardProps) {
           </div>
         )}
       </dl>
+
+      <div className="pt-2 grid grid-cols-2 gap-2">
+        {[
+          { href: '/my-requests',   label: 'My Requests' },
+          { href: '/my-reservations', label: 'My Tool Reservations' },
+          { href: '/food/reservations', label: 'My Food Reservations' },
+          { href: '/my-events',     label: 'My Events' },
+          { href: '/my-drives',     label: 'My Pledges' },
+        ].map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="text-center px-3 py-2 rounded-md text-sm font-medium border border-gray-200 text-gray-700 hover:border-green-400 hover:text-green-700 transition-colors"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

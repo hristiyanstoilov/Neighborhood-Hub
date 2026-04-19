@@ -88,3 +88,24 @@ export async function queryUserRsvp(eventId: string, userId: string) {
     .limit(1)
   return row ?? null
 }
+
+export async function queryUserRsvps(userId: string) {
+  return db
+    .select({
+      rsvpId:               eventAttendees.id,
+      rsvpStatus:           eventAttendees.status,
+      eventId:              events.id,
+      eventTitle:           events.title,
+      eventStartsAt:        events.startsAt,
+      eventEndsAt:          events.endsAt,
+      eventStatus:          events.status,
+      eventAddress:         events.address,
+      locationNeighborhood: locations.neighborhood,
+      locationCity:         locations.city,
+    })
+    .from(eventAttendees)
+    .innerJoin(events,    eq(events.id,    eventAttendees.eventId))
+    .leftJoin(locations,  eq(locations.id, events.locationId))
+    .where(and(eq(eventAttendees.userId, userId), isNull(events.deletedAt)))
+    .orderBy(desc(events.startsAt))
+}

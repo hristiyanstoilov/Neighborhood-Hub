@@ -84,6 +84,27 @@ export async function queryUserPledge(driveId: string, userId: string) {
   return row ?? null
 }
 
+export async function queryUserPledges(userId: string) {
+  return db
+    .select({
+      pledgeId:          drivePledges.id,
+      pledgeStatus:      drivePledges.status,
+      pledgeDescription: drivePledges.pledgeDescription,
+      createdAt:         drivePledges.createdAt,
+      driveId:           communityDrives.id,
+      driveTitle:        communityDrives.title,
+      driveStatus:       communityDrives.status,
+      driveType:         communityDrives.driveType,
+      deadline:          communityDrives.deadline,
+      organizerName:     profiles.name,
+    })
+    .from(drivePledges)
+    .innerJoin(communityDrives, eq(communityDrives.id, drivePledges.driveId))
+    .leftJoin(profiles,         eq(profiles.userId,    communityDrives.organizerId))
+    .where(and(eq(drivePledges.userId, userId), isNull(communityDrives.deletedAt)))
+    .orderBy(desc(drivePledges.createdAt))
+}
+
 export async function queryDrivePledges(driveId: string) {
   return db
     .select({
