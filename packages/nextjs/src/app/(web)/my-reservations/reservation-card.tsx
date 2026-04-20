@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast'
 import { RatingForm } from '@/components/ui/rating-form'
 import { apiFetch } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
+import { formatDate as sharedFormatDate } from '@/lib/format'
 import { type ReservationRow, useReservationAction } from './use-reservations'
 
 interface Props {
@@ -39,12 +40,6 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 }
 
-function formatDate(dateStr: string) {
-  // Slice the date part to avoid timezone shift (DB stores as timestamptz, JSON serializes to UTC ISO)
-  const datePart = dateStr.slice(0, 10) // "YYYY-MM-DD"
-  const [year, month, day] = datePart.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 export default function ReservationCard({ reservation, viewerId }: Props) {
   const [error, setError]               = useState<string | null>(null)
@@ -112,11 +107,11 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
         <div>
           <dt className="text-xs text-gray-400">From</dt>
-          <dd className="font-medium">{formatDate(reservation.startDate)}</dd>
+          <dd className="font-medium">{sharedFormatDate(reservation.startDate)}</dd>
         </div>
         <div>
           <dt className="text-xs text-gray-400">Until</dt>
-          <dd className="font-medium">{formatDate(reservation.endDate)}</dd>
+          <dd className="font-medium">{sharedFormatDate(reservation.endDate)}</dd>
         </div>
       </dl>
 
