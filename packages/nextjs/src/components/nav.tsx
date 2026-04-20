@@ -130,6 +130,20 @@ export default function Nav() {
             Food
           </Link>
           <Link
+            href="/feed"
+            aria-current={isActive('/feed') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Feed
+          </Link>
+          <Link
+            href="/messages"
+            aria-current={isActive('/messages') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Messages
+          </Link>
+          <Link
             href="/radar"
             aria-current={isActive('/radar') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
