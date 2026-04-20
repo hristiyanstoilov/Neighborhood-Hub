@@ -64,12 +64,6 @@ export const queryKeys = {
     public: (userId: string) => ['profile', 'public', userId] as const,
   },
 
-  chat: {
-    all:           ['chat'] as const,
-    conversations: (userId: string) => ['chat', 'conversations', userId] as const,
-    messages:      (conversationId: string) => ['chat', 'messages', conversationId] as const,
-  },
-
   ratings: {
     all: ['ratings'] as const,
     byUser: (userId: string) => ['ratings', 'user', userId] as const,
@@ -81,5 +75,15 @@ export const queryKeys = {
     all: ['search'] as const,
     results: (q: string, types?: string, locationId?: string) =>
       ['search', 'results', q, types ?? 'all', locationId ?? 'all'] as const,
+  },
+
+  feed: {
+    list: ['feed', 'list'] as const,
+  },
+
+  directMessages: {
+    all: ['direct-messages'] as const,
+    conversations: (userId: string) => ['direct-messages', 'conversations', userId] as const,
+    messages: (conversationId: string) => ['direct-messages', 'messages', conversationId] as const,
   },
 } as const
