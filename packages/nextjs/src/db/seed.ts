@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { eq } from 'drizzle-orm'
 import * as schema from './schema'
-import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations } from './schema'
+import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations, events, eventAttendees, communityDrives, drivePledges } from './schema'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
@@ -65,6 +65,18 @@ async function seed() {
     process.exit(0)
   }
 
+  if (process.argv.includes('--events')) {
+    await seedEvents()
+    console.log('Done.')
+    process.exit(0)
+  }
+
+  if (process.argv.includes('--drives')) {
+    await seedDrives()
+    console.log('Done.')
+    process.exit(0)
+  }
+
   // ─── 3. Guard: skip demo data if it already exists ───────────────────────
   const existing = await db.select({ id: users.id })
     .from(users)
@@ -75,7 +87,10 @@ async function seed() {
     // Users already seeded — check if tools exist too
     const toolsExist = await db.select({ id: tools.id }).from(tools).limit(1)
     if (toolsExist.length > 0) {
-      console.log('Demo data already exists — skipping.')
+      // Tools exist — still run events/drives/food in case they were added later
+      await seedFood()
+      await seedEvents()
+      await seedDrives()
       console.log('Done.')
       process.exit(0)
     }
@@ -101,6 +116,8 @@ async function seed() {
 
     await seedTools(db, { ivan: _ivan, maria: _maria, georgi: _georgi, elena: _elena, nikola: _nikola }, loc2, cat2)
     await seedFood()
+    await seedEvents()
+    await seedDrives()
     console.log('Done.')
     process.exit(0)
   }
@@ -400,6 +417,8 @@ async function seed() {
   // ─── 9 + 10. Tools & Reservations ───────────────────────────────────────
   await seedTools(db, { ivan, maria, georgi, elena, nikola }, loc, cat)
   await seedFood()
+  await seedEvents()
+  await seedDrives()
 
   console.log('\nDone! Demo accounts created:')
   console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
@@ -630,6 +649,263 @@ async function seedFood() {
       notes: 'Отменено поради промяна в графика.',
     },
   ])
+}
+
+async function seedEvents() {
+  const existing = await db.select({ id: events.id }).from(events).limit(1)
+  if (existing.length > 0) {
+    console.log('Events already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo events...')
+
+  const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+  const allLocations = await db.select({ id: locations.id, neighborhood: locations.neighborhood }).from(locations)
+
+  const byEmail = (email: string) => {
+    const found = demoUsers.find((u) => u.email === email)
+    if (!found) throw new Error(`Demo user not found: ${email}`)
+    return found
+  }
+  const locId = (neighborhood: string) => {
+    const found = allLocations.find((l) => l.neighborhood === neighborhood)
+    if (!found) throw new Error(`Location not found: ${neighborhood}`)
+    return found.id
+  }
+
+  const ivan   = byEmail('ivan@demo.bg')
+  const maria  = byEmail('maria@demo.bg')
+  const georgi = byEmail('georgi@demo.bg')
+  const elena  = byEmail('elena@demo.bg')
+  const nikola = byEmail('nikola@demo.bg')
+
+  const inDays = (n: number, hour = 10) => {
+    const d = new Date()
+    d.setDate(d.getDate() + n)
+    d.setHours(hour, 0, 0, 0)
+    return d
+  }
+
+  const [devMeetup, cookingWorkshop, yogaSession, languageExchange] = await db.insert(events).values([
+    // Ivan organises a dev meetup next week
+    {
+      organizerId:  ivan.id,
+      title:        'Sofia Dev Meetup — Web Performance',
+      description:  'Informal gathering of local developers. Ivan will give a 30-min talk on Core Web Vitals and React Server Components, followed by open discussion. Bring your laptop!',
+      locationId:   locId('Lozenets'),
+      address:      'Coworking Hub Sofia, ul. Cherni Vrah 47, Lozenets',
+      startsAt:     inDays(7, 18),
+      endsAt:       inDays(7, 20),
+      maxCapacity:  20,
+      status:       'published',
+    },
+    // Elena organises a cooking workshop in two weeks
+    {
+      organizerId:  elena.id,
+      title:        'Traditional Bulgarian Kitchen Workshop',
+      description:  'Hands-on cooking session: we make shopska salad, tarator, and gyuvech from scratch. Elena provides all ingredients. Max 6 people — book early! Includes tasting.',
+      locationId:   locId('Oborishte'),
+      address:      'Elena\'s home kitchen, ul. Oborishte 22, Sofia',
+      startsAt:     inDays(14, 11),
+      endsAt:       inDays(14, 14),
+      maxCapacity:  6,
+      status:       'published',
+    },
+    // Nikola organises a group yoga session this weekend
+    {
+      organizerId:  nikola.id,
+      title:        'Sunrise Yoga in Borisova Garden',
+      description:  'Open-air yoga session for all levels. Meet at the main fountain. Bring your own mat (or borrow one of Nikola\'s). Suitable for complete beginners. Free of charge.',
+      locationId:   locId('Studentski Grad'),
+      address:      'Borisova Garden — main fountain entrance',
+      startsAt:     inDays(3, 7),
+      endsAt:       inDays(3, 9),
+      maxCapacity:  15,
+      status:       'published',
+    },
+    // Maria organised a language exchange last month — completed
+    {
+      organizerId:  maria.id,
+      title:        'Language Exchange Café — English & German',
+      description:  'Monthly language exchange at a local café. Participants pair up: native English speakers practice German, native German speakers practice English. Great atmosphere!',
+      locationId:   locId('Mladost 1'),
+      address:      'Café Centrale, bul. Al. Malinov 51, Mladost 1',
+      startsAt:     inDays(-30, 17),
+      endsAt:       inDays(-30, 19),
+      maxCapacity:  null,
+      status:       'completed',
+    },
+  ]).returning()
+
+  console.log('Seeding demo event attendees...')
+
+  await db.insert(eventAttendees).values([
+    // Dev meetup: maria, georgi, elena attending
+    { eventId: devMeetup.id,        userId: maria.id,  status: 'attending' },
+    { eventId: devMeetup.id,        userId: georgi.id, status: 'attending' },
+    { eventId: devMeetup.id,        userId: elena.id,  status: 'attending' },
+    // Cooking workshop: ivan, nikola attending
+    { eventId: cookingWorkshop.id,  userId: ivan.id,   status: 'attending' },
+    { eventId: cookingWorkshop.id,  userId: nikola.id, status: 'attending' },
+    // Yoga session: maria, georgi, elena attending; nikola is organizer so not in attendees
+    { eventId: yogaSession.id,      userId: maria.id,  status: 'attending' },
+    { eventId: yogaSession.id,      userId: georgi.id, status: 'attending' },
+    { eventId: yogaSession.id,      userId: elena.id,  status: 'attending' },
+    { eventId: yogaSession.id,      userId: ivan.id,   status: 'cancelled' },
+    // Language exchange (completed): all four others attended
+    { eventId: languageExchange.id, userId: ivan.id,   status: 'attending' },
+    { eventId: languageExchange.id, userId: georgi.id, status: 'attending' },
+    { eventId: languageExchange.id, userId: elena.id,  status: 'attending' },
+    { eventId: languageExchange.id, userId: nikola.id, status: 'attending' },
+  ]).onConflictDoNothing()
+}
+
+async function seedDrives() {
+  const existing = await db.select({ id: communityDrives.id }).from(communityDrives).limit(1)
+  if (existing.length > 0) {
+    console.log('Drives already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo community drives...')
+
+  const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+
+  const byEmail = (email: string) => {
+    const found = demoUsers.find((u) => u.email === email)
+    if (!found) throw new Error(`Demo user not found: ${email}`)
+    return found
+  }
+
+  const ivan   = byEmail('ivan@demo.bg')
+  const maria  = byEmail('maria@demo.bg')
+  const georgi = byEmail('georgi@demo.bg')
+  const elena  = byEmail('elena@demo.bg')
+  const nikola = byEmail('nikola@demo.bg')
+
+  const inDays = (n: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + n)
+    d.setHours(23, 59, 0, 0)
+    return d
+  }
+
+  const [winterClothes, schoolBooks, homemadeFood, gardenFund] = await db.insert(communityDrives).values([
+    // Georgi collects winter clothes — open
+    {
+      organizerId:      georgi.id,
+      title:            'Winter Clothes Collection for Families in Need',
+      description:      'Collecting warm winter clothes (jackets, jumpers, boots) for families in Serdika and Nadezhda. Drop off clean, gently used items at the address below. All sizes welcome.',
+      driveType:        'items',
+      goalDescription:  'Collect at least 50 items of warm clothing by end of November',
+      dropOffAddress:   'ul. Pirotska 12, Sredets — Georgi\'s storage room (ring bell on intercom)',
+      deadline:         inDays(21),
+      status:           'open',
+    },
+    // Maria collects books — open
+    {
+      organizerId:      maria.id,
+      title:            'Books for Mladost Community Library',
+      description:      'Donating books to the newly opened community reading room in Mladost 1. We especially need children\'s books, fiction, and language learning materials. Any language welcome.',
+      driveType:        'items',
+      goalDescription:  'Collect 200 books to fill the new shelves',
+      dropOffAddress:   'bul. Al. Malinov 32, Mladost 1 — lobby of residential block',
+      deadline:         inDays(14),
+      status:           'open',
+    },
+    // Elena did a homemade food drive — completed
+    {
+      organizerId:      elena.id,
+      title:            'Homemade Meals for Elderly Neighbours',
+      description:      'Neighbours cooked and delivered homemade lunches to isolated elderly residents in Oborishte and Sredets. 12 residents received meals every day for a week.',
+      driveType:        'food',
+      goalDescription:  'Deliver 60+ homemade meals over 7 days',
+      dropOffAddress:   null,
+      deadline:         inDays(-7),
+      status:           'completed',
+    },
+    // Ivan raises money for a community garden — open
+    {
+      organizerId:      ivan.id,
+      title:            'Community Garden Fund — Lozenets',
+      description:      'Raising funds to build raised garden beds in the small park on ul. Cherni Vrah. We need ~800 BGN for timber, soil, and seeds. Excess funds go toward watering equipment.',
+      driveType:        'money',
+      goalDescription:  'Raise 800 BGN for materials and tools',
+      dropOffAddress:   null,
+      deadline:         inDays(30),
+      status:           'open',
+    },
+  ]).returning()
+
+  console.log('Seeding demo drive pledges...')
+
+  await db.insert(drivePledges).values([
+    // Winter clothes: three pledges
+    {
+      driveId:            winterClothes.id,
+      userId:             maria.id,
+      pledgeDescription:  'I have 2 winter jackets (size M and L) and a bag of knitted jumpers to donate.',
+      status:             'pledged',
+    },
+    {
+      driveId:            winterClothes.id,
+      userId:             elena.id,
+      pledgeDescription:  'Dropping off children\'s boots (sizes 28–32) and a warm coat.',
+      status:             'pledged',
+    },
+    {
+      driveId:            winterClothes.id,
+      userId:             nikola.id,
+      pledgeDescription:  'Sports jackets and fleece tops — about 5 items total.',
+      status:             'pledged',
+    },
+    // School books: two pledges
+    {
+      driveId:            schoolBooks.id,
+      userId:             ivan.id,
+      pledgeDescription:  'Around 15 programming and tech books — Python, JavaScript, Linux basics.',
+      status:             'pledged',
+    },
+    {
+      driveId:            schoolBooks.id,
+      userId:             georgi.id,
+      pledgeDescription:  'Box of children\'s books and a few Bulgarian fiction classics.',
+      status:             'pledged',
+    },
+    // Homemade food drive (completed): all four others fulfilled
+    {
+      driveId:            homemadeFood.id,
+      userId:             ivan.id,
+      pledgeDescription:  'Cooked lentil soup and sandwiches for 3 residents on Tuesday and Thursday.',
+      status:             'fulfilled',
+    },
+    {
+      driveId:            homemadeFood.id,
+      userId:             maria.id,
+      pledgeDescription:  'Made banitsa and yoghurt pots for 4 residents every morning.',
+      status:             'fulfilled',
+    },
+    {
+      driveId:            homemadeFood.id,
+      userId:             nikola.id,
+      pledgeDescription:  'Delivered protein-rich meals (chicken, rice, salad) to 2 residents.',
+      status:             'fulfilled',
+    },
+    // Community garden fund: two pledges
+    {
+      driveId:            gardenFund.id,
+      userId:             maria.id,
+      pledgeDescription:  'Contributing 100 BGN towards the timber for raised beds.',
+      status:             'pledged',
+    },
+    {
+      driveId:            gardenFund.id,
+      userId:             georgi.id,
+      pledgeDescription:  'I can donate 50 BGN and also help with the actual construction work.',
+      status:             'pledged',
+    },
+  ]).onConflictDoNothing()
 }
 
 seed().catch((err) => {
