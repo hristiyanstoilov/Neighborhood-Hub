@@ -17,7 +17,7 @@ const PAGE_SIZE = 5
 
 export function PublicProfileRatings({ userId }: { userId: string }) {
   const ratingsQuery = useInfiniteQuery({
-    queryKey: queryKeys.ratings.byUser(userId, PAGE_SIZE, 0),
+    queryKey: queryKeys.ratings.byUser(userId),
     queryFn: async ({ pageParam }) => {
       const offset = pageParam as number
       const params = new URLSearchParams({

@@ -72,8 +72,7 @@ export const queryKeys = {
 
   ratings: {
     all: ['ratings'] as const,
-    byUser: (userId: string, limit: number, offset: number) =>
-      ['ratings', 'user', userId, limit, offset] as const,
+    byUser: (userId: string) => ['ratings', 'user', userId] as const,
     check: (userId: string, contextType: string, contextId: string) =>
       ['ratings', 'check', userId, contextType, contextId] as const,
   },
