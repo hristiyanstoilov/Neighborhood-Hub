@@ -2,20 +2,13 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { queryFoodReservationsForUser } from '@/lib/queries/food'
+import { FoodReservationsClient } from './food-reservations-client'
 
 export const dynamic = 'force-dynamic'
 
 const ROLE_LABELS: Record<string, string> = {
   requester: 'My reservations',
   owner: 'Reservations for my food',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  reserved: 'Reserved',
-  picked_up: 'Picked up',
-  rejected: 'Rejected',
-  cancelled: 'Cancelled',
 }
 
 export default async function FoodReservationsPage({
@@ -75,25 +68,7 @@ export default async function FoodReservationsPage({
           <Link href="/food" className="text-sm text-green-700 hover:underline">Browse food listings →</Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {reservations.map((reservation) => (
-            <div key={reservation.id} className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div>
-                  <Link href={`/food/${reservation.foodShareId}`} className="font-semibold text-gray-900 hover:text-green-700 hover:underline">
-                    {reservation.foodShareTitle}
-                  </Link>
-                  <p className="text-xs text-gray-500">Pickup: {new Date(reservation.pickupAt).toLocaleString('en-GB')}</p>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
-                  {STATUS_LABELS[reservation.status] ?? reservation.status}
-                </span>
-              </div>
-              {reservation.notes && <p className="text-sm text-gray-600 mb-1">{reservation.notes}</p>}
-              {reservation.cancellationReason && <p className="text-sm text-red-600">Cancelled: {reservation.cancellationReason}</p>}
-            </div>
-          ))}
-        </div>
+        <FoodReservationsClient reservations={reservations} viewerId={user.id} />
       )}
     </div>
   )

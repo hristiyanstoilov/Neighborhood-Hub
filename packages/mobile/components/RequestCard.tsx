@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   View,
   Text,
@@ -14,8 +15,10 @@ import {
   type SkillRequestRow,
   updateSkillRequestAction,
 } from '../lib/queries/skill-requests'
+import { fetchRatingCheck, ratingsKeys } from '../lib/queries/ratings'
 import { useToast } from '../lib/toast'
 import { formatDateTime, formatMeetingType, REQUEST_STATUS_COLORS } from '../lib/format'
+import { RatingModal } from '../app/(app)/_components/RatingModal'
 
 interface Props {
   request: SkillRequestRow
@@ -34,6 +37,7 @@ const ACTION_TOASTS: Record<RequestAction, string> = {
 export default function RequestCard({ request, viewerId }: Props) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+  const [ratingVisible, setRatingVisible] = useState(false)
   const mutation = useMutation({
     mutationFn: updateSkillRequestAction,
     onSuccess: async () => {
@@ -44,8 +48,17 @@ export default function RequestCard({ request, viewerId }: Props) {
   const isOwner = request.userToId === viewerId
   const isRequester = request.userFromId === viewerId
   const otherName = isOwner ? request.requesterName : request.ownerName
+  const ratedUserId = isOwner ? request.userFromId : request.userToId
+  const ratedUserName = otherName ?? 'neighbor'
   const statusStyle = REQUEST_STATUS_COLORS[request.status] ?? REQUEST_STATUS_COLORS.cancelled
   const isTerminal = TERMINAL.includes(request.status)
+
+  const ratingCheckQuery = useQuery({
+    queryKey: ratingsKeys.check(viewerId, 'skill_request', request.id),
+    queryFn: () => fetchRatingCheck('skill_request', request.id),
+    enabled: request.status === 'completed',
+    staleTime: 15_000,
+  })
 
   async function performAction(action: RequestAction, cancellationReason?: string) {
     try {
@@ -173,6 +186,28 @@ export default function RequestCard({ request, viewerId }: Props) {
           <ActivityIndicator size="small" color="#15803d" />
         </View>
       )}
+
+      {request.status === 'completed' && !ratingCheckQuery.isLoading && (
+        ratingCheckQuery.data?.hasRated ? (
+          <Text style={styles.ratedText}>
+            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+          </Text>
+        ) : (
+          <TouchableOpacity style={[styles.btn, styles.btnAmber]} onPress={() => setRatingVisible(true)}>
+            <Text style={styles.btnTextWhite}>Rate {ratedUserName}</Text>
+          </TouchableOpacity>
+        )
+      )}
+
+      <RatingModal
+        viewerId={viewerId}
+        visible={ratingVisible}
+        onClose={() => setRatingVisible(false)}
+        contextType="skill_request"
+        contextId={request.id}
+        ratedUserId={ratedUserId}
+        ratedUserName={ratedUserName}
+      />
     </View>
   )
 }
@@ -261,9 +296,16 @@ const styles = StyleSheet.create({
   btnGreen: { backgroundColor: '#15803d' },
   btnRed:   { backgroundColor: '#dc2626' },
   btnBlue:  { backgroundColor: '#2563eb' },
+  btnAmber: { backgroundColor: '#b45309' },
   btnGray:  { borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
   btnTextWhite: { color: '#fff', fontSize: 13, fontWeight: '600' },
   btnTextGray:  { color: '#374151', fontSize: 13, fontWeight: '500' },
+  ratedText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#92400e',
+    fontWeight: '600',
+  },
   loadingRow: {
     alignItems: 'center',
     paddingVertical: 8,

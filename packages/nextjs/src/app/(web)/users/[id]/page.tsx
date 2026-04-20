@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ui/async-states'
 import { PublicProfileBackLink } from './_components/public-profile-back-link'
 import { PublicProfileHeader } from './_components/public-profile-header'
 import { PublicProfileSkills } from './_components/public-profile-skills'
+import { PublicProfileRatings } from './_components/public-profile-ratings'
 import { PrivateProfileState } from './_components/private-profile-state'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,7 @@ export default async function PublicProfilePage({ params }: Props) {
   let row: {
     userId: string; name: string | null; bio: string | null
     avatarUrl: string | null; isPublic: boolean
+    avgRating: string | null; ratingCount: number
     city: string | null; neighborhood: string | null
   } | null = null
   let fetchError = false
@@ -52,6 +54,8 @@ export default async function PublicProfilePage({ params }: Props) {
         bio: profiles.bio,
         avatarUrl: profiles.avatarUrl,
         isPublic: profiles.isPublic,
+        avgRating: profiles.avgRating,
+        ratingCount: profiles.ratingCount,
         city: locations.city,
         neighborhood: locations.neighborhood,
       })
@@ -104,8 +108,18 @@ export default async function PublicProfilePage({ params }: Props) {
   return (
     <div className="max-w-2xl">
       <PublicProfileBackLink />
-      <PublicProfileHeader name={row.name} avatarUrl={row.avatarUrl} location={location} bio={row.bio} />
+      <PublicProfileHeader
+        name={row.name}
+        avatarUrl={row.avatarUrl}
+        location={location}
+        bio={row.bio}
+        avgRating={row.avgRating}
+        ratingCount={row.ratingCount}
+      />
       <PublicProfileSkills skills={userSkills} />
+      <div className="mt-6">
+        <PublicProfileRatings userId={id} />
+      </div>
     </div>
   )
 }

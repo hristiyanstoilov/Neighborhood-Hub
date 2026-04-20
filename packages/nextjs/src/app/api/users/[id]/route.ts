@@ -17,6 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         name: profiles.name,
         bio: profiles.bio,
         avatarUrl: profiles.avatarUrl,
+        avgRating: profiles.avgRating,
+        ratingCount: profiles.ratingCount,
         isPublic: profiles.isPublic,
         createdAt: users.createdAt,
         locationNeighborhood: locations.neighborhood,
@@ -59,6 +61,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         name: profileRow.name,
         bio: profileRow.bio,
         avatarUrl: profileRow.avatarUrl,
+        avgRating: profileRow.avgRating,
+        ratingCount: profileRow.ratingCount,
         memberSince: profileRow.createdAt,
         location: profileRow.locationNeighborhood
           ? `${profileRow.locationNeighborhood}, ${profileRow.locationCity ?? ''}`

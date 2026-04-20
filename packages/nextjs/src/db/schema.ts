@@ -93,6 +93,8 @@ export const profiles = pgTable('profiles', {
   name: varchar('name', { length: 100 }),
   bio: text('bio'),
   avatarUrl: varchar('avatar_url', { length: 2048 }),
+  avgRating: numeric('avg_rating', { precision: 3, scale: 2 }),
+  ratingCount: integer('rating_count').default(0).notNull(),
   locationId: uuid('location_id').references(() => locations.id, { onDelete: 'set null' }),
   isPublic: boolean('is_public').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -585,7 +587,40 @@ export const foodReservations = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 19. AI CONVERSATIONS
+// 19. RATINGS
+// ─────────────────────────────────────────────
+
+export const ratings = pgTable(
+  'ratings',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    raterId: uuid('rater_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    ratedUserId: uuid('rated_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    contextType: varchar('context_type', { length: 30 }).notNull(),
+    contextId: uuid('context_id').notNull(),
+    score: integer('score').notNull(),
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('ratings_rater_context_idx').on(t.raterId, t.contextType, t.contextId),
+    index('ratings_rated_user_idx').on(t.ratedUserId),
+    index('ratings_context_idx').on(t.contextType, t.contextId),
+    check('ratings_score_check', sql`${t.score} BETWEEN 1 AND 5`),
+    check(
+      'ratings_context_type_check',
+      sql`${t.contextType} IN ('skill_request', 'tool_reservation', 'food_reservation')`
+    ),
+    check('ratings_not_self_check', sql`${t.raterId} != ${t.ratedUserId}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 20. AI CONVERSATIONS
 // ─────────────────────────────────────────────
 
 export const aiConversations = pgTable(
@@ -604,7 +639,7 @@ export const aiConversations = pgTable(
 )
 
 // ─────────────────────────────────────────────
-// 18. AI MESSAGES
+// 21. AI MESSAGES
 // ─────────────────────────────────────────────
 
 export const aiMessages = pgTable(

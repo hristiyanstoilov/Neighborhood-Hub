@@ -69,4 +69,12 @@ export const queryKeys = {
     conversations: (userId: string) => ['chat', 'conversations', userId] as const,
     messages:      (conversationId: string) => ['chat', 'messages', conversationId] as const,
   },
+
+  ratings: {
+    all: ['ratings'] as const,
+    byUser: (userId: string, limit: number, offset: number) =>
+      ['ratings', 'user', userId, limit, offset] as const,
+    check: (userId: string, contextType: string, contextId: string) =>
+      ['ratings', 'check', userId, contextType, contextId] as const,
+  },
 } as const

@@ -4,9 +4,9 @@ loadEnvConfig(process.cwd())
 import bcrypt from 'bcryptjs'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
-import { eq } from 'drizzle-orm'
+import { eq, sql as sqlExpr } from 'drizzle-orm'
 import * as schema from './schema'
-import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations, events, eventAttendees, communityDrives, drivePledges } from './schema'
+import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations, events, eventAttendees, communityDrives, drivePledges, ratings } from './schema'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
@@ -91,6 +91,7 @@ async function seed() {
       await seedFood()
       await seedEvents()
       await seedDrives()
+      await seedRatings()
       console.log('Done.')
       process.exit(0)
     }
@@ -118,6 +119,7 @@ async function seed() {
     await seedFood()
     await seedEvents()
     await seedDrives()
+    await seedRatings()
     console.log('Done.')
     process.exit(0)
   }
@@ -419,6 +421,7 @@ async function seed() {
   await seedFood()
   await seedEvents()
   await seedDrives()
+  await seedRatings()
 
   console.log('\nDone! Demo accounts created:')
   console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
@@ -649,6 +652,98 @@ async function seedFood() {
       notes: 'Отменено поради промяна в графика.',
     },
   ])
+}
+
+async function seedRatings() {
+  const existing = await db.select({ id: ratings.id }).from(ratings).limit(1)
+  if (existing.length > 0) {
+    console.log('Ratings already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo ratings...')
+
+  const [completedRequest] = await db
+    .select({ id: skillRequests.id, userFromId: skillRequests.userFromId, userToId: skillRequests.userToId })
+    .from(skillRequests)
+    .where(eq(skillRequests.status, 'completed'))
+    .limit(1)
+
+  const [returnedReservation] = await db
+    .select({ id: toolReservations.id, borrowerId: toolReservations.borrowerId, ownerId: toolReservations.ownerId })
+    .from(toolReservations)
+    .where(eq(toolReservations.status, 'returned'))
+    .limit(1)
+
+  const seedRows: Array<typeof ratings.$inferInsert> = []
+
+  if (completedRequest) {
+    seedRows.push(
+      {
+        raterId: completedRequest.userFromId,
+        ratedUserId: completedRequest.userToId,
+        contextType: 'skill_request',
+        contextId: completedRequest.id,
+        score: 5,
+        comment: 'Excellent help, very professional and quick.',
+      },
+      {
+        raterId: completedRequest.userToId,
+        ratedUserId: completedRequest.userFromId,
+        contextType: 'skill_request',
+        contextId: completedRequest.id,
+        score: 4,
+        comment: 'Great communication and prepared in advance.',
+      }
+    )
+  }
+
+  if (returnedReservation) {
+    seedRows.push(
+      {
+        raterId: returnedReservation.borrowerId,
+        ratedUserId: returnedReservation.ownerId,
+        contextType: 'tool_reservation',
+        contextId: returnedReservation.id,
+        score: 5,
+        comment: 'Tool was exactly as described and easy to coordinate pickup.',
+      },
+      {
+        raterId: returnedReservation.ownerId,
+        ratedUserId: returnedReservation.borrowerId,
+        contextType: 'tool_reservation',
+        contextId: returnedReservation.id,
+        score: 3,
+        comment: 'Returned safely, but with a small delay.',
+      }
+    )
+  }
+
+  if (seedRows.length === 0) {
+    console.log('No completed contexts found for ratings seed, skipping')
+    return
+  }
+
+  await db.insert(ratings).values(seedRows).onConflictDoNothing()
+
+  const impactedUserIds = [...new Set(seedRows.map((row) => row.ratedUserId))]
+  for (const userId of impactedUserIds) {
+    const [agg] = await db
+      .select({
+        avg: sqlExpr<string | null>`AVG(${ratings.score})::numeric(3,2)`,
+        count: sqlExpr<number>`COUNT(*)::int`,
+      })
+      .from(ratings)
+      .where(eq(ratings.ratedUserId, userId))
+
+    await db
+      .update(profiles)
+      .set({
+        avgRating: agg?.avg ?? null,
+        ratingCount: agg?.count ?? 0,
+      })
+      .where(eq(profiles.userId, userId))
+  }
 }
 
 async function seedEvents() {

@@ -15,6 +15,8 @@ import {
   fetchPublicProfileById,
   publicProfileKeys,
 } from '../../../lib/queries/public-profile'
+import { fetchRatingsByUser, ratingsKeys } from '../../../lib/queries/ratings'
+import { formatDateOnly } from '../../../lib/format'
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -24,6 +26,12 @@ export default function PublicProfileScreen() {
   const profileQuery = useQuery({
     queryKey: publicProfileKeys.detail(userId),
     queryFn: () => fetchPublicProfileById(userId),
+    enabled: userId.length > 0,
+  })
+
+  const ratingsQuery = useQuery({
+    queryKey: ratingsKeys.byUser(userId, 5, 0),
+    queryFn: () => fetchRatingsByUser(userId, 5, 0),
     enabled: userId.length > 0,
   })
 
@@ -89,6 +97,11 @@ export default function PublicProfileScreen() {
         )}
         <Text style={styles.name}>{profile.name ?? 'Neighbor'}</Text>
         {profile.location && <Text style={styles.location}>📍 {profile.location}</Text>}
+        {profile.ratingCount > 0 && profile.avgRating && (
+          <Text style={styles.ratingSummary}>
+            ★ {Number(profile.avgRating).toFixed(1)} ({profile.ratingCount} reviews)
+          </Text>
+        )}
         {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
       </View>
 
@@ -121,6 +134,26 @@ export default function PublicProfileScreen() {
           </TouchableOpacity>
         ))
       )}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Recent reviews</Text>
+      {ratingsQuery.isLoading ? (
+        <Text style={styles.emptyText}>Loading reviews...</Text>
+      ) : ratingsQuery.isError ? (
+        <Text style={styles.emptyText}>Could not load reviews.</Text>
+      ) : (ratingsQuery.data?.ratings.length ?? 0) === 0 ? (
+        <Text style={styles.emptyText}>No reviews yet.</Text>
+      ) : (
+        ratingsQuery.data?.ratings.map((rating) => (
+          <View key={rating.id} style={styles.reviewCard}>
+            <View style={styles.reviewHeader}>
+              <Text style={styles.reviewName}>{rating.raterName ?? 'Neighbor'}</Text>
+              <Text style={styles.reviewStars}>{'★'.repeat(Math.max(0, Math.min(5, rating.score)))}</Text>
+            </View>
+            {rating.comment ? <Text style={styles.reviewComment}>{rating.comment}</Text> : null}
+            <Text style={styles.reviewDate}>{formatDateOnly(rating.createdAt)}</Text>
+          </View>
+        ))
+      )}
     </ScrollView>
   )
 }
@@ -145,6 +178,7 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 28, fontWeight: '700', color: '#15803d' },
   name: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 4 },
   location: { fontSize: 13, color: '#6b7280', marginBottom: 4 },
+  ratingSummary: { fontSize: 13, color: '#92400e', marginTop: 2, fontWeight: '600' },
   bio: { fontSize: 14, color: '#374151', lineHeight: 22, textAlign: 'center', marginTop: 8, maxWidth: 300 },
 
   sectionTitle: { fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 12 },
@@ -169,4 +203,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3, marginRight: 12,
   },
   availableBadgeText: { fontSize: 11, color: '#065f46', fontWeight: '600' },
+  reviewCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 12,
+    marginBottom: 10,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  reviewName: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  reviewStars: { fontSize: 12, color: '#b45309', fontWeight: '700' },
+  reviewComment: { fontSize: 13, color: '#374151' },
+  reviewDate: { fontSize: 12, color: '#6b7280', marginTop: 6 },
 })

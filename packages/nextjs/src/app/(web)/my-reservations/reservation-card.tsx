@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
+import { RatingForm } from '@/components/ui/rating-form'
+import { apiFetch } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import { type ReservationRow, useReservationAction } from './use-reservations'
 
 interface Props {
@@ -51,6 +55,24 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
   const isBorrower = reservation.borrowerId === viewerId
   const isOwner    = reservation.ownerId    === viewerId
   const isTerminal = TERMINAL.includes(reservation.status)
+  const ratedUserId = isBorrower ? reservation.ownerId : reservation.borrowerId
+  const ratedUserName = isBorrower ? 'tool owner' : 'borrower'
+
+  const ratingCheckQuery = useQuery({
+    queryKey: queryKeys.ratings.check(viewerId, 'tool_reservation', reservation.id),
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        contextType: 'tool_reservation',
+        contextId: reservation.id,
+      })
+      const res = await apiFetch(`/api/ratings/check?${params.toString()}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error ?? 'CHECK_FAILED')
+      return json.data as { hasRated: boolean; existingRating: { score: number } | null }
+    },
+    enabled: reservation.status === 'returned',
+    staleTime: 10_000,
+  })
 
   const action = useReservationAction(viewerId)
 
@@ -190,6 +212,22 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
             </button>
           </div>
         </div>
+      )}
+
+      {reservation.status === 'returned' && !ratingCheckQuery.isLoading && (
+        ratingCheckQuery.data?.hasRated ? (
+          <p className="text-xs mt-3 text-amber-700 font-medium">
+            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+          </p>
+        ) : (
+          <RatingForm
+            viewerId={viewerId}
+            contextType="tool_reservation"
+            contextId={reservation.id}
+            ratedUserId={ratedUserId}
+            ratedUserName={ratedUserName}
+          />
+        )
       )}
     </div>
   )

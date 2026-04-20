@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchFoodReservationsForUser, foodKeys, type FoodReservationWithShare } from '../../../lib/queries/food'
 import { formatDateTime } from '../../../lib/format'
+import { fetchRatingCheck, ratingsKeys } from '../../../lib/queries/ratings'
+import { RatingModal } from '../_components/RatingModal'
 
 const ROLE_TABS: Array<{ key: 'requester' | 'owner'; label: string }> = [
   { key: 'requester', label: 'My reservations' },
@@ -105,7 +107,19 @@ export default function FoodReservationsScreen() {
 }
 
 function ReservationCard({ item, onOpenFood }: { item: FoodReservationWithShare; onOpenFood: () => void }) {
+  const { user } = useAuth()
+  const [ratingVisible, setRatingVisible] = useState(false)
   const sc = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const isRequester = user?.id === item.requesterId
+  const ratedUserId = isRequester ? item.ownerId : item.requesterId
+  const ratedUserName = isRequester ? 'food owner' : 'requester'
+
+  const ratingCheckQuery = useQuery({
+    queryKey: ratingsKeys.check(user?.id ?? '', 'food_reservation', item.id),
+    queryFn: () => fetchRatingCheck('food_reservation', item.id),
+    enabled: item.status === 'picked_up' && Boolean(user?.id),
+    staleTime: 15_000,
+  })
 
   return (
     <TouchableOpacity style={styles.card} onPress={onOpenFood} activeOpacity={0.75}>
@@ -120,6 +134,28 @@ function ReservationCard({ item, onOpenFood }: { item: FoodReservationWithShare;
       {item.requesterName ? <Text style={styles.metaSubtle}>Requester: {item.requesterName}</Text> : null}
       {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
       {item.cancellationReason ? <Text style={styles.cancelled}>Cancelled: {item.cancellationReason}</Text> : null}
+
+      {item.status === 'picked_up' && !ratingCheckQuery.isLoading && (
+        ratingCheckQuery.data?.hasRated ? (
+          <Text style={styles.ratedText}>
+            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+          </Text>
+        ) : (
+          <TouchableOpacity style={styles.rateBtn} onPress={() => setRatingVisible(true)}>
+            <Text style={styles.rateBtnText}>Rate {ratedUserName}</Text>
+          </TouchableOpacity>
+        )
+      )}
+
+      <RatingModal
+        viewerId={user?.id ?? ''}
+        visible={ratingVisible}
+        onClose={() => setRatingVisible(false)}
+        contextType="food_reservation"
+        contextId={item.id}
+        ratedUserId={ratedUserId}
+        ratedUserName={ratedUserName}
+      />
     </TouchableOpacity>
   )
 }
@@ -142,6 +178,16 @@ const styles = StyleSheet.create({
   metaSubtle: { fontSize: 12, color: '#6b7280' },
   notes: { fontSize: 12, color: '#4b5563' },
   cancelled: { fontSize: 12, color: '#b91c1c' },
+  ratedText: { fontSize: 12, color: '#92400e', fontWeight: '600', marginTop: 4 },
+  rateBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    backgroundColor: '#b45309',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rateBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12 },
   emptyText: { color: '#6b7280', fontSize: 14, textAlign: 'center' },
   primaryBtn: { backgroundColor: '#15803d', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 },

@@ -5,9 +5,20 @@ type PublicProfileHeaderProps = {
   avatarUrl: string | null
   location: string | null
   bio: string | null
+  avgRating: string | null
+  ratingCount: number
 }
 
-export function PublicProfileHeader({ name, avatarUrl, location, bio }: PublicProfileHeaderProps) {
+export function PublicProfileHeader({
+  name,
+  avatarUrl,
+  location,
+  bio,
+  avgRating,
+  ratingCount,
+}: PublicProfileHeaderProps) {
+  const hasRatings = ratingCount > 0 && avgRating !== null
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start gap-4">
@@ -20,6 +31,11 @@ export function PublicProfileHeader({ name, avatarUrl, location, bio }: PublicPr
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold text-gray-900">{name ?? 'Neighbor'}</h1>
           {location && <p className="text-sm text-gray-500 mt-0.5">📍 {location}</p>}
+          {hasRatings && (
+            <p className="text-sm text-amber-700 mt-1 font-medium">
+              ★ {Number(avgRating).toFixed(1)} ({ratingCount} reviews)
+            </p>
+          )}
           {bio && <p className="text-sm text-gray-700 mt-3 leading-relaxed">{bio}</p>}
         </div>
       </div>

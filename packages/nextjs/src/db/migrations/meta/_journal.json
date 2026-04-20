@@ -57,6 +57,13 @@
       "when": 1776478984365,
       "tag": "0007_overconfident_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776657947386,
+      "tag": "0008_fancy_the_renegades",
+      "breakpoints": true
     }
   ]
 }

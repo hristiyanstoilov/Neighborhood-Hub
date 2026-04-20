@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { fetchUserToolReservations, toolsKeys, type UserReservationItem } from '../../../lib/queries/tools'
+import { fetchRatingCheck, ratingsKeys } from '../../../lib/queries/ratings'
+import { RatingModal } from '../_components/RatingModal'
 
 type Role = 'borrower' | 'owner'
 
@@ -91,7 +93,7 @@ export default function MyToolReservationsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
           }
           renderItem={({ item }) => (
-            <ReservationCard item={item} onOpen={() => router.push(`/(app)/tools/${item.toolId}`)} />
+            <ReservationCard item={item} viewerId={user.id} onOpen={() => router.push(`/(app)/tools/${item.toolId}`)} />
           )}
           ListEmptyComponent={
             <View style={styles.center}>
@@ -109,8 +111,19 @@ export default function MyToolReservationsScreen() {
   )
 }
 
-function ReservationCard({ item, onOpen }: { item: UserReservationItem; onOpen: () => void }) {
+function ReservationCard({ item, viewerId, onOpen }: { item: UserReservationItem; viewerId: string; onOpen: () => void }) {
+  const [ratingVisible, setRatingVisible] = useState(false)
   const color = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
+  const isBorrower = item.borrowerId === viewerId
+  const ratedUserId = isBorrower ? item.ownerId : item.borrowerId
+  const ratedUserName = isBorrower ? 'tool owner' : 'borrower'
+
+  const ratingCheckQuery = useQuery({
+    queryKey: ratingsKeys.check(viewerId, 'tool_reservation', item.id),
+    queryFn: () => fetchRatingCheck('tool_reservation', item.id),
+    enabled: item.status === 'returned',
+    staleTime: 15_000,
+  })
   // Dates are plain date strings (YYYY-MM-DD) — avoid UTC-to-local shift by splitting directly
   const fmt = (d: string) => d.split('T')[0].split('-').reverse().join('/')
   const start = fmt(item.startDate)
@@ -127,6 +140,28 @@ function ReservationCard({ item, onOpen }: { item: UserReservationItem; onOpen: 
       <Text style={styles.metaText}>{start} – {end}</Text>
       {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
       {item.cancellationReason ? <Text style={styles.notes} numberOfLines={1}>Reason: {item.cancellationReason}</Text> : null}
+
+      {item.status === 'returned' && !ratingCheckQuery.isLoading && (
+        ratingCheckQuery.data?.hasRated ? (
+          <Text style={styles.ratedText}>
+            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+          </Text>
+        ) : (
+          <TouchableOpacity style={styles.rateBtn} onPress={() => setRatingVisible(true)}>
+            <Text style={styles.rateBtnText}>Rate {ratedUserName}</Text>
+          </TouchableOpacity>
+        )
+      )}
+
+      <RatingModal
+        viewerId={viewerId}
+        visible={ratingVisible}
+        onClose={() => setRatingVisible(false)}
+        contextType="tool_reservation"
+        contextId={item.id}
+        ratedUserId={ratedUserId}
+        ratedUserName={ratedUserName}
+      />
     </TouchableOpacity>
   )
 }
@@ -150,6 +185,16 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 11, fontWeight: '600' },
   metaText: { fontSize: 12, color: '#374151' },
   notes: { fontSize: 12, color: '#6b7280' },
+  ratedText: { fontSize: 12, color: '#92400e', fontWeight: '600', marginTop: 4 },
+  rateBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    backgroundColor: '#b45309',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rateBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12 },
   emptyText: { color: '#6b7280', fontSize: 14, textAlign: 'center' },
   primaryBtn: { backgroundColor: '#15803d', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 },

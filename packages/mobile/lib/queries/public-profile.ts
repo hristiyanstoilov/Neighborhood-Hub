@@ -12,6 +12,8 @@ export interface PublicProfile {
   name: string | null
   bio: string | null
   avatarUrl: string | null
+  avgRating: string | null
+  ratingCount: number
   location: string | null
   memberSince: string
   skills: PublicSkill[]
