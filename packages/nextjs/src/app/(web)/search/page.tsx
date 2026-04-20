@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+import { ListPageSkeleton } from '@/components/ui/skeletons'
 import { SearchResultsView } from './_components/search-results-view'
 
 type SearchPageProps = {
@@ -13,11 +15,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <SearchResultsView
-        initialQuery={params.q ?? ''}
-        initialType={params.type ?? 'all'}
-        initialLocationId={params.locationId}
-      />
+      <Suspense fallback={<ListPageSkeleton />}>
+        <SearchResultsView
+          initialQuery={params.q ?? ''}
+          initialType={params.type ?? 'all'}
+          initialLocationId={params.locationId}
+        />
+      </Suspense>
     </div>
   )
 }
