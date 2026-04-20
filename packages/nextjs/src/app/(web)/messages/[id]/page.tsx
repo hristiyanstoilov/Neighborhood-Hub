@@ -48,7 +48,7 @@ export default function ConversationThreadPage() {
       if (!lastPage.hasMore || lastPage.messages.length === 0) return undefined
       return lastPage.messages[lastPage.messages.length - 1]?.createdAt
     },
-    enabled: Boolean(conversationId),
+    enabled: Boolean(conversationId) && Boolean(user),
     refetchInterval: 15_000,
   })
 

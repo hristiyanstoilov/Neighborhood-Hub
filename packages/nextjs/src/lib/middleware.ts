@@ -3,10 +3,12 @@ import { verifyAccessToken, JwtPayload } from './auth'
 
 export type AuthedRequest = NextRequest & { user: JwtPayload }
 
+type RouteContext = { params?: Promise<Record<string, string>> }
+
 export function requireAuth(
-  handler: (req: NextRequest, context: { user: JwtPayload }) => Promise<NextResponse>
+  handler: (req: NextRequest, context: { user: JwtPayload; params: Record<string, string> }) => Promise<NextResponse>
 ) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+  return async (req: NextRequest, routeContext?: RouteContext): Promise<NextResponse> => {
     const authHeader = req.headers.get('authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,7 +19,8 @@ export function requireAuth(
 
     try {
       const user = verifyAccessToken(token)
-      return handler(req, { user })
+      const params = routeContext?.params ? await routeContext.params : {}
+      return handler(req, { user, params })
     } catch {
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 401 })
     }

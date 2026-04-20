@@ -9,10 +9,9 @@ function isParticipant(conversation: { participantA: string; participantB: strin
   return conversation.participantA === userId || conversation.participantB === userId
 }
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const segments = req.nextUrl.pathname.split('/').filter(Boolean)
-    const conversationId = segments[segments.indexOf('conversations') + 1]
+    const conversationId = params.id
 
     if (!conversationId) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -79,10 +78,9 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
   }
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const segments = req.nextUrl.pathname.split('/').filter(Boolean)
-    const conversationId = segments[segments.indexOf('conversations') + 1]
+    const conversationId = params.id
 
     if (!conversationId) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
