@@ -110,7 +110,11 @@ export function RatingModal({
           <Text style={styles.counter}>{comment.length}/500</Text>
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onClose} disabled={mutation.isPending}>
+            <Pressable
+              style={styles.cancelBtn}
+              onPress={() => { setComment(''); setScore(5); onClose() }}
+              disabled={mutation.isPending}
+            >
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </Pressable>
             <Pressable
