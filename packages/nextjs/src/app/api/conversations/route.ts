@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, count, desc, eq, inArray, ne, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, profiles, users } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
@@ -46,7 +46,7 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
         .where(and(
           inArray(messages.conversationId, conversationIds),
           ne(messages.senderId, user.sub),
-          sql`${messages.readAt} IS NULL`
+          isNull(messages.readAt)
         ))
         .groupBy(messages.conversationId),
     ])
@@ -109,20 +109,21 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     const { participantA, participantB } = normalizePair(user.sub, otherUserId)
 
+    const [created] = await db
+      .insert(conversations)
+      .values({ participantA, participantB })
+      .onConflictDoNothing()
+      .returning({ id: conversations.id })
+
+    if (created) {
+      return NextResponse.json({ data: { conversationId: created.id } }, { status: 201 })
+    }
+
     const existing = await db.query.conversations.findFirst({
       where: and(eq(conversations.participantA, participantA), eq(conversations.participantB, participantB)),
     })
 
-    if (existing) {
-      return NextResponse.json({ data: { conversationId: existing.id } })
-    }
-
-    const [created] = await db
-      .insert(conversations)
-      .values({ participantA, participantB })
-      .returning({ id: conversations.id })
-
-    return NextResponse.json({ data: { conversationId: created.id } }, { status: 201 })
+    return NextResponse.json({ data: { conversationId: existing!.id } })
   } catch (err) {
     console.error('[POST /api/conversations]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
