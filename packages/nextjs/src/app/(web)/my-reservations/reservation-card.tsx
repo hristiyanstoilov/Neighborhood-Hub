@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
 import { RatingForm } from '@/components/ui/rating-form'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { apiFetch } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
 import { formatDate as sharedFormatDate } from '@/lib/format'
@@ -45,6 +46,7 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
   const [error, setError]               = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'return' | null>(null)
   const { showToast } = useToast()
 
   const isBorrower = reservation.borrowerId === viewerId
@@ -138,14 +140,14 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
           {isOwner && reservation.status === 'pending' && (
             <>
               <button
-                onClick={() => handleAction('approve')}
+                onClick={() => setConfirmAction('approve')}
                 disabled={action.isPending}
                 className="px-3 py-1.5 bg-green-700 text-white rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
               >
-                {action.isPending ? '…' : 'Approve'}
+                Approve
               </button>
               <button
-                onClick={() => handleAction('reject')}
+                onClick={() => setConfirmAction('reject')}
                 disabled={action.isPending}
                 className="px-3 py-1.5 border border-red-300 text-red-600 rounded-md text-sm font-medium hover:bg-red-50 disabled:opacity-50 transition-colors"
               >
@@ -157,11 +159,11 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
           {/* Borrower: return approved */}
           {isBorrower && reservation.status === 'approved' && (
             <button
-              onClick={() => handleAction('return')}
+              onClick={() => setConfirmAction('return')}
               disabled={action.isPending}
               className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {action.isPending ? '…' : 'Mark returned'}
+              Mark returned
             </button>
           )}
 
@@ -208,6 +210,29 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={
+          confirmAction === 'approve' ? 'Approve this reservation?' :
+          confirmAction === 'reject'  ? 'Decline this reservation?' :
+          'Mark as returned?'
+        }
+        description={
+          confirmAction === 'reject' ? 'The slot will reopen for other borrowers.' :
+          confirmAction === 'return' ? 'This confirms the tool has been returned.' :
+          undefined
+        }
+        confirmLabel={
+          confirmAction === 'approve' ? 'Approve' :
+          confirmAction === 'reject'  ? 'Decline' :
+          'Mark returned'
+        }
+        confirmVariant={confirmAction === 'reject' ? 'danger' : 'primary'}
+        onConfirm={() => { handleAction(confirmAction!); setConfirmAction(null) }}
+        onCancel={() => setConfirmAction(null)}
+        busy={action.isPending}
+      />
 
       {reservation.status === 'returned' && !ratingCheckQuery.isLoading && (
         ratingCheckQuery.data?.hasRated ? (
