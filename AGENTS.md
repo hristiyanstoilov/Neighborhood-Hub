@@ -48,25 +48,29 @@ neighborhood-hub/
 │   │   │   │   │   ├── drives/          # CRUD community drives + pledges
 │   │   │   │   │   ├── food-shares/     # CRUD food listings + reservations state machine
 │   │   │   │   │   ├── food-reservations/ # list user reservations across all food shares
+│   │   │   │   │   ├── ratings/         # POST create rating, GET list by user, GET check
+│   │   │   │   │   ├── search/          # GET unified cross-module full-text search
 │   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
 │   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (20 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (21 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
-│   │   │   │   ├── seed.ts      # Seed locations, categories, demo users, skills/requests, tools/reservations
+│   │   │   │   ├── seed.ts      # Seed: locations, categories, demo users, skills, tools, food, events, drives, ratings
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify + token helpers
 │   │   │       ├── middleware.ts # requireAuth / requireAdmin
-│   │   │       ├── ratelimit.ts # Upstash rate limiters
+│   │   │       ├── ratelimit.ts # Upstash rate limiters (login, register, AI, API, search)
 │   │   │       ├── email.ts     # Resend email templates (green brand)
 │   │   │       ├── audit.ts     # Audit log writer
 │   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
+│   │   │       ├── format.ts    # Shared formatters: formatDate, formatDateTime, status classes, humanizeValue
+│   │   │       ├── query-keys.ts # Central TanStack Query key registry (skills, tools, events, drives, food, ratings, search, notifications, profile, chat)
 │   │   │       ├── queries/     # Reusable DB query functions
-│   │   │       └── schemas/     # Zod validation schemas
+│   │   │       └── schemas/     # Zod validation schemas (per domain: rating.ts, search.ts, …)
 │   │   └── package.json
 │   └── mobile/                  # React Native mobile app (Expo 54)
 │       ├── app/
@@ -82,14 +86,14 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (20 tables)
+## 4. Database Schema (21 tables)
 
 ### Core tables (all built)
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth only (email, password_hash, role, failed_login_attempts, locked_until, deleted_at) |
-| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public) |
+| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public, avg_rating, rating_count) |
 | `refresh_tokens` | JWT refresh tokens (user_id FK, token, is_revoked, expires_at, ip_address) |
 | `audit_log` | Admin action log (user_id FK, action, entity, entity_id, metadata jsonb, ip_address) |
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
@@ -108,6 +112,9 @@ neighborhood-hub/
 | `drive_pledges` | Pledge records (drive_id FK, user_id FK, pledge_description, status) |
 | `food_shares` | Food listings (owner_id FK, title, quantity, location_id FK, available_until, pickup_instructions, image_url, status, deleted_at) |
 | `food_reservations` | Food reservations (food_share_id FK, requester_id FK, pickup_time, notes, status, picked_up_at) |
+| `ratings` | Peer ratings (rater_id FK, rated_user_id FK, context_type, context_id, score 1–5, comment) — one per rater per completed exchange; updates avg_rating/rating_count on profiles |
+
+> **Full-text search:** `skills`, `tools`, `events`, `community_drives`, `food_shares` each have a generated `search_vector tsvector` column (STORED) with a GIN index. Used by `GET /api/search`. Dictionary: `'english'` for all except `food_shares` (`'simple'` — Bulgarian titles).
 
 **Rules:**
 - Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
@@ -234,6 +241,7 @@ Rules:
 | Notifications | `/notifications` | ✅ done |
 | My Events (RSVPs) | `/my-events` | ✅ done |
 | My Pledges (Drives) | `/my-drives` | ✅ done |
+| Search (cross-module) | `/search` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -271,6 +279,7 @@ Rules:
 | My Food Reservations | ✅ done |
 | My Events (RSVPs) | ✅ done |
 | My Pledges (Drives) | ✅ done |
+| Search (cross-module) | ✅ done |
 
 ---
 
@@ -337,7 +346,7 @@ Rules:
 - Refactors for modularization must preserve existing behavior (structure-only improvement, no hidden logic changes unless explicitly requested).
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
-- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; keys are always arrays starting with a domain string; user-scoped keys include `userId`; default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
+- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; namespaces: `skills`, `skillRequests`, `tools`, `events`, `drives`, `food`, `ratings`, `search`, `notifications`, `profile`, `chat`; keys are always arrays starting with a domain string; user-scoped keys include `userId`; infinite query keys must NOT include pagination params (page/offset/limit); default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
 - Status formatting: use helpers from `src/lib/format.ts` (`eventStatusClass`, `rsvpStatusClass`, `driveStatusClass`, `pledgeStatusClass`, `formatEventStatus`, `humanizeValue`) — do not add inline status color maps to screens
 
 ### Mobile (Expo 54)
@@ -397,7 +406,6 @@ Do not make any changes until you have 95% confidence in what you need to build.
 - Use Prisma instead of Drizzle
 - Use class components in React
 - Skip Drizzle migrations when changing DB schema
-- Add ratings/reviews to MVP (separate UX flow, out of scope)
 - Store exact user lat/lng – only neighborhood centroids in `locations` (GDPR)
 - Skip `notifications` table – status changes on requests must create notification rows
 - Skip `ai_conversations`/`ai_messages` – AI chat must be persisted, not stateless
