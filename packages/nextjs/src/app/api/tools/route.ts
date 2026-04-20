@@ -95,6 +95,23 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       ipAddress: ip,
     })
 
+    const authHeader = req.headers.get('authorization')
+    if (authHeader) {
+      void fetch(`${req.nextUrl.origin}/api/feed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({
+          eventType: 'tool_listed',
+          targetId: tool.id,
+          targetTitle: tool.title,
+          targetUrl: `/tools/${tool.id}`,
+        }),
+      }).catch(() => undefined)
+    }
+
     return NextResponse.json({ data: tool }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/tools]', err)

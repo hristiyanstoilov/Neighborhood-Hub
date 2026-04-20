@@ -77,6 +77,23 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'events', entityId: event.id, ipAddress: ip })
 
+    const authHeader = req.headers.get('authorization')
+    if (authHeader) {
+      void fetch(`${req.nextUrl.origin}/api/feed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({
+          eventType: 'event_created',
+          targetId: event.id,
+          targetTitle: event.title,
+          targetUrl: `/events/${event.id}`,
+        }),
+      }).catch(() => undefined)
+    }
+
     return NextResponse.json({ data: event }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/events]', err)

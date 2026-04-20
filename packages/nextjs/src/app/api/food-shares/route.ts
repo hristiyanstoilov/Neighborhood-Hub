@@ -68,6 +68,23 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'food_shares', entityId: foodShare.id, ipAddress: ip })
 
+    const authHeader = req.headers.get('authorization')
+    if (authHeader) {
+      void fetch(`${req.nextUrl.origin}/api/feed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({
+          eventType: 'food_shared',
+          targetId: foodShare.id,
+          targetTitle: foodShare.title,
+          targetUrl: `/food/${foodShare.id}`,
+        }),
+      }).catch(() => undefined)
+    }
+
     return NextResponse.json({ data: foodShare }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/food-shares]', err)
