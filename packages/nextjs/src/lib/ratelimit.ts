@@ -40,3 +40,17 @@ export const apiRatelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(100, '1 m'),
   prefix: 'rl:api',
 })
+
+// 30 requests per minute per IP — for public search
+export const searchPublicRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, '1 m'),
+  prefix: 'rl:search:public',
+})
+
+// 60 requests per minute per authenticated user — for search
+export const searchUserRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, '1 m'),
+  prefix: 'rl:search:user',
+})

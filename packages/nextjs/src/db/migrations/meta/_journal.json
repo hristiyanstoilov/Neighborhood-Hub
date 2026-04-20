@@ -64,6 +64,13 @@
       "when": 1776657947386,
       "tag": "0008_fancy_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776681600000,
+      "tag": "0009_search_discovery_indexes",
+      "breakpoints": true
     }
   ]
 }

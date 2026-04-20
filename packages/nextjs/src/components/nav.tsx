@@ -13,6 +13,8 @@ export default function Nav() {
   const pathname = usePathname()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   function isActive(path: string) {
     return pathname === path || pathname.startsWith(`${path}/`)
@@ -39,6 +41,25 @@ export default function Nav() {
     }
   }, [dropdownOpen])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const q = new URLSearchParams(window.location.search).get('q') ?? ''
+    setSearchValue(q)
+  }, [pathname])
+
+  function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const query = searchValue.trim()
+    if (query.length < 2) {
+      router.push('/search')
+      setMobileSearchOpen(false)
+      return
+    }
+
+    router.push(`/search?q=${encodeURIComponent(query)}`)
+    setMobileSearchOpen(false)
+  }
+
   async function handleLogout() {
     await logout()
     router.push('/login')
@@ -46,12 +67,33 @@ export default function Nav() {
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <Link href="/" aria-label="Neighborhood Hub home">
           <Logo variant="light" height={32} />
         </Link>
 
+        <form onSubmit={handleSearchSubmit} className="hidden lg:block">
+          <label htmlFor="global-search" className="sr-only">Search</label>
+          <input
+            id="global-search"
+            type="search"
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            placeholder="Search skills, tools, events..."
+            className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </form>
+
         <nav className="flex items-center gap-4 text-sm" aria-label="Primary">
+          <button
+            type="button"
+            className="lg:hidden text-gray-600 hover:text-green-700 transition-colors"
+            onClick={() => setMobileSearchOpen((open) => !open)}
+            aria-expanded={mobileSearchOpen}
+            aria-controls="mobile-search-panel"
+          >
+            Search
+          </button>
           <Link
             href="/skills"
             aria-current={isActive('/skills') ? 'page' : undefined}
@@ -210,6 +252,22 @@ export default function Nav() {
           )}
         </nav>
       </div>
+
+      {mobileSearchOpen && (
+        <div id="mobile-search-panel" className="lg:hidden border-t border-gray-200 bg-white px-4 py-3">
+          <form onSubmit={handleSearchSubmit}>
+            <label htmlFor="mobile-global-search" className="sr-only">Search</label>
+            <input
+              id="mobile-global-search"
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder="Search skills, tools, events..."
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </form>
+        </div>
+      )}
     </header>
   )
 }

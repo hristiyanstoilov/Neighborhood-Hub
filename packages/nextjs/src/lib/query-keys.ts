@@ -77,4 +77,10 @@ export const queryKeys = {
     check: (userId: string, contextType: string, contextId: string) =>
       ['ratings', 'check', userId, contextType, contextId] as const,
   },
+
+  search: {
+    all: ['search'] as const,
+    results: (q: string, types?: string, locationId?: string) =>
+      ['search', 'results', q, types ?? 'all', locationId ?? 'all'] as const,
+  },
 } as const
