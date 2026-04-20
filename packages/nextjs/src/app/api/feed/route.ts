@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, count, desc, eq, isNull } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -55,10 +55,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }
 
     const actorProfile = await db.query.profiles.findFirst({
-      where: and(eq(profiles.userId, user.sub), eq(profiles.isPublic, true)),
+      where: eq(profiles.userId, user.sub),
+      columns: { name: true, isPublic: true },
     })
 
-    const actorName = actorProfile?.name ?? user.email
+    const actorName = actorProfile?.name ?? 'Neighbor'
 
     const [event] = await db
       .insert(feedEvents)
