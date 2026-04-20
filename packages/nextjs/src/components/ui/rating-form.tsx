@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
@@ -47,7 +47,7 @@ export function RatingForm({
   const { showToast } = useToast()
 
   const activeScore = hoverScore ?? score
-  const charCount = useMemo(() => comment.length, [comment.length])
+  const charCount = comment.length
 
   const mutation = useMutation({
     mutationFn: async () => {
