@@ -655,3 +655,78 @@ export const aiMessages = pgTable(
   },
   (t) => [index('ai_messages_conversation_id_idx').on(t.conversationId)]
 )
+
+// ─────────────────────────────────────────────
+// 22. FEED EVENTS
+// ─────────────────────────────────────────────
+
+export const feedEvents = pgTable(
+  'feed_events',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    actorName: varchar('actor_name', { length: 100 }).notNull(),
+    eventType: varchar('event_type', { length: 40 }).notNull(),
+    targetId: uuid('target_id').notNull(),
+    targetTitle: varchar('target_title', { length: 220 }).notNull(),
+    targetUrl: varchar('target_url', { length: 400 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('feed_events_created_at_idx').on(t.createdAt),
+    check(
+      'feed_events_type_check',
+      sql`${t.eventType} IN ('skill_listed', 'tool_listed', 'food_shared', 'drive_opened', 'event_created')`
+    ),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 23. CONVERSATIONS (DM)
+// ─────────────────────────────────────────────
+
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    participantA: uuid('participant_a')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    participantB: uuid('participant_b')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('conversations_pair_idx').on(t.participantA, t.participantB),
+    index('conversations_updated_at_idx').on(t.updatedAt),
+    check('conversations_no_self_check', sql`${t.participantA} != ${t.participantB}`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 24. MESSAGES (DM)
+// ─────────────────────────────────────────────
+
+export const messages = pgTable(
+  'messages',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('messages_conversation_idx').on(t.conversationId, t.createdAt),
+    check('messages_body_not_empty_check', sql`char_length(trim(${t.body})) > 0`),
+  ]
+)
