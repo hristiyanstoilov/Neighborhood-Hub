@@ -20,8 +20,5 @@
     "playwright": "^1.53.1",
     "typescript": "^5.0.0"
   },
-  "license": "ISC",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.103.0"
-  }
+  "license": "ISC"
 }

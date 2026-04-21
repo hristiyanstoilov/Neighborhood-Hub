@@ -1,8 +1,10 @@
 import type { NextConfig } from 'next'
+import path from 'path'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   headers: async () => [
     {
       source: '/(.*)',
