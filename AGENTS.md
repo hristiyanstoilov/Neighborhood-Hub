@@ -51,12 +51,16 @@ neighborhood-hub/
 │   │   │   │   │   ├── ratings/         # POST create rating, GET list by user, GET check
 │   │   │   │   │   ├── search/          # GET unified cross-module full-text search
 │   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
-│   │   │   │   │   └── ai/              # AI chat + conversation history
+│   │   │   │   │   ├── ai/              # AI chat + conversation history
+│   │   │   │   │   ├── feed/            # GET neighborhood activity feed (paginated)
+│   │   │   │   │   ├── conversations/   # GET list + POST create DM conversation
+│   │   │   │   │   │   └── [id]/messages/ # GET + POST messages in a conversation
+│   │   │   │   │   └── users/           # GET /users/search?q= user search by email/name
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (21 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (24 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
 │   │   │   │   ├── seed.ts      # Seed: locations, categories, demo users, skills, tools, food, events, drives, ratings
 │   │   │   │   └── migrations/  # SQL migration files
@@ -68,7 +72,7 @@ neighborhood-hub/
 │   │   │       ├── audit.ts     # Audit log writer
 │   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
 │   │   │       ├── format.ts    # Shared formatters: formatDate, formatDateTime, status classes, humanizeValue
-│   │   │       ├── query-keys.ts # Central TanStack Query key registry (skills, tools, events, drives, food, ratings, search, notifications, profile, chat)
+│   │   │       ├── query-keys.ts # Central TanStack Query key registry (skills, tools, events, drives, food, ratings, search, notifications, profile, chat, feed, directMessages)
 │   │   │       ├── queries/     # Reusable DB query functions
 │   │   │       └── schemas/     # Zod validation schemas (per domain: rating.ts, search.ts, …)
 │   │   └── package.json
@@ -86,7 +90,7 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (21 tables)
+## 4. Database Schema (24 tables)
 
 ### Core tables (all built)
 
@@ -113,6 +117,9 @@ neighborhood-hub/
 | `food_shares` | Food listings (owner_id FK, title, quantity, location_id FK, available_until, pickup_instructions, image_url, status, deleted_at) |
 | `food_reservations` | Food reservations (food_share_id FK, requester_id FK, pickup_time, notes, status, picked_up_at) |
 | `ratings` | Peer ratings (rater_id FK, rated_user_id FK, context_type, context_id, score 1–5, comment) — one per rater per completed exchange; updates avg_rating/rating_count on profiles |
+| `feed_events` | Activity feed entries (actor_id FK, actor_name, event_type, target_id, target_title, target_url) — types: skill_listed, tool_listed, food_shared, drive_opened, event_created |
+| `conversations` | DM conversation pairs (participant_a FK, participant_b FK, updated_at) — unique pair constraint, no self-messaging |
+| `messages` | DM messages (conversation_id FK, sender_id FK, body text, read_at nullable) |
 
 > **Full-text search:** `skills`, `tools`, `events`, `community_drives`, `food_shares` each have a generated `search_vector tsvector` column (STORED) with a GIN index. Used by `GET /api/search`. Dictionary: `'english'` for all except `food_shares` (`'simple'` — Bulgarian titles).
 
@@ -239,6 +246,10 @@ Rules:
 | Edit Food Share | `/food/[id]/edit` | ✅ done |
 | My Food Reservations | `/food/reservations` | ✅ done |
 | Notifications | `/notifications` | ✅ done |
+| Neighborhood Feed | `/feed` | ✅ done |
+| My Conversations | `/messages` | ✅ done |
+| Start Conversation | `/messages/new` | ✅ done |
+| Conversation Thread | `/messages/[id]` | ✅ done |
 | My Events (RSVPs) | `/my-events` | ✅ done |
 | My Pledges (Drives) | `/my-drives` | ✅ done |
 | Search (cross-module) | `/search` | ✅ done |
@@ -280,6 +291,9 @@ Rules:
 | My Events (RSVPs) | ✅ done |
 | My Pledges (Drives) | ✅ done |
 | Search (cross-module) | ✅ done |
+| Neighborhood Feed | ✅ done |
+| Messages (conversations list) | ✅ done |
+| Message Thread (DM) | ✅ done |
 
 ---
 
@@ -291,7 +305,7 @@ Rules:
 | 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Community Drives (Charity) | ✅ Done |
 | 0.4 | Food Sharing | ✅ Done |
-| 0.5 | Chat / Feed | Later |
+| 0.5 | Chat / Feed (DMs + Activity Feed) | ✅ Done |
 
 > **Community Drives are NOT "charity events"** — they are a separate module with their own tables (`community_drives`, `drive_pledges`), API routes (`/api/drives`), and screens.
 > Events have their own tables (`events`, `event_attendees`), API routes (`/api/events`), and screens.
@@ -346,7 +360,7 @@ Rules:
 - Refactors for modularization must preserve existing behavior (structure-only improvement, no hidden logic changes unless explicitly requested).
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
-- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; namespaces: `skills`, `skillRequests`, `tools`, `events`, `drives`, `food`, `ratings`, `search`, `notifications`, `profile`, `chat`; keys are always arrays starting with a domain string; user-scoped keys include `userId`; infinite query keys must NOT include pagination params (page/offset/limit); default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
+- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; namespaces: `skills`, `skillRequests`, `tools`, `events`, `drives`, `food`, `ratings`, `search`, `notifications`, `profile`, `chat`, `feed`, `directMessages`; keys are always arrays starting with a domain string; user-scoped keys include `userId`; infinite query keys must NOT include pagination params (page/offset/limit); default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
 - Status formatting: use helpers from `src/lib/format.ts` (`eventStatusClass`, `rsvpStatusClass`, `driveStatusClass`, `pledgeStatusClass`, `formatEventStatus`, `humanizeValue`) — do not add inline status color maps to screens
 
 ### Mobile (Expo 54)

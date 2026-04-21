@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { eq, sql as sqlExpr } from 'drizzle-orm'
 import * as schema from './schema'
-import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations, events, eventAttendees, communityDrives, drivePledges, ratings } from './schema'
+import { locations, categories, users, profiles, skills, skillRequests, tools, toolReservations, foodShares, foodReservations, events, eventAttendees, communityDrives, drivePledges, ratings, conversations, messages, feedEvents } from './schema'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
@@ -77,6 +77,12 @@ async function seed() {
     process.exit(0)
   }
 
+  if (process.argv.includes('--conversations')) {
+    await seedConversations()
+    console.log('Done.')
+    process.exit(0)
+  }
+
   // ─── 3. Guard: skip demo data if it already exists ───────────────────────
   const existing = await db.select({ id: users.id })
     .from(users)
@@ -92,6 +98,7 @@ async function seed() {
       await seedEvents()
       await seedDrives()
       await seedRatings()
+      await seedConversations()
       console.log('Done.')
       process.exit(0)
     }
@@ -120,6 +127,7 @@ async function seed() {
     await seedEvents()
     await seedDrives()
     await seedRatings()
+    await seedConversations()
     console.log('Done.')
     process.exit(0)
   }
@@ -422,6 +430,7 @@ async function seed() {
   await seedEvents()
   await seedDrives()
   await seedRatings()
+  await seedConversations()
 
   console.log('\nDone! Demo accounts created:')
   console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
@@ -1001,6 +1010,217 @@ async function seedDrives() {
       status:             'pledged',
     },
   ]).onConflictDoNothing()
+}
+
+async function seedConversations() {
+  const existingConvs = await db.select({ id: conversations.id }).from(conversations).limit(1)
+  if (existingConvs.length > 0) {
+    console.log('Conversations already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo conversations and messages...')
+
+  const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
+
+  const byEmail = (email: string) => {
+    const found = demoUsers.find((u) => u.email === email)
+    if (!found) throw new Error(`Demo user not found: ${email}`)
+    return found
+  }
+
+  const ivan   = byEmail('ivan@demo.bg')
+  const maria  = byEmail('maria@demo.bg')
+  const georgi = byEmail('georgi@demo.bg')
+  const elena  = byEmail('elena@demo.bg')
+  const nikola = byEmail('nikola@demo.bg')
+
+  // Conversation 1: Ivan ↔ Maria
+  const [convIvanMaria] = await db.insert(conversations).values({
+    participantA: ivan.id,
+    participantB: maria.id,
+  }).returning()
+
+  const msgsAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000)
+
+  await db.insert(messages).values([
+    {
+      conversationId: convIvanMaria.id,
+      senderId: maria.id,
+      body: 'Здравей Ivan! Исках да попитам — все още ли предлагаш Python tutoring? Интересувам се от Data Analysis.',
+      createdAt: msgsAgo(120),
+      readAt: msgsAgo(110),
+    },
+    {
+      conversationId: convIvanMaria.id,
+      senderId: ivan.id,
+      body: 'Привет Maria! Да, точно сега имам свободни часове. Какво ниво имаш — начинаещ или вече имаш малко опит?',
+      createdAt: msgsAgo(100),
+      readAt: msgsAgo(90),
+    },
+    {
+      conversationId: convIvanMaria.id,
+      senderId: maria.id,
+      body: 'Имам малко опит с Excel и основите на програмирането, но Python ми е напълно ново. Може ли да тренираме онлайн?',
+      createdAt: msgsAgo(85),
+      readAt: msgsAgo(80),
+    },
+    {
+      conversationId: convIvanMaria.id,
+      senderId: ivan.id,
+      body: 'Разбира се! Ще ти изпратя линк за първата сесия — събота 10:00 ти подходящо ли е?',
+      createdAt: msgsAgo(70),
+      readAt: msgsAgo(65),
+    },
+    {
+      conversationId: convIvanMaria.id,
+      senderId: maria.id,
+      body: 'Перфектно! Ще съм готова. Благодаря!',
+      createdAt: msgsAgo(60),
+      readAt: msgsAgo(55),
+    },
+  ])
+
+  // Conversation 2: Georgi ↔ Elena
+  const [convGeorgiElena] = await db.insert(conversations).values({
+    participantA: georgi.id,
+    participantB: elena.id,
+  }).returning()
+
+  await db.insert(messages).values([
+    {
+      conversationId: convGeorgiElena.id,
+      senderId: georgi.id,
+      body: 'Elena, видях обявата ти за баница. Все още ли е налична? Ще мина около 19:30.',
+      createdAt: msgsAgo(48 * 60),
+      readAt: msgsAgo(47 * 60),
+    },
+    {
+      conversationId: convGeorgiElena.id,
+      senderId: elena.id,
+      body: 'Да, налична е! Запазвам ти 2 порции. Звъни на входа като дойдеш.',
+      createdAt: msgsAgo(47 * 60 - 30),
+      readAt: msgsAgo(47 * 60 - 20),
+    },
+    {
+      conversationId: convGeorgiElena.id,
+      senderId: georgi.id,
+      body: 'Страхотно, благодаря! Ще взема и нещо за ответност — обичаш ли домати от градината?',
+      createdAt: msgsAgo(46 * 60),
+      readAt: msgsAgo(45 * 60),
+    },
+    {
+      conversationId: convGeorgiElena.id,
+      senderId: elena.id,
+      body: '😄 Много обичам! Ще се видим тази вечер.',
+      createdAt: msgsAgo(44 * 60),
+      readAt: null,
+    },
+  ])
+
+  // Conversation 3: Nikola ↔ Ivan (about the fitness skill)
+  const [convNikolaIvan] = await db.insert(conversations).values({
+    participantA: nikola.id,
+    participantB: ivan.id,
+  }).returning()
+
+  await db.insert(messages).values([
+    {
+      conversationId: convNikolaIvan.id,
+      senderId: nikola.id,
+      body: 'Иван, искам да направим size for size — аз те уча на Yoga, ти ме учиш React. Как ти звучи?',
+      createdAt: msgsAgo(3 * 24 * 60),
+      readAt: msgsAgo(3 * 24 * 60 - 30),
+    },
+    {
+      conversationId: convNikolaIvan.id,
+      senderId: ivan.id,
+      body: 'Много интересна идея! Аз точно исках да се науча на yoga. Напиши ми кога си свободен.',
+      createdAt: msgsAgo(3 * 24 * 60 - 60),
+      readAt: msgsAgo(3 * 24 * 60 - 50),
+    },
+    {
+      conversationId: convNikolaIvan.id,
+      senderId: nikola.id,
+      body: 'Уикенд сутрин — събота или неделя около 8:00. Ти?',
+      createdAt: msgsAgo(3 * 24 * 60 - 90),
+      readAt: null,
+    },
+  ])
+
+  // ─── Feed events ──────────────────────────────────────────────────────────
+  const existingFeed = await db.select({ id: feedEvents.id }).from(feedEvents).limit(1)
+  if (existingFeed.length > 0) {
+    console.log('Feed events already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding demo feed events...')
+
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
+
+  // Fetch IDs we need for target references
+  const [skillRow] = await db.select({ id: skills.id }).from(skills).limit(1)
+  const [toolRow] = await db.select({ id: tools.id }).from(tools).limit(1)
+  const [foodRow] = await db.select({ id: foodShares.id }).from(foodShares).limit(1)
+  const [driveRow] = await db.select({ id: communityDrives.id }).from(communityDrives).limit(1)
+  const [eventRow] = await db.select({ id: events.id }).from(events).limit(1)
+
+  const feedRows: Array<typeof feedEvents.$inferInsert> = []
+
+  if (skillRow) feedRows.push({
+    actorId: ivan.id,
+    actorName: 'Ivan Petrov',
+    eventType: 'skill_listed',
+    targetId: skillRow.id,
+    targetTitle: 'Python & Django tutoring',
+    targetUrl: `/skills/${skillRow.id}`,
+    createdAt: daysAgo(6),
+  })
+
+  if (toolRow) feedRows.push({
+    actorId: ivan.id,
+    actorName: 'Ivan Petrov',
+    eventType: 'tool_listed',
+    targetId: toolRow.id,
+    targetTitle: 'Bosch Cordless Drill',
+    targetUrl: `/tools/${toolRow.id}`,
+    createdAt: daysAgo(5),
+  })
+
+  if (foodRow) feedRows.push({
+    actorId: elena.id,
+    actorName: 'Elena Stoyanova',
+    eventType: 'food_shared',
+    targetId: foodRow.id,
+    targetTitle: 'Домашна баница — 6 порции',
+    targetUrl: `/food/${foodRow.id}`,
+    createdAt: daysAgo(3),
+  })
+
+  if (driveRow) feedRows.push({
+    actorId: georgi.id,
+    actorName: 'Georgi Dimitrov',
+    eventType: 'drive_opened',
+    targetId: driveRow.id,
+    targetTitle: 'Winter Clothes Collection for Families in Need',
+    targetUrl: `/drives/${driveRow.id}`,
+    createdAt: daysAgo(2),
+  })
+
+  if (eventRow) feedRows.push({
+    actorId: ivan.id,
+    actorName: 'Ivan Petrov',
+    eventType: 'event_created',
+    targetId: eventRow.id,
+    targetTitle: 'Sofia Dev Meetup — Web Performance',
+    targetUrl: `/events/${eventRow.id}`,
+    createdAt: daysAgo(1),
+  })
+
+  if (feedRows.length > 0) {
+    await db.insert(feedEvents).values(feedRows).onConflictDoNothing()
+  }
 }
 
 seed().catch((err) => {
