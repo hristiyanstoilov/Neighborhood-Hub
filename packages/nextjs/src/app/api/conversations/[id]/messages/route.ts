@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, desc, eq, inArray, lt, ne, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
@@ -67,7 +67,7 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
         .where(and(
           inArray(messages.id, unreadIds),
           ne(messages.senderId, user.sub),
-          sql`${messages.readAt} IS NULL`
+          isNull(messages.readAt)
         ))
     }
 
