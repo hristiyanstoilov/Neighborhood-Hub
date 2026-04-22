@@ -17,6 +17,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <div className="mx-auto max-w-5xl">
       <Suspense fallback={<ListPageSkeleton />}>
         <SearchResultsView
+          key={`${params.q ?? ''}|${params.type ?? 'all'}|${params.locationId ?? ''}`}
           initialQuery={params.q ?? ''}
           initialType={params.type ?? 'all'}
           initialLocationId={params.locationId}

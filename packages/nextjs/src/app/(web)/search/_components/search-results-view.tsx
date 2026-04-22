@@ -11,6 +11,7 @@ import {
   type SkillSearchResult,
   type ToolSearchResult,
 } from './search-result-card'
+import { SearchResultsGrid } from './search-results-grid'
 import { LocationFilter } from './location-filter'
 
 type SearchTab = 'all' | 'skills' | 'tools' | 'events' | 'drives' | 'food'
@@ -39,6 +40,26 @@ type SearchResultsViewProps = {
 
 const tabs: SearchTab[] = ['all', 'skills', 'tools', 'events', 'drives', 'food']
 
+function renderSkills(items: SkillSearchResult[]) {
+  return items.map((item) => <SearchResultCard key={item.id} type="skills" item={item} />)
+}
+
+function renderTools(items: ToolSearchResult[]) {
+  return items.map((item) => <SearchResultCard key={item.id} type="tools" item={item} />)
+}
+
+function renderEvents(items: EventSearchResult[]) {
+  return items.map((item) => <SearchResultCard key={item.id} type="events" item={item} />)
+}
+
+function renderDrives(items: DriveSearchResult[]) {
+  return items.map((item) => <SearchResultCard key={item.id} type="drives" item={item} />)
+}
+
+function renderFood(items: FoodSearchResult[]) {
+  return items.map((item) => <SearchResultCard key={item.id} type="food" item={item} />)
+}
+
 export function SearchResultsView({ initialQuery, initialType, initialLocationId }: SearchResultsViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -50,14 +71,6 @@ export function SearchResultsView({ initialQuery, initialType, initialLocationId
   const [results, setResults] = useState<SearchResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setQuery(searchParams.get('q') ?? '')
-    setDebouncedQuery(searchParams.get('q') ?? '')
-    const nextType = searchParams.get('type')
-    setActiveType(tabs.includes((nextType ?? 'all') as SearchTab) ? (nextType as SearchTab) : 'all')
-    setLocationId(searchParams.get('locationId') ?? undefined)
-  }, [searchParams])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 350)
@@ -233,46 +246,26 @@ export function SearchResultsView({ initialQuery, initialType, initialLocationId
           {sections.filter((section) => section.items.length > 0).map((section) => (
             <section key={section.key} className="space-y-3">
               <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
-              <div className="grid gap-3">
-                {section.key === 'skills' && section.items.map((item) => (
-                  <SearchResultCard key={item.id} type="skills" item={item} />
-                ))}
-                {section.key === 'tools' && section.items.map((item) => (
-                  <SearchResultCard key={item.id} type="tools" item={item} />
-                ))}
-                {section.key === 'events' && section.items.map((item) => (
-                  <SearchResultCard key={item.id} type="events" item={item} />
-                ))}
-                {section.key === 'drives' && section.items.map((item) => (
-                  <SearchResultCard key={item.id} type="drives" item={item} />
-                ))}
-                {section.key === 'food' && section.items.map((item) => (
-                  <SearchResultCard key={item.id} type="food" item={item} />
-                ))}
-              </div>
+              <SearchResultsGrid>
+                {section.key === 'skills' && renderSkills(section.items)}
+                {section.key === 'tools' && renderTools(section.items)}
+                {section.key === 'events' && renderEvents(section.items)}
+                {section.key === 'drives' && renderDrives(section.items)}
+                {section.key === 'food' && renderFood(section.items)}
+              </SearchResultsGrid>
             </section>
           ))}
         </div>
       )}
 
       {debouncedQuery.length >= 2 && !loading && !error && hasAnyResults && activeType !== 'all' && (
-        <div className="grid gap-3">
-          {activeType === 'skills' && results?.skills.map((item) => (
-            <SearchResultCard key={item.id} type="skills" item={item} />
-          ))}
-          {activeType === 'tools' && results?.tools.map((item) => (
-            <SearchResultCard key={item.id} type="tools" item={item} />
-          ))}
-          {activeType === 'events' && results?.events.map((item) => (
-            <SearchResultCard key={item.id} type="events" item={item} />
-          ))}
-          {activeType === 'drives' && results?.drives.map((item) => (
-            <SearchResultCard key={item.id} type="drives" item={item} />
-          ))}
-          {activeType === 'food' && results?.food.map((item) => (
-            <SearchResultCard key={item.id} type="food" item={item} />
-          ))}
-        </div>
+        <SearchResultsGrid>
+          {activeType === 'skills' && renderSkills(results?.skills ?? [])}
+          {activeType === 'tools' && renderTools(results?.tools ?? [])}
+          {activeType === 'events' && renderEvents(results?.events ?? [])}
+          {activeType === 'drives' && renderDrives(results?.drives ?? [])}
+          {activeType === 'food' && renderFood(results?.food ?? [])}
+        </SearchResultsGrid>
       )}
     </div>
   )
