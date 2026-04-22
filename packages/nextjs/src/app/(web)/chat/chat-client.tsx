@@ -248,10 +248,10 @@ export default function ChatClient() {
           messages={messages}
           bottomRef={bottomRef}
           suggestions={[
-            { icon: '🔄', text: 'How do skill requests work?' },
-            { icon: '💡', text: 'What skills can I offer?' },
-            { icon: '🗺️', text: 'What is the Neighborhood Radar?' },
-            { icon: '🚀', text: 'How do I get started?' },
+            { icon: 'refresh', text: 'How do skill requests work?' },
+            { icon: 'idea', text: 'What skills can I offer?' },
+            { icon: 'radar', text: 'What is the Neighborhood Radar?' },
+            { icon: 'rocket', text: 'How do I get started?' },
           ]}
           onSuggestionClick={handleSend}
         />

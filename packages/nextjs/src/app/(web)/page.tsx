@@ -9,6 +9,7 @@ import { skills } from '@/db/schema'
 import { isNull, sql } from 'drizzle-orm'
 import { FeaturesSection } from '@/components/landing/features-section'
 import { HowItWorks } from '@/components/landing/how-it-works'
+import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
 
 export const dynamic = 'force-dynamic'
 
@@ -167,19 +168,21 @@ export default async function HomePage() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Browse</p>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {[
-            { href: '/skills',  label: 'Skills',  icon: '🛠️' },
-            { href: '/tools',   label: 'Tools',   icon: '🔧' },
-            { href: '/events',  label: 'Events',  icon: '📅' },
-            { href: '/drives',  label: 'Drives',  icon: '❤️' },
-            { href: '/food',    label: 'Food',    icon: '🍱' },
-            { href: '/radar',   label: 'Radar',   icon: '🗺️' },
+            { href: '/skills',  label: 'Skills',  icon: 'skills' as AppIconName },
+            { href: '/tools',   label: 'Tools',   icon: 'tools' as AppIconName },
+            { href: '/events',  label: 'Events',  icon: 'events' as AppIconName },
+            { href: '/drives',  label: 'Drives',  icon: 'drives' as AppIconName },
+            { href: '/food',    label: 'Food',    icon: 'food' as AppIconName },
+            { href: '/radar',   label: 'Radar',   icon: 'radar' as AppIconName },
           ].map(({ href, label, icon }) => (
             <Link
               key={href}
               href={href}
               className="bg-white rounded-lg border border-gray-200 p-3 text-center hover:border-green-400 hover:shadow-sm transition-all"
             >
-              <div className="text-2xl mb-1">{icon}</div>
+              <div className="mb-1 inline-flex rounded-full bg-emerald-50 p-2 text-emerald-700">
+                <AppIcon name={icon} size={18} />
+              </div>
               <p className="text-xs font-medium text-gray-700">{label}</p>
             </Link>
           ))}
@@ -191,19 +194,21 @@ export default async function HomePage() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">My Activity</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { href: '/my-requests',     label: 'My Requests',           icon: '📋' },
-            { href: '/my-reservations', label: 'My Tool Reservations',  icon: '🔧' },
-            { href: '/food/reservations', label: 'My Food Reservations', icon: '🍱' },
-            { href: '/my-events',       label: 'My Events',             icon: '📅' },
-            { href: '/my-drives',       label: 'My Pledges',            icon: '❤️' },
-            { href: '/profile',         label: 'Profile',               icon: '👤' },
+            { href: '/my-requests',     label: 'My Requests',            icon: 'requests' as AppIconName },
+            { href: '/my-reservations', label: 'My Tool Reservations',   icon: 'reservations' as AppIconName },
+            { href: '/food/reservations', label: 'My Food Reservations', icon: 'food' as AppIconName },
+            { href: '/my-events',       label: 'My Events',              icon: 'events' as AppIconName },
+            { href: '/my-drives',       label: 'My Pledges',             icon: 'pledge' as AppIconName },
+            { href: '/profile',         label: 'Profile',                icon: 'profile' as AppIconName },
           ].map(({ href, label, icon }) => (
             <Link
               key={href}
               href={href}
               className="bg-white rounded-lg border border-gray-200 p-3 text-center hover:border-green-400 hover:shadow-sm transition-all"
             >
-              <div className="text-2xl mb-1">{icon}</div>
+              <div className="mb-1 inline-flex rounded-full bg-emerald-50 p-2 text-emerald-700">
+                <AppIcon name={icon} size={18} />
+              </div>
               <p className="text-xs font-medium text-gray-700">{label}</p>
             </Link>
           ))}

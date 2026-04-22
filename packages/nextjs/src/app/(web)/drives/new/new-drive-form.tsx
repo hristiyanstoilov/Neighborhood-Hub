@@ -127,10 +127,10 @@ export default function NewDriveForm() {
             defaultValue=""
           >
             <option value="" disabled>— Select type —</option>
-            <option value="items">📦 Items</option>
-            <option value="food">🍎 Food</option>
-            <option value="money">💰 Money</option>
-            <option value="other">🤝 Other</option>
+            <option value="items">Items</option>
+            <option value="food">Food</option>
+            <option value="money">Money</option>
+            <option value="other">Other</option>
           </select>
         </div>
 

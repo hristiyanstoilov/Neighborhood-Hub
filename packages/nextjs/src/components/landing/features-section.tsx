@@ -1,30 +1,32 @@
+import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
+
 const FEATURES = [
   {
-    icon: '🤝',
+    icon: 'skills' as AppIconName,
     title: 'Share Skills',
     description:
       'Offer what you know — cooking, languages, IT, home repair. Find a neighbor who has exactly what you need.',
   },
   {
-    icon: '🔧',
+    icon: 'tools' as AppIconName,
     title: 'Lend Tools',
     description:
       'Borrow a drill, ladder, or espresso machine from someone nearby. No need to buy something you\'ll use once.',
   },
   {
-    icon: '📅',
+    icon: 'events' as AppIconName,
     title: 'Local Events',
     description:
       'Discover and attend events organised by your neighbors — clean-ups, block parties, skill swaps, and more.',
   },
   {
-    icon: '🫶',
+    icon: 'drives' as AppIconName,
     title: 'Community Drives',
     description:
       'Coordinate clothing donations, food collections, and neighborhood initiatives — all in one place.',
   },
   {
-    icon: '🍲',
+    icon: 'food' as AppIconName,
     title: 'Food Sharing',
     description:
       'Share surplus meals and produce before it goes to waste, with neighborhood pickup coordination.',
@@ -47,7 +49,9 @@ export function FeaturesSection() {
             key={f.title}
             className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col items-center text-center hover:border-green-300 hover:shadow-sm transition-all"
           >
-            <span className="text-4xl mb-4">{f.icon}</span>
+            <span className="mb-4 rounded-full bg-emerald-50 p-3 text-emerald-700">
+              <AppIcon name={f.icon} size={26} />
+            </span>
             <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
             <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
           </div>

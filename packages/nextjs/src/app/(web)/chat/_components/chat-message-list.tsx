@@ -1,4 +1,5 @@
 import { MutableRefObject } from 'react'
+import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
 
 type Message = {
   id?: string
@@ -8,7 +9,7 @@ type Message = {
 }
 
 type Suggestion = {
-  icon: string
+  icon: AppIconName
   text: string
 }
 
@@ -40,7 +41,9 @@ export function ChatMessageList({
         </div>
       ) : messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
-          <div className="text-4xl">💬</div>
+          <div className="rounded-full bg-green-50 p-4 text-green-700">
+            <AppIcon name="message" size={28} />
+          </div>
           <p className="text-gray-600 text-sm font-medium">How can I help you today?</p>
           <p className="text-gray-400 text-xs max-w-xs -mt-1">
             Ask me anything about Neighborhood Hub — skills, requests, your profile, or how things work.
@@ -52,7 +55,9 @@ export function ChatMessageList({
                 onClick={() => onSuggestionClick(s.text)}
                 className="flex items-start gap-2 text-xs text-gray-700 border border-gray-200 rounded-xl px-3 py-2.5 hover:border-green-400 hover:bg-green-50 transition-colors text-left"
               >
-                <span className="text-base leading-none mt-0.5">{s.icon}</span>
+                <span className="mt-0.5 rounded-full bg-green-50 p-1.5 text-green-700" aria-hidden="true">
+                  <AppIcon name={s.icon} size={14} />
+                </span>
                 <span>{s.text}</span>
               </button>
             ))}

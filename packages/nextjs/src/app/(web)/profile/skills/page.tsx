@@ -7,6 +7,7 @@ import { querySkills } from '@/lib/queries/skills'
 import { db } from '@/db'
 import { skills } from '@/db/schema'
 import { eq, and, isNull, count } from 'drizzle-orm'
+import { AppIcon } from '@/components/ui/app-icon'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,7 +62,9 @@ export default async function MySkillsPage({
 
       {mySkills.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-4xl mb-4">📋</p>
+          <div className="mb-4 inline-flex rounded-full bg-green-50 p-4 text-green-700">
+            <AppIcon name="requests" size={28} />
+          </div>
           <h2 className="text-lg font-semibold text-gray-700 mb-2">No skills yet</h2>
           <p className="text-sm text-gray-400 mb-6">Share what you know with your neighborhood.</p>
           <Link

@@ -5,6 +5,7 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { signAccessToken } from '@/lib/auth'
 import { formatDateTime } from '@/lib/format'
 import MarkAllReadButton from './mark-all-read-button'
+import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,27 +41,27 @@ const TYPE_LABELS: Record<string, string> = {
   drive_completed: 'A drive was completed',
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  new_request: '📥',
-  request_accepted: '✅',
-  request_rejected: '❌',
-  request_cancelled: '🚫',
-  request_completed: '🎉',
-  reservation_new: '🧰',
-  reservation_approved: '✅',
-  reservation_rejected: '❌',
-  reservation_cancelled: '🚫',
-  reservation_returned: '↩️',
-  food_reservation_new: '🍲',
-  food_reservation_approved: '✅',
-  food_reservation_rejected: '❌',
-  food_reservation_cancelled: '🚫',
-  food_reservation_picked_up: '🥡',
-  event_new_rsvp: '📅',
-  event_cancelled: '🚫',
-  drive_new_pledge: '🫶',
-  drive_pledge_fulfilled: '🎯',
-  drive_completed: '🏁',
+const TYPE_ICONS: Record<string, AppIconName> = {
+  new_request: 'requests',
+  request_accepted: 'check',
+  request_rejected: 'close',
+  request_cancelled: 'cancel',
+  request_completed: 'complete',
+  reservation_new: 'tools',
+  reservation_approved: 'check',
+  reservation_rejected: 'close',
+  reservation_cancelled: 'cancel',
+  reservation_returned: 'return',
+  food_reservation_new: 'food',
+  food_reservation_approved: 'check',
+  food_reservation_rejected: 'close',
+  food_reservation_cancelled: 'cancel',
+  food_reservation_picked_up: 'food',
+  event_new_rsvp: 'events',
+  event_cancelled: 'cancel',
+  drive_new_pledge: 'pledge',
+  drive_pledge_fulfilled: 'target',
+  drive_completed: 'check',
 }
 
 function getBaseUrl(headerStore: Headers) {
@@ -112,7 +113,9 @@ function NotificationList({ title, items }: { title: string; items: Notification
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="text-lg" aria-hidden="true">{TYPE_ICONS[item.type] ?? '🔔'}</span>
+                <span className="rounded-full bg-white/80 p-1.5 text-gray-600" aria-hidden="true">
+                  <AppIcon name={TYPE_ICONS[item.type] ?? 'bell'} size={16} />
+                </span>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{TYPE_LABELS[item.type] ?? 'New notification'}</p>
                   <p className="text-xs text-gray-500 mt-1">{formatDateTime(item.createdAt)}</p>

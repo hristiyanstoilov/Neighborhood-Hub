@@ -1,7 +1,9 @@
-import Link from 'next/link'
-import { queryDrivesPage } from '@/lib/queries/drives'
 import { cookies } from 'next/headers'
+import Link from 'next/link'
+
+import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
+import { queryDrivesPage } from '@/lib/queries/drives'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,28 +13,39 @@ export const metadata = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  open:      'Open',
+  open: 'Open',
   completed: 'Completed',
   cancelled: 'Cancelled',
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  items: '📦 Items',
-  food:  '🍎 Food',
-  money: '💰 Money',
-  other: '🤝 Other',
+  items: 'Items',
+  food: 'Food',
+  money: 'Money',
+  other: 'Other',
+}
+
+const TYPE_ICONS: Record<string, AppIconName> = {
+  items: 'reservations',
+  food: 'food',
+  money: 'target',
+  other: 'pledge',
 }
 
 const TYPE_COLORS: Record<string, string> = {
   items: 'bg-blue-50 text-blue-700',
-  food:  'bg-orange-50 text-orange-700',
+  food: 'bg-orange-50 text-orange-700',
   money: 'bg-yellow-50 text-yellow-700',
   other: 'bg-gray-100 text-gray-600',
 }
 
-function formatDeadline(d: Date | null) {
-  if (!d) return null
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+function formatDeadline(deadline: Date | null) {
+  if (!deadline) return null
+  return new Date(deadline).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 export default async function DrivesPage({
@@ -83,7 +96,6 @@ export default async function DrivesPage({
         )}
       </div>
 
-      {/* Status filters */}
       <div className="flex gap-2 mb-3 flex-wrap">
         {['open', 'completed', 'cancelled'].map((s) => (
           <Link
@@ -100,7 +112,6 @@ export default async function DrivesPage({
         ))}
       </div>
 
-      {/* Type filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
         <Link
           href={`/drives?status=${activeStatus}`}
@@ -110,15 +121,18 @@ export default async function DrivesPage({
         >
           All types
         </Link>
-        {['items', 'food', 'money', 'other'].map((t) => (
+        {['items', 'food', 'money', 'other'].map((type) => (
           <Link
-            key={t}
-            href={`/drives?status=${activeStatus}&driveType=${t}`}
+            key={type}
+            href={`/drives?status=${activeStatus}&driveType=${type}`}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              driveType === t ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              driveType === type ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
           >
-            {TYPE_LABELS[t]}
+            <span className="inline-flex items-center gap-1.5">
+              <AppIcon name={TYPE_ICONS[type]} size={12} />
+              <span>{TYPE_LABELS[type]}</span>
+            </span>
           </Link>
         ))}
       </div>
@@ -147,7 +161,10 @@ export default async function DrivesPage({
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="font-semibold text-gray-900 leading-snug line-clamp-2">{drive.title}</h2>
                 <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[drive.driveType] ?? 'bg-gray-100 text-gray-600'}`}>
-                  {TYPE_LABELS[drive.driveType] ?? drive.driveType}
+                  <span className="inline-flex items-center gap-1">
+                    <AppIcon name={TYPE_ICONS[drive.driveType] ?? 'drives'} size={12} />
+                    <span>{TYPE_LABELS[drive.driveType] ?? drive.driveType}</span>
+                  </span>
                 </span>
               </div>
 
@@ -162,15 +179,13 @@ export default async function DrivesPage({
               <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>by {drive.organizerName ?? 'Anonymous'}</span>
                 <div className="flex items-center gap-3">
-                  {drive.deadline && (
-                    <span>Deadline: {formatDeadline(drive.deadline)}</span>
-                  )}
+                  {drive.deadline && <span>Deadline: {formatDeadline(drive.deadline)}</span>}
                   <span className={`px-2 py-0.5 rounded-full ${
                     drive.status === 'open'
                       ? 'bg-green-100 text-green-700'
                       : drive.status === 'cancelled'
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-gray-100 text-gray-500'
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-500'
                   }`}>
                     {STATUS_LABELS[drive.status] ?? drive.status}
                   </span>
@@ -181,7 +196,6 @@ export default async function DrivesPage({
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
@@ -192,7 +206,9 @@ export default async function DrivesPage({
               ← Previous
             </Link>
           )}
-          <span className="px-4 py-2 text-sm text-gray-500">Page {page} of {totalPages}</span>
+          <span className="px-4 py-2 text-sm text-gray-500">
+            Page {page} of {totalPages}
+          </span>
           {page < totalPages && (
             <Link
               href={`/drives?status=${activeStatus}${driveType ? `&driveType=${driveType}` : ''}&page=${page + 1}`}
