@@ -1035,11 +1035,11 @@ async function seedConversations() {
   const elena  = byEmail('elena@demo.bg')
   const nikola = byEmail('nikola@demo.bg')
 
+  const pair = (a: string, b: string) =>
+    a < b ? { participantA: a, participantB: b } : { participantA: b, participantB: a }
+
   // Conversation 1: Ivan ↔ Maria
-  const [convIvanMaria] = await db.insert(conversations).values({
-    participantA: ivan.id,
-    participantB: maria.id,
-  }).returning()
+  const [convIvanMaria] = await db.insert(conversations).values(pair(ivan.id, maria.id)).returning()
 
   const msgsAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000)
 
@@ -1082,10 +1082,7 @@ async function seedConversations() {
   ])
 
   // Conversation 2: Georgi ↔ Elena
-  const [convGeorgiElena] = await db.insert(conversations).values({
-    participantA: georgi.id,
-    participantB: elena.id,
-  }).returning()
+  const [convGeorgiElena] = await db.insert(conversations).values(pair(georgi.id, elena.id)).returning()
 
   await db.insert(messages).values([
     {
@@ -1119,10 +1116,7 @@ async function seedConversations() {
   ])
 
   // Conversation 3: Nikola ↔ Ivan (about the fitness skill)
-  const [convNikolaIvan] = await db.insert(conversations).values({
-    participantA: nikola.id,
-    participantB: ivan.id,
-  }).returning()
+  const [convNikolaIvan] = await db.insert(conversations).values(pair(nikola.id, ivan.id)).returning()
 
   await db.insert(messages).values([
     {

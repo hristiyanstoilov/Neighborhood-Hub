@@ -1,12 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 import { queryKeys } from '@/lib/query-keys'
 import { useAuth } from '@/contexts/auth'
+import { useToast } from '@/components/ui/toast'
 
 type MessageItem = {
   id: string
@@ -37,6 +39,7 @@ export default function ConversationThreadPage() {
   const conversationId = params.id
   const { user, loading: authLoading } = useAuth()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const [text, setText] = useState('')
 
@@ -78,7 +81,11 @@ export default function ConversationThreadPage() {
     event.preventDefault()
     const payload = text.trim()
     if (!payload) return
-    await sendMutation.mutateAsync(payload)
+    try {
+      await sendMutation.mutateAsync(payload)
+    } catch {
+      showToast({ variant: 'error', title: 'Could not send message. Please try again.' })
+    }
   }
 
   if (authLoading) return <p className="text-sm text-gray-500">Loading...</p>
@@ -93,7 +100,10 @@ export default function ConversationThreadPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-4 text-2xl font-bold text-gray-900">Conversation</h1>
+      <div className="mb-4 flex items-center gap-3">
+        <Link href="/messages" className="text-sm text-gray-500 hover:text-gray-700">← Messages</Link>
+        <h1 className="text-2xl font-bold text-gray-900">Conversation</h1>
+      </div>
 
       {query.hasNextPage && (
         <button
