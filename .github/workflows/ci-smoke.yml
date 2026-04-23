@@ -29,10 +29,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -57,7 +57,12 @@ jobs:
 
       - name: Wait for server
         run: |
-          for i in {1..60}; do
+          for i in {1..120}; do
+            if [ -f /tmp/next-start.pid ] && ! kill -0 "$(cat /tmp/next-start.pid)" 2>/dev/null; then
+              echo "Server process exited early"
+              cat /tmp/next-start.log
+              exit 1
+            fi
             if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
               exit 0
             fi
@@ -106,10 +111,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -130,7 +135,12 @@ jobs:
 
       - name: Wait for server
         run: |
-          for i in {1..60}; do
+          for i in {1..120}; do
+            if [ -f /tmp/next-auth-start.pid ] && ! kill -0 "$(cat /tmp/next-auth-start.pid)" 2>/dev/null; then
+              echo "Server process exited early"
+              cat /tmp/next-auth-start.log
+              exit 1
+            fi
             if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
               exit 0
             fi
@@ -179,10 +189,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -206,7 +216,12 @@ jobs:
 
       - name: Wait for server
         run: |
-          for i in {1..60}; do
+          for i in {1..120}; do
+            if [ -f /tmp/next-auth-browser-start.pid ] && ! kill -0 "$(cat /tmp/next-auth-browser-start.pid)" 2>/dev/null; then
+              echo "Server process exited early"
+              cat /tmp/next-auth-browser-start.log
+              exit 1
+            fi
             if curl -fsS http://127.0.0.1:3000/login > /dev/null; then
               exit 0
             fi
