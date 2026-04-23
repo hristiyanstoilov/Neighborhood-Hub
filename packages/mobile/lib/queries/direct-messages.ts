@@ -74,6 +74,23 @@ export async function fetchMessages(conversationId: string, before?: string, lim
   return json.data as MessagesPage
 }
 
+export type UserSearchResult = {
+  id: string
+  name: string | null
+  avatarUrl: string | null
+}
+
+export async function searchUsers(q: string): Promise<UserSearchResult[]> {
+  const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`)
+  const json = await res.json()
+
+  if (!res.ok || !json?.data) {
+    throw new Error(readErrorCode(json))
+  }
+
+  return json.data.users as UserSearchResult[]
+}
+
 export async function sendMessage(conversationId: string, body: string): Promise<MessageItem> {
   const res = await apiFetch(`/api/conversations/${conversationId}/messages`, {
     method: 'POST',
