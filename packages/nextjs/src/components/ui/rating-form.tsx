@@ -14,7 +14,6 @@ type RatingFormProps = {
   contextId: string
   ratedUserId: string
   ratedUserName: string
-  profileUserId?: string
   onSuccess?: () => void
 }
 
@@ -36,7 +35,6 @@ export function RatingForm({
   contextId,
   ratedUserId,
   ratedUserName,
-  profileUserId,
   onSuccess,
 }: RatingFormProps) {
   const [score, setScore] = useState<number>(5)
@@ -77,11 +75,13 @@ export function RatingForm({
         queryKey: queryKeys.ratings.check(viewerId, contextType, contextId),
       })
 
-      if (profileUserId) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.ratings.all,
-        })
-      }
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.ratings.byUser(ratedUserId),
+      })
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.ratings.all,
+      })
 
       onSuccess?.()
     },

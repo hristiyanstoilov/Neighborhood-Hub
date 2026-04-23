@@ -25,6 +25,7 @@ type Props = {
 
 function errorMessage(code: string) {
   const map: Record<string, string> = {
+    CONTEXT_NOT_FOUND: 'The related exchange could not be found.',
     CONTEXT_NOT_TERMINAL: 'This exchange is not complete yet.',
     NOT_A_PARTICIPANT: 'You cannot rate this exchange.',
     DUPLICATE_RATING: 'You already rated this exchange.',
