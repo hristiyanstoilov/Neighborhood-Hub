@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { foodReservations, profiles, ratings, skillRequests, toolReservations } from '@/db/schema'
 import { apiRatelimit } from '@/lib/ratelimit'

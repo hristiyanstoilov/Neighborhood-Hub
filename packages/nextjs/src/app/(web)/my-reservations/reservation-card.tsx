@@ -118,7 +118,7 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
       </dl>
 
       {reservation.notes && (
-        <p className="text-sm text-gray-500 mb-3 italic">"{reservation.notes}"</p>
+        <p className="text-sm text-gray-500 mb-3 italic">&quot;{reservation.notes}&quot;</p>
       )}
 
       {reservation.cancellationReason && (
