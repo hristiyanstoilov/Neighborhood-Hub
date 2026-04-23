@@ -11,6 +11,7 @@
     "smoke:web": "node scripts/smoke-web.mjs",
     "smoke:auth": "node scripts/smoke-auth.mjs",
     "smoke:auth:browser": "node scripts/smoke-auth-browser.mjs",
+    "smoke:ratings": "node scripts/smoke-ratings.mjs",
     "smoke:skill-requests:transitions": "node scripts/smoke-skill-requests-transitions.mjs",
     "smoke:tool-reservations:transitions": "node scripts/smoke-tool-reservations.mjs",
     "smoke:food-reservations:transitions": "node scripts/smoke-food-reservations.mjs",

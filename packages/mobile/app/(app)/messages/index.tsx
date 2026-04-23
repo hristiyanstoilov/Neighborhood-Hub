@@ -26,6 +26,7 @@ export default function MessagesListScreen() {
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<UserSearchResult | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchSeqRef = useRef(0)
 
   const listQuery = useQuery({
     queryKey: dmKeys.conversations(user?.id ?? 'guest'),
@@ -43,31 +44,53 @@ export default function MessagesListScreen() {
       router.push(`/(app)/messages/${conversationId}`)
     },
     onError: (error) => {
-      showToast({ variant: 'error', message: error instanceof Error ? error.message : 'FAILED_TO_START_CONVERSATION' })
+      const code = error instanceof Error ? error.message : 'FAILED_TO_START_CONVERSATION'
+      showToast({
+        variant: 'error',
+        message: code === 'CONVERSATION_NOT_ALLOWED' ? 'You cannot start a conversation with this user.' : 'Could not start conversation.',
+      })
     },
   })
 
   useEffect(() => {
-    if (selected) return
+    if (selected) {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      return
+    }
 
-    if (query.length < 2) {
+    const trimmed = query.trim()
+
+    if (trimmed.length < 2) {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
       setSearchResults([])
       return
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
+    const requestId = ++searchSeqRef.current
+
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const results = await searchUsers(query)
-        setSearchResults(results)
+        const results = await searchUsers(trimmed)
+        if (searchSeqRef.current === requestId) {
+          setSearchResults(results)
+        }
       } catch {
-        setSearchResults([])
+        if (searchSeqRef.current === requestId) {
+          setSearchResults([])
+        }
       } finally {
-        setSearching(false)
+        if (searchSeqRef.current === requestId) {
+          setSearching(false)
+        }
       }
     }, 300)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [query, selected])
 
   function handleSelectUser(u: UserSearchResult) {

@@ -37,7 +37,7 @@ function readErrorCode(json: unknown): string {
 
 export async function fetchConversations(): Promise<ConversationItem[]> {
   const res = await apiFetch('/api/conversations')
-  const json = await res.json()
+  const json = await res.json().catch(() => null)
 
   if (!res.ok || !json?.data) {
     throw new Error(readErrorCode(json))
@@ -51,7 +51,7 @@ export async function createConversation(otherUserId: string): Promise<{ convers
     method: 'POST',
     body: JSON.stringify({ otherUserId }),
   })
-  const json = await res.json()
+  const json = await res.json().catch(() => null)
 
   if (!res.ok || !json?.data) {
     throw new Error(readErrorCode(json))
@@ -65,7 +65,7 @@ export async function fetchMessages(conversationId: string, before?: string, lim
   if (before) params.set('before', before)
 
   const res = await apiFetch(`/api/conversations/${conversationId}/messages?${params.toString()}`)
-  const json = await res.json()
+  const json = await res.json().catch(() => null)
 
   if (!res.ok || !json?.data) {
     throw new Error(readErrorCode(json))
@@ -82,13 +82,13 @@ export type UserSearchResult = {
 
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
   const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`)
-  const json = await res.json()
+  const json = await res.json().catch(() => null)
 
   if (!res.ok || !json?.data) {
     throw new Error(readErrorCode(json))
   }
 
-  return json.data.users as UserSearchResult[]
+  return Array.isArray(json?.data?.users) ? (json.data.users as UserSearchResult[]) : []
 }
 
 export async function sendMessage(conversationId: string, body: string): Promise<MessageItem> {
