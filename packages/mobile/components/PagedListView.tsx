@@ -17,6 +17,8 @@ type PagedListViewProps<T> = {
   loadingMore?: boolean
   listContentStyle: object
   emptyMessage: string
+  listHeader?: ReactElement | null
+  emptyComponent?: ReactElement | null
   emptyAction?: ReactElement | null
   footer?: ReactElement | null
   footerLoaderColor?: string
@@ -37,6 +39,8 @@ export function PagedListView<T>({
   loadingMore,
   listContentStyle,
   emptyMessage,
+  listHeader,
+  emptyComponent,
   emptyAction,
   footer,
   footerLoaderColor = mobileTheme.colors.primary,
@@ -67,11 +71,14 @@ export function PagedListView<T>({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={footerLoaderColor} />
       }
       contentContainerStyle={data.length === 0 ? styles.emptyContainer : listContentStyle}
+      ListHeaderComponent={listHeader ?? null}
       ListEmptyComponent={
-        <View style={styles.center}>
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
-          {emptyAction}
-        </View>
+        emptyComponent ?? (
+          <View style={styles.center}>
+            <Text style={styles.emptyText}>{emptyMessage}</Text>
+            {emptyAction}
+          </View>
+        )
       }
       ListFooterComponent={
         hasMore ? (

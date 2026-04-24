@@ -2,20 +2,20 @@ import { useCallback } from 'react'
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
-  RefreshControl,
   TouchableOpacity,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
+import { AppScreen } from '../../components/AppScreen'
+import { PagedListView } from '../../components/PagedListView'
 import SkillCard from '../../components/SkillCard'
 import { useAuth } from '../../contexts/auth'
+import { mobileTheme } from '../../lib/theme'
 import { useMySkillsState } from './_hooks/use-my-skills-state'
 import { MySkillsHeader } from './_components/my-skills-header'
 import {
   MySkillsEmptyState,
-  MySkillsErrorState,
   MySkillsLoadingState,
   MySkillsLoginRequiredState,
 } from './_components/my-skills-states'
@@ -53,18 +53,12 @@ export default function MySkillsScreen() {
     return <MySkillsLoadingState />
   }
 
-  if (isError) {
-    return <MySkillsErrorState onRetry={() => void retry()} />
-  }
-
   return (
-    <View style={styles.container}>
-      <FlatList
+    <AppScreen backgroundColor={mobileTheme.colors.canvasAlt}>
+      <PagedListView
         data={skills}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <MySkillsHeader onNew={() => router.push('/(app)/skills/new')} />
-        }
+        listHeader={<MySkillsHeader onNew={() => router.push('/(app)/skills/new')} />}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
             <SkillCard
@@ -83,32 +77,33 @@ export default function MySkillsScreen() {
             </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={
-          <MySkillsEmptyState onOffer={() => router.push('/(app)/skills/new')} />
+        loading={false}
+        error={isError}
+        errorMessage="Could not load your skills."
+        onRetry={() => void retry()}
+        refreshing={isRefreshing}
+        onRefresh={() => void handleRefresh()}
+        onEndReached={hasMore ? handleLoadMore : undefined}
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        listContentStyle={styles.list}
+        emptyMessage=""
+        emptyComponent={<MySkillsEmptyState onOffer={() => router.push('/(app)/skills/new')} />}
+        footer={
+          <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore} disabled={loadingMore}>
+            {loadingMore
+              ? <ActivityIndicator color={mobileTheme.colors.primary} />
+              : <Text style={styles.loadMoreText}>Load more</Text>
+            }
+          </TouchableOpacity>
         }
-        ListFooterComponent={
-          hasMore ? (
-            <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore} disabled={loadingMore}>
-              {loadingMore
-                ? <ActivityIndicator color="#15803d" />
-                : <Text style={styles.loadMoreText}>Load more</Text>
-              }
-            </TouchableOpacity>
-          ) : null
-        }
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
-        }
-        contentContainerStyle={skills.length === 0 ? styles.emptyContainer : styles.list}
       />
-    </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
   list: { paddingBottom: 24 },
-  emptyContainer: { flex: 1 },
   cardWrapper: { position: 'relative' },
   editChip: {
     position: 'absolute',
@@ -127,11 +122,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
     paddingVertical: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: mobileTheme.colors.primarySoft,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: mobileTheme.colors.primarySoftBorder,
   },
-  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
+  loadMoreText: { color: mobileTheme.colors.primary, fontWeight: '500', fontSize: 14 },
 })
