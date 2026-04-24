@@ -122,8 +122,8 @@ export default function NotificationsScreen() {
     await notificationsQuery.refetch()
   }
 
-  async function handlePress(item: NotificationItem) {
-    await markReadMutation.mutateAsync(item.id).catch(() => {})
+  function handlePress(item: NotificationItem) {
+    void markReadMutation.mutateAsync(item.id).catch(() => {})
     if (item.entityType === 'skill_request') {
       router.push('/(app)/(tabs)/my-requests')
       return
@@ -186,7 +186,7 @@ export default function NotificationsScreen() {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Notifications</Text>
             {items.length > 0 && (
-              <TouchableOpacity onPress={() => void handleMarkAllRead()}>
+              <TouchableOpacity onPress={() => void handleMarkAllRead()} disabled={markReadMutation.isPending}>
                 <Text style={styles.markAllText}>Mark all read</Text>
               </TouchableOpacity>
             )}

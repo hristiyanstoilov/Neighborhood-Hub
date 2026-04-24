@@ -259,13 +259,19 @@ export function SearchResultsView({ initialQuery, initialType, initialLocationId
       )}
 
       {debouncedQuery.length >= 2 && !loading && !error && hasAnyResults && activeType !== 'all' && (
-        <SearchResultsGrid>
-          {activeType === 'skills' && renderSkills(results?.skills ?? [])}
-          {activeType === 'tools' && renderTools(results?.tools ?? [])}
-          {activeType === 'events' && renderEvents(results?.events ?? [])}
-          {activeType === 'drives' && renderDrives(results?.drives ?? [])}
-          {activeType === 'food' && renderFood(results?.food ?? [])}
-        </SearchResultsGrid>
+        (results?.[activeType]?.length ?? 0) > 0 ? (
+          <SearchResultsGrid>
+            {activeType === 'skills' && renderSkills(results?.skills ?? [])}
+            {activeType === 'tools' && renderTools(results?.tools ?? [])}
+            {activeType === 'events' && renderEvents(results?.events ?? [])}
+            {activeType === 'drives' && renderDrives(results?.drives ?? [])}
+            {activeType === 'food' && renderFood(results?.food ?? [])}
+          </SearchResultsGrid>
+        ) : (
+          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-600">
+            No {activeType} match this search.
+          </div>
+        )
       )}
     </div>
   )
