@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateDriveSchema } from '@/lib/schemas/drive'
 import { queryDriveById } from '@/lib/queries/drives'
+import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -65,15 +66,13 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
         .from(drivePledges)
         .where(and(eq(drivePledges.driveId, id), eq(drivePledges.status, 'pledged')))
 
-      if (pledgers.length > 0) {
-        db.insert(notifications).values(
-          pledgers.map((p) => ({
-            userId:     p.userId,
-            type:       'drive_completed' as const,
-            entityType: 'community_drive',
-            entityId:   id,
-          }))
-        ).catch(() => {})
+      for (const p of pledgers) {
+        void createNotification({
+          userId: p.userId,
+          type: 'drive_completed',
+          entityType: 'community_drive',
+          entityId: id,
+        }).catch(() => {})
       }
     }
 

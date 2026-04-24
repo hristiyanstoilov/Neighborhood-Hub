@@ -6,6 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage, queryFoodReservations } from '@/lib/queries/food'
+import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -91,7 +92,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       notes: parsed.data.notes ?? null,
     }).returning()
 
-    await db.insert(notifications).values({
+    void createNotification({
       userId: foodShare.ownerId,
       type: 'food_reservation_new',
       entityType: 'food_reservation',

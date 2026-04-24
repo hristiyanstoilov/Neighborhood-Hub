@@ -6,6 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
+import { createNotification } from '@/lib/create-notification'
 
 // URL: /api/events/[id]/rsvp  → id is second-to-last segment
 function extractEventId(url: string): string {
@@ -60,11 +61,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }).returning()
 
     // Notify organizer
-    db.insert(notifications).values({
-      userId:     event.organizerId,
-      type:       'event_new_rsvp' as const,
+    void createNotification({
+      userId: event.organizerId,
+      type: 'event_new_rsvp',
       entityType: 'event',
-      entityId:   eventId,
+      entityId: eventId,
     }).catch(() => {})
 
     return NextResponse.json({ data: attendee }, { status: 201 })

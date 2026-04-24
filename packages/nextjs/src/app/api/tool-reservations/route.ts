@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { z } from 'zod'
+import { createNotification } from '@/lib/create-notification'
 
 function isUniqueViolation(err: unknown, indexHint: string): boolean {
   const visited = new Set<unknown>()
@@ -104,11 +105,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }
 
     // Notify owner
-    db.insert(notifications).values({
-      userId:     tool.ownerId,
-      type:       'reservation_new',
+    void createNotification({
+      userId: tool.ownerId,
+      type: 'reservation_new',
       entityType: 'tool_reservation',
-      entityId:   reservation.id,
+      entityId: reservation.id,
     }).catch(() => {})
 
     return NextResponse.json({ data: reservation }, { status: 201 })

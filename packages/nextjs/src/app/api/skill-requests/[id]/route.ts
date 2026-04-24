@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
+import { createNotification } from '@/lib/create-notification'
 
 const TERMINAL_STATUSES = ['rejected', 'completed', 'cancelled']
 
@@ -129,14 +130,12 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       .returning()
 
     // Notify the other party — fire and forget
-    db.insert(notifications)
-      .values({
-        userId: notificationRecipient,
-        type: notificationType,
-        entityType: 'skill_request',
-        entityId: id,
-      })
-      .catch(() => {})
+    void createNotification({
+      userId: notificationRecipient,
+      type: notificationType,
+      entityType: 'skill_request',
+      entityId: id,
+    }).catch(() => {})
 
     await writeAuditLog({
       userId: user.sub,

@@ -5,11 +5,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '../contexts/auth'
 import { QueryProvider } from '../components/query-provider'
 import { ToastProvider } from '../lib/toast'
+import { usePushNotifications } from '../lib/push-notifications'
 
 function RootNavigation() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const segments = useSegments()
+
+  usePushNotifications(user?.id)
 
   useEffect(() => {
     if (loading) return

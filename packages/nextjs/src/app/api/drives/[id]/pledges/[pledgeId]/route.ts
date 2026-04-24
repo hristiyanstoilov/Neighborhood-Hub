@@ -6,6 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
+import { createNotification } from '@/lib/create-notification'
 
 // URL: /api/drives/[id]/pledges/[pledgeId]
 // parts: ['api', 'drives', '{id}', 'pledges', '{pledgeId}']
@@ -64,22 +65,20 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       .returning()
 
     if (status === 'fulfilled') {
-      // Notify pledger when organizer marks fulfilled
-      db.insert(notifications).values({
-        userId:     pledge.userId,
-        type:       'drive_pledge_fulfilled' as const,
+      void createNotification({
+        userId: pledge.userId,
+        type: 'drive_pledge_fulfilled',
         entityType: 'community_drive',
-        entityId:   driveId,
+        entityId: driveId,
       }).catch(() => {})
     }
 
     if (status === 'cancelled') {
-      // Notify organizer when pledger cancels
-      db.insert(notifications).values({
-        userId:     drive.organizerId,
-        type:       'drive_pledge_cancelled' as const,
+      void createNotification({
+        userId: drive.organizerId,
+        type: 'drive_pledge_cancelled',
         entityType: 'community_drive',
-        entityId:   driveId,
+        entityId: driveId,
       }).catch(() => {})
     }
 

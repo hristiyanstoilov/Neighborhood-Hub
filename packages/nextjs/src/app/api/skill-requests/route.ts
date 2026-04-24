@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
 import { querySkillRequestsByUser } from '@/lib/queries/skill-requests'
+import { createNotification } from '@/lib/create-notification'
 
 // ─── GET /api/skill-requests — list requests visible to the current user ─────
 
@@ -94,14 +95,12 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       .returning()
 
     // Notify the skill owner — fire and forget
-    db.insert(notifications)
-      .values({
-        userId: skill.ownerId,
-        type: 'new_request',
-        entityType: 'skill_request',
-        entityId: newRequest.id,
-      })
-      .catch(() => {})
+    void createNotification({
+      userId: skill.ownerId,
+      type: 'new_request',
+      entityType: 'skill_request',
+      entityId: newRequest.id,
+    }).catch(() => {})
 
     await writeAuditLog({
       userId: user.sub,

@@ -730,3 +730,24 @@ export const messages = pgTable(
     check('messages_body_not_empty_check', sql`char_length(trim(${t.body})) > 0`),
   ]
 )
+
+// ─────────────────────────────────────────────
+// 25. PUSH TOKENS (Expo push notifications)
+// ─────────────────────────────────────────────
+
+export const pushTokens = pgTable(
+  'push_tokens',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    token: varchar('token', { length: 512 }).notNull(),
+    platform: varchar('platform', { length: 16 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('push_tokens_token_idx').on(t.token),
+    index('push_tokens_user_id_idx').on(t.userId),
+  ]
+)

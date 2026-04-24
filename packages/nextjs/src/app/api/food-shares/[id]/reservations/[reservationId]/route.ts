@@ -7,6 +7,7 @@ import { requireAuth, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
+import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string; reservationId: string }> }
 
@@ -113,7 +114,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       picked_up: 'food_reservation_picked_up',
     }
 
-    await db.insert(notifications).values({
+    void createNotification({
       userId: recipient,
       type: typeMap[parsed.data.action],
       entityType: 'food_reservation',

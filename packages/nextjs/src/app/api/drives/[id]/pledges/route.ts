@@ -6,6 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
+import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -81,11 +82,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }).returning()
 
     // Notify organizer
-    db.insert(notifications).values({
-      userId:     drive.organizerId,
-      type:       'drive_new_pledge' as const,
+    void createNotification({
+      userId: drive.organizerId,
+      type: 'drive_new_pledge',
       entityType: 'community_drive',
-      entityId:   driveId,
+      entityId: driveId,
     }).catch(() => {})
 
     return NextResponse.json({ data: pledge }, { status: 201 })

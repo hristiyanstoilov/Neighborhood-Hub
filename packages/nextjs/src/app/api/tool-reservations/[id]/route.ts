@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { patchToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { uuidSchema } from '@/lib/schemas/skill'
+import { createNotification } from '@/lib/create-notification'
 
 const TERMINAL = ['rejected', 'returned', 'cancelled']
 
@@ -99,11 +100,11 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
     // Notify the other party
     const recipient = isOwner ? existing.borrowerId : existing.ownerId
-    db.insert(notifications).values({
-      userId:     recipient,
-      type:       notifTypeMap[action],
+    void createNotification({
+      userId: recipient,
+      type: notifTypeMap[action],
       entityType: 'tool_reservation',
-      entityId:   id,
+      entityId: id,
     }).catch(() => {})
 
     await writeAuditLog({
