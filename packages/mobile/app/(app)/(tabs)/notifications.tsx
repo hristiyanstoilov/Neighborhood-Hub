@@ -130,7 +130,7 @@ export default function NotificationsScreen() {
     }
 
     if (item.entityType === 'food_reservation') {
-      router.push('/(app)/food')
+      router.push('/(app)/food/reservations')
       return
     }
 
