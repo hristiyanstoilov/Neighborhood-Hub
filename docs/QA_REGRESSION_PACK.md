@@ -1,7 +1,7 @@
 # Neighborhood Hub - QA Regression Pack
 
-Version: 1.1  
-Last updated: April 18, 2026  
+Version: 1.2  
+Last updated: April 24, 2026  
 Status: Active
 
 ---
@@ -26,6 +26,8 @@ Included:
 6. Admin access control: non-admin guard and admin route sanity checks.
 7. Mobile parity: loading, error, empty states on key screens.
 8. Food Sharing: create/list, reservation lifecycle, ownership guards, duplicate prevention.
+9. Direct Messages: conversation create/find-or-create, message send/read, user search, auth guards.
+10. Activity Feed: public listing, pagination, event write, URL validation.
 
 Excluded:
 
@@ -113,6 +115,24 @@ Execute all critical flows by test ID (section 4).
 7. FOOD-07 Requester cancels reservation → 200, status = cancelled.
 8. FOOD-08 Non-owner cannot approve/reject/mark picked up → 403 FORBIDDEN.
 
+### Direct Messages
+
+1. DM-01 `GET /api/users/search?q=el` without auth → 401.
+2. DM-02 `GET /api/users/search?q=ivan` as Ivan → own profile excluded from results; name/avatarUrl returned, email never returned.
+3. DM-03 `POST /api/conversations` with valid `otherUserId` → 201 first call, 200 same `conversationId` on repeat (find-or-create).
+4. DM-04 `POST /api/conversations` with `otherUserId = self` → 400 CANNOT_MESSAGE_SELF.
+5. DM-05 `POST /api/conversations/[id]/messages` as non-participant → 403 FORBIDDEN.
+6. DM-06 `GET /api/conversations/[id]/messages` as participant → messages returned oldest-first after client reversal; unread messages from other party have `readAt` set after fetch.
+7. DM-07 Web `/messages/new` search: type 2+ chars → dropdown appears; select user → selected card shown with "Change" button; click Start → redirects to thread.
+8. DM-08 Web `/messages/[id]` thread: send message → input clears, message appears within 15 s refetch; network failure → error toast shown.
+
+### Activity Feed
+
+1. FEED-01 `GET /api/feed` without auth → 200, paginated items returned (public endpoint).
+2. FEED-02 `GET /api/feed?limit=20&offset=0` → `total` field present; `hasMore` derived correctly on client.
+3. FEED-03 `POST /api/feed` without auth → 401; with auth and `targetUrl` not starting with `/` → 400 VALIDATION_ERROR.
+4. FEED-04 `POST /api/feed` with valid payload → 201, event appears at top of next `GET /api/feed`.
+
 ### Auth — Password Reset & Email Verification
 
 6. AUTH-06 `POST /api/auth/forgot-password` with any email format → always 200 (no enumeration).
@@ -135,13 +155,14 @@ Execute all critical flows by test ID (section 4).
 7. At least one food share in status `available` owned by the verified user.
 8. At least one food reservation in status `pending` made by a second verified user.
 9. A password reset token can be seeded directly via SQL for AUTH-07..09 tests (see `scripts/smoke-password-reset.mjs` for the pattern).
+10. At least three seeded conversations with messages between demo users (run `npx tsx src/db/seed.ts --conversations`); at least one conversation has an unread message.
 
 ---
 
 ## 6. Execution Protocol
 
 1. Start with build check.
-2. Execute by module order: Auth → Skills → Requests → Chat → Profile → Admin → Mobile → Food.
+2. Execute by module order: Auth → Skills → Requests → Chat → Profile → Admin → Mobile → Food → DMs → Feed.
 3. Record each test ID as PASS / FAIL / BLOCKED.
 4. For every FAIL: include exact reproduction steps and expected vs actual behavior.
 5. End with Go/No-Go release decision.
