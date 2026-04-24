@@ -128,7 +128,7 @@ export default function ToolListScreen() {
             onPress={() => router.push(`/tools/${item.id}` as never)}
           />
         )}
-        loading={query.isLoading}
+        loading={query.isFetching && !query.data}
         error={query.isError}
         errorMessage="Could not load tools."
         onRetry={() => query.refetch()}

@@ -19,6 +19,7 @@ type PagedListViewProps<T> = {
   emptyMessage: string
   listHeader?: ReactElement | null
   emptyComponent?: ReactElement | null
+  itemSeparator?: ReactElement | null
   emptyAction?: ReactElement | null
   footer?: ReactElement | null
   footerLoaderColor?: string
@@ -41,10 +42,13 @@ export function PagedListView<T>({
   emptyMessage,
   listHeader,
   emptyComponent,
+  itemSeparator,
   emptyAction,
   footer,
   footerLoaderColor = mobileTheme.colors.primary,
 }: PagedListViewProps<T>) {
+  const staleDataError = error && data.length > 0
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -71,7 +75,19 @@ export function PagedListView<T>({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={footerLoaderColor} />
       }
       contentContainerStyle={data.length === 0 ? styles.emptyContainer : listContentStyle}
-      ListHeaderComponent={listHeader ?? null}
+      ListHeaderComponent={
+        staleDataError || listHeader ? (
+          <View>
+            {staleDataError ? (
+              <View style={styles.inlineError}>
+                <Text style={styles.inlineErrorText}>{errorMessage}</Text>
+                <Text onPress={onRetry} style={styles.inlineRetryText}>Retry</Text>
+              </View>
+            ) : null}
+            {listHeader}
+          </View>
+        ) : null
+      }
       ListEmptyComponent={
         emptyComponent ?? (
           <View style={styles.center}>
@@ -80,6 +96,7 @@ export function PagedListView<T>({
           </View>
         )
       }
+      ItemSeparatorComponent={itemSeparator ? () => itemSeparator : undefined}
       ListFooterComponent={
         hasMore ? (
           footer ?? (
@@ -120,5 +137,30 @@ const styles = StyleSheet.create({
   },
   footerLoader: {
     paddingVertical: 16,
+  },
+  inlineError: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: mobileTheme.colors.statusDangerBg,
+    backgroundColor: mobileTheme.colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  inlineErrorText: {
+    flex: 1,
+    fontSize: 12,
+    color: mobileTheme.colors.statusDangerText,
+  },
+  inlineRetryText: {
+    color: mobileTheme.colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
   },
 })

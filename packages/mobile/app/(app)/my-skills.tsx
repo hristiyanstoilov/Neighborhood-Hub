@@ -77,7 +77,7 @@ export default function MySkillsScreen() {
             </TouchableOpacity>
           </View>
         )}
-        loading={false}
+        loading={isInitialLoading}
         error={isError}
         errorMessage="Could not load your skills."
         onRetry={() => void retry()}

@@ -70,6 +70,11 @@ export default function FoodListScreen() {
   const isRefreshing = foodQuery.isRefetching && !!foodQuery.data
   const hasMore = foodShares.length < total
 
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || foodQuery.isFetchingNextPage) return
+    void foodQuery.fetchNextPage()
+  }, [hasMore, foodQuery])
+
   function renderFood({ item }: { item: FoodShareListItem }) {
     const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     return (
@@ -127,7 +132,7 @@ export default function FoodListScreen() {
         onRetry={() => void foodQuery.refetch()}
         refreshing={isRefreshing}
         onRefresh={() => void foodQuery.refetch()}
-        onEndReached={() => void foodQuery.fetchNextPage()}
+        onEndReached={handleLoadMore}
         hasMore={hasMore}
         loadingMore={foodQuery.isFetchingNextPage}
         listContentStyle={styles.list}
@@ -140,7 +145,7 @@ export default function FoodListScreen() {
           ) : null
         }
         footer={
-          <TouchableOpacity style={styles.loadMoreBtn} onPress={() => void foodQuery.fetchNextPage()} disabled={foodQuery.isFetchingNextPage}>
+          <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore} disabled={foodQuery.isFetchingNextPage}>
             {foodQuery.isFetchingNextPage
               ? <ActivityIndicator color={mobileTheme.colors.primary} />
               : <Text style={styles.loadMoreText}>Load more</Text>

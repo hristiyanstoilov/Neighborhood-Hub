@@ -2,14 +2,13 @@ import { useCallback } from 'react'
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AppScreen } from '../../../components/AppScreen'
+import { PagedListView } from '../../../components/PagedListView'
 import { useAuth } from '../../../contexts/auth'
 import {
   fetchNotifications,
@@ -18,6 +17,7 @@ import {
   type NotificationItem,
 } from '../../../lib/queries/notifications'
 import { formatDateTime } from '../../../lib/format'
+import { mobileTheme } from '../../../lib/theme'
 
 const TYPE_LABELS: Record<string, string> = {
   new_request:       'New skill request received',
@@ -115,8 +115,8 @@ export default function NotificationsScreen() {
   )
 
   const items = notificationsQuery.data ?? []
-  const loading = notificationsQuery.isLoading
-  const refreshing = notificationsQuery.isFetching && !notificationsQuery.isLoading
+  const isInitial = notificationsQuery.isLoading && !notificationsQuery.data
+  const refreshing = notificationsQuery.isRefetching && !!notificationsQuery.data
 
   async function handleRefresh() {
     await notificationsQuery.refetch()
@@ -156,54 +156,15 @@ export default function NotificationsScreen() {
     await markReadMutation.mutateAsync(undefined).catch(() => {})
   }
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#15803d" />
-      </View>
-    )
-  }
-
-
-  if (notificationsQuery.isError && !notificationsQuery.data) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Could not load notifications.</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => void notificationsQuery.refetch()}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    )
-  }
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        {items.length > 0 && (
-          <TouchableOpacity onPress={handleMarkAllRead}>
-            <Text style={styles.markAllText}>Mark all read</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
+    <AppScreen backgroundColor={mobileTheme.colors.canvasAlt}>
+      <PagedListView
         data={items}
         keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyTitle}>All caught up</Text>
-            <Text style={styles.emptySubtitle}>No new notifications.</Text>
-          </View>
-        }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.item}
-            onPress={() => handlePress(item)}
+            onPress={() => void handlePress(item)}
             disabled={markReadMutation.isPending}
           >
             <Text style={styles.itemIcon}>{TYPE_ICONS[item.type] ?? '🔔'}</Text>
@@ -215,16 +176,38 @@ export default function NotificationsScreen() {
             <Text style={styles.itemChevron}>›</Text>
           </TouchableOpacity>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        contentContainerStyle={items.length === 0 ? styles.emptyContainer : styles.list}
+        loading={isInitial}
+        error={notificationsQuery.isError}
+        errorMessage="Could not load notifications."
+        onRetry={() => void notificationsQuery.refetch()}
+        refreshing={refreshing}
+        onRefresh={() => void handleRefresh()}
+        listHeader={
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Notifications</Text>
+            {items.length > 0 && (
+              <TouchableOpacity onPress={() => void handleMarkAllRead()}>
+                <Text style={styles.markAllText}>Mark all read</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        }
+        listContentStyle={styles.list}
+        emptyMessage=""
+        emptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyTitle}>All caught up</Text>
+            <Text style={styles.emptySubtitle}>No new notifications.</Text>
+          </View>
+        }
+        itemSeparator={<View style={styles.separator} />}
       />
-    </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -233,25 +216,24 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  markAllText: { fontSize: 13, color: '#15803d', fontWeight: '500' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: mobileTheme.colors.textPrimary },
+  markAllText: { fontSize: 13, color: mobileTheme.colors.primary, fontWeight: '500' },
   list: { paddingBottom: 24 },
-  emptyContainer: { flex: 1 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
   },
   itemIcon: { fontSize: 20, width: 28, textAlign: 'center' },
   itemBody: { flex: 1 },
-  itemLabel: { fontSize: 14, fontWeight: '500', color: '#111827', lineHeight: 20 },
-  itemEntity: { fontSize: 11, color: '#6b7280', marginTop: 2 },
-  itemDate: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  itemChevron: { fontSize: 20, color: '#d1d5db' },
-  separator: { height: 1, backgroundColor: '#f3f4f6' },
+  itemLabel: { fontSize: 14, fontWeight: '500', color: mobileTheme.colors.textPrimary, lineHeight: 20 },
+  itemEntity: { fontSize: 11, color: mobileTheme.colors.textMuted, marginTop: 2 },
+  itemDate: { fontSize: 12, color: mobileTheme.colors.textSubtle, marginTop: 2 },
+  itemChevron: { fontSize: 20, color: mobileTheme.colors.border },
+  separator: { height: 1, backgroundColor: mobileTheme.colors.canvas },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -260,22 +242,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyIcon: { fontSize: 40 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#374151' },
-  emptySubtitle: { fontSize: 13, color: '#9ca3af' },
-  errorText: {
-    fontSize: 14,
-    color: '#dc2626',
-    marginBottom: 12,
-  },
-  retryBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: '#15803d',
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
-  },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: mobileTheme.colors.textSecondary },
+  emptySubtitle: { fontSize: 13, color: mobileTheme.colors.textSubtle },
 })
