@@ -72,7 +72,7 @@ function getBaseUrl(headerStore: Headers) {
 
 function notificationHref(item: NotificationRow) {
   if (item.entityType === 'skill_request') return '/my-requests'
-  if (item.entityType === 'food_reservation') return '/food'
+  if (item.entityType === 'food_reservation') return '/food/reservations'
   if (item.entityType === 'tool_reservation') return '/my-reservations'
   if (item.entityType === 'drive_pledge' && item.entityId) return `/drives/${item.entityId}`
   if (item.entityType === 'event_rsvp' && item.entityId) return `/events/${item.entityId}`

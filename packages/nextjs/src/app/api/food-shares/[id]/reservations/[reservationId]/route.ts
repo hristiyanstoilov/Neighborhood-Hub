@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { foodShares, foodReservations, notifications, users } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuth, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
@@ -35,7 +35,7 @@ async function syncFoodShareStatus(foodShareId: string, quantity: number) {
 
 export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+    const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
