@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, profiles, users } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
+import { apiRatelimit } from '@/lib/ratelimit'
 import { createConversationSchema } from '@/lib/schemas/dm'
 
 function normalizePair(a: string, b: string): { participantA: string; participantB: string } {
@@ -90,6 +91,9 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
 
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const body = await req.json().catch(() => null)
     const parsed = createConversationSchema.safeParse(body)
     if (!parsed.success) {

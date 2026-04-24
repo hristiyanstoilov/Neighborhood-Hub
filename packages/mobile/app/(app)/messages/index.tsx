@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { useToast } from '../../../lib/toast'
+import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 import {
   createConversation,
   dmKeys,
@@ -103,6 +105,7 @@ export default function MessagesListScreen() {
   }
 
   return (
+    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <View style={styles.container}>
       <Text style={styles.title}>Messages</Text>
 
@@ -183,6 +186,7 @@ export default function MessagesListScreen() {
         )}
       />
     </View>
+    </AppScreen>
   )
 }
 

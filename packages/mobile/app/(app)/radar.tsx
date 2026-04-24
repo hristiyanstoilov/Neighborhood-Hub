@@ -9,6 +9,8 @@ import {
 import MapView, { Circle, Callout, Marker, Region } from 'react-native-maps'
 import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
+import { AppScreen } from '../../components/AppScreen'
+import { mobileTheme } from '../../lib/theme'
 import { fetchRadarLocations, radarKeys } from '../../lib/queries/radar'
 
 const SOFIA_REGION: Region = {
@@ -41,20 +43,24 @@ export default function RadarScreen() {
 
   if (locationsQuery.isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#15803d" />
-      </View>
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={mobileTheme.colors.primary} />
+        </View>
+      </AppScreen>
     )
   }
 
   if (locationsQuery.isError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Could not load radar data.</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => void locationsQuery.refetch()}>
-          <Text style={styles.btnText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Could not load radar data.</Text>
+          <TouchableOpacity style={styles.btn} onPress={() => void locationsQuery.refetch()}>
+            <Text style={styles.btnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </AppScreen>
     )
   }
 
@@ -64,7 +70,8 @@ export default function RadarScreen() {
   const activeCount = locations.filter((l) => l.skillCount > 0).length
 
   return (
-    <View style={styles.container}>
+    <AppScreen backgroundColor={mobileTheme.colors.canvas} edges={['top']}>
+      <View style={styles.container}>
       {/* Stats bar */}
       <View style={styles.statsBar}>
         <Text style={styles.statsText}>
@@ -136,6 +143,7 @@ export default function RadarScreen() {
         ))}
       </View>
     </View>
+    </AppScreen>
   )
 }
 

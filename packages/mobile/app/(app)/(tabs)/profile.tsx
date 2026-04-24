@@ -23,6 +23,8 @@ import {
   ProfileLoadingState,
   ProfileUnauthorizedState,
 } from './_components/profile-states'
+import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth()
@@ -97,20 +99,33 @@ export default function ProfileScreen() {
   }
 
   if (!user) {
-    return <ProfileUnauthorizedState onLogin={() => router.replace('/(auth)/login')} />
+    return (
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <ProfileUnauthorizedState onLogin={() => router.replace('/(auth)/login')} />
+      </AppScreen>
+    )
   }
 
   if (profileQuery.isLoading) {
-    return <ProfileLoadingState />
+    return (
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <ProfileLoadingState />
+      </AppScreen>
+    )
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return <ProfileErrorState onRetry={() => { void profileQuery.refetch() }} />
+    return (
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <ProfileErrorState onRetry={() => { void profileQuery.refetch() }} />
+      </AppScreen>
+    )
   }
 
   const profile = profileQuery.data
 
   return (
+    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -142,6 +157,7 @@ export default function ProfileScreen() {
         onLogout={handleLogout}
       />
     </ScrollView>
+    </AppScreen>
   )
 }
 

@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, lt, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
+import { apiRatelimit } from '@/lib/ratelimit'
 import { createMessageSchema, listMessagesSchema } from '@/lib/schemas/dm'
 
 function isParticipant(conversation: { participantA: string; participantB: string }, userId: string) {
@@ -80,6 +81,9 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
 
 export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const conversationId = params.id
 
     if (!conversationId) {

@@ -19,6 +19,8 @@ import {
   updateOwnProfile,
 } from '../../../lib/queries/profile'
 import { useToast } from '../../../lib/toast'
+import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 
 export default function EditProfileScreen() {
   const router = useRouter()
@@ -81,33 +83,38 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#15803d" />
-      </View>
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={mobileTheme.colors.primary} />
+        </View>
+      </AppScreen>
     )
   }
 
   if (loadError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Could not load profile. Please try again.</Text>
-        <TouchableOpacity
-          style={styles.submitBtn}
-          onPress={() => {
-            void profileQuery.refetch()
-            void locationsQuery.refetch()
-          }}
-        >
-          <Text style={styles.submitBtnText}>Retry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelBtnText}>Go back</Text>
-        </TouchableOpacity>
-      </View>
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Could not load profile. Please try again.</Text>
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={() => {
+              void profileQuery.refetch()
+              void locationsQuery.refetch()
+            }}
+          >
+            <Text style={styles.submitBtnText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+            <Text style={styles.cancelBtnText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </AppScreen>
     )
   }
 
   return (
+    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -213,6 +220,7 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </AppScreen>
   )
 }
 

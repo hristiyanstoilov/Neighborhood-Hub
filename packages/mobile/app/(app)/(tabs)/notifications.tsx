@@ -39,7 +39,9 @@ const TYPE_LABELS: Record<string, string> = {
   event_cancelled: 'An event was cancelled',
   drive_new_pledge: 'New pledge for your drive',
   drive_pledge_fulfilled: 'A pledge was fulfilled',
+  drive_pledge_cancelled: 'A pledge was cancelled',
   drive_completed: 'A drive was completed',
+  event_rsvp_cancelled: 'An attendee cancelled their RSVP',
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -62,7 +64,9 @@ const TYPE_ICONS: Record<string, string> = {
   event_cancelled: '🚫',
   drive_new_pledge: '🫶',
   drive_pledge_fulfilled: '🎯',
+  drive_pledge_cancelled: '🚫',
   drive_completed: '🏁',
+  event_rsvp_cancelled: '🚫',
 }
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {

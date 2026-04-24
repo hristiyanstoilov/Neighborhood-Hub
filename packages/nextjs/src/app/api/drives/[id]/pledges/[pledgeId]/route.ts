@@ -3,7 +3,8 @@ import { db } from '@/db'
 import { communityDrives, drivePledges, notifications } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
 
 // URL: /api/drives/[id]/pledges/[pledgeId]
@@ -19,6 +20,7 @@ function extractIds(url: string): { driveId: string; pledgeId: string } {
 
 export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
@@ -61,8 +63,8 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       .where(eq(drivePledges.id, pledgeId))
       .returning()
 
-    // Notify pledger when organizer marks fulfilled
     if (status === 'fulfilled') {
+      // Notify pledger when organizer marks fulfilled
       db.insert(notifications).values({
         userId:     pledge.userId,
         type:       'drive_pledge_fulfilled' as const,
@@ -70,6 +72,25 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
         entityId:   driveId,
       }).catch(() => {})
     }
+
+    if (status === 'cancelled') {
+      // Notify organizer when pledger cancels
+      db.insert(notifications).values({
+        userId:     drive.organizerId,
+        type:       'drive_pledge_cancelled' as const,
+        entityType: 'community_drive',
+        entityId:   driveId,
+      }).catch(() => {})
+    }
+
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'update',
+      entity:    'drive_pledges',
+      entityId:  pledgeId,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: updated })
   } catch (err) {

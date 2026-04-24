@@ -3,7 +3,8 @@ import { db } from '@/db'
 import { events, eventAttendees, notifications } from '@/db/schema'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
 
 // URL: /api/events/[id]/rsvp  → id is second-to-last segment
@@ -77,11 +78,15 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
 export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const eventId = extractEventId(req.url)
-    const existing = await queryUserRsvp(eventId, user.sub)
+    const [existing, event] = await Promise.all([
+      queryUserRsvp(eventId, user.sub),
+      db.query.events.findFirst({ where: and(eq(events.id, eventId), isNull(events.deletedAt)) }),
+    ])
     if (!existing || existing.status === 'cancelled') {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
@@ -91,6 +96,24 @@ export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
       .set({ status: 'cancelled' })
       .where(eq(eventAttendees.id, existing.id))
       .returning()
+
+    if (event) {
+      db.insert(notifications).values({
+        userId:     event.organizerId,
+        type:       'event_rsvp_cancelled' as const,
+        entityType: 'event_rsvp',
+        entityId:   eventId,
+      }).catch(() => {})
+    }
+
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'update',
+      entity:    'event_attendees',
+      entityId:  existing.id,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: updated })
   } catch (err) {

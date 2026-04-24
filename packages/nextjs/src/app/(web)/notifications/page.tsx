@@ -38,7 +38,9 @@ const TYPE_LABELS: Record<string, string> = {
   event_cancelled: 'An event was cancelled',
   drive_new_pledge: 'New pledge for your drive',
   drive_pledge_fulfilled: 'A pledge was fulfilled',
+  drive_pledge_cancelled: 'A pledge was cancelled',
   drive_completed: 'A drive was completed',
+  event_rsvp_cancelled: 'An attendee cancelled their RSVP',
 }
 
 const TYPE_ICONS: Record<string, AppIconName> = {
@@ -61,7 +63,9 @@ const TYPE_ICONS: Record<string, AppIconName> = {
   event_cancelled: 'cancel',
   drive_new_pledge: 'pledge',
   drive_pledge_fulfilled: 'target',
+  drive_pledge_cancelled: 'cancel',
   drive_completed: 'check',
+  event_rsvp_cancelled: 'cancel',
 }
 
 function getBaseUrl(headerStore: Headers) {

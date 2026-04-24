@@ -309,7 +309,7 @@ export const notifications = pgTable(
     index('notifications_unread_idx').on(t.userId, t.isRead).where(sql`${t.isRead} = false`),
     check(
       'notifications_type_check',
-      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_completed', 'food_reservation_new', 'food_reservation_approved', 'food_reservation_rejected', 'food_reservation_cancelled', 'food_reservation_picked_up')`
+      sql`${t.type} IN ('request_accepted', 'request_rejected', 'new_request', 'request_cancelled', 'request_completed', 'reservation_approved', 'reservation_rejected', 'reservation_new', 'reservation_cancelled', 'reservation_returned', 'event_new_rsvp', 'event_cancelled', 'event_rsvp_cancelled', 'drive_new_pledge', 'drive_pledge_fulfilled', 'drive_pledge_cancelled', 'drive_completed', 'food_reservation_new', 'food_reservation_approved', 'food_reservation_rejected', 'food_reservation_cancelled', 'food_reservation_picked_up')`
     ),
   ]
 )
