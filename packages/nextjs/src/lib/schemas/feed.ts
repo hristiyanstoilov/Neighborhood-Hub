@@ -17,5 +17,5 @@ export const createFeedSchema = z.object({
   eventType: feedEventTypeSchema,
   targetId: z.string().uuid(),
   targetTitle: z.string().trim().min(1).max(220),
-  targetUrl: z.string().trim().min(1).max(400),
+  targetUrl: z.string().trim().min(1).max(400).startsWith('/'),
 })
