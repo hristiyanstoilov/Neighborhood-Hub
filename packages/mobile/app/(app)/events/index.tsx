@@ -74,6 +74,11 @@ export default function EventsListScreen() {
     setStatus(newStatus)
   }
 
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || eventsQuery.isFetchingNextPage) return
+    void eventsQuery.fetchNextPage()
+  }, [hasMore, eventsQuery])
+
   function renderEvent({ item }: { item: EventListItem }) {
     const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     return (
@@ -145,7 +150,7 @@ export default function EventsListScreen() {
         onRetry={() => void eventsQuery.refetch()}
         refreshing={isRefreshing}
         onRefresh={() => void eventsQuery.refetch()}
-        onEndReached={() => void eventsQuery.fetchNextPage()}
+        onEndReached={handleLoadMore}
         hasMore={hasMore}
         loadingMore={eventsQuery.isFetchingNextPage}
         listContentStyle={styles.list}
@@ -160,7 +165,7 @@ export default function EventsListScreen() {
         footer={
           <TouchableOpacity
             style={styles.loadMoreBtn}
-            onPress={() => void eventsQuery.fetchNextPage()}
+            onPress={handleLoadMore}
             disabled={eventsQuery.isFetchingNextPage}
           >
             {eventsQuery.isFetchingNextPage

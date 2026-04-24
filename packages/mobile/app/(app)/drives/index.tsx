@@ -95,6 +95,11 @@ export default function DrivesListScreen() {
     setDriveType(newType)
   }
 
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || drivesQuery.isFetchingNextPage) return
+    void drivesQuery.fetchNextPage()
+  }, [hasMore, drivesQuery])
+
   function renderDrive({ item }: { item: DriveListItem }) {
     const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     const tc = TYPE_COLORS[item.driveType] ?? { bg: '#f3f4f6', text: '#374151' }
@@ -192,7 +197,7 @@ export default function DrivesListScreen() {
         onRetry={() => void drivesQuery.refetch()}
         refreshing={isRefreshing}
         onRefresh={() => void drivesQuery.refetch()}
-        onEndReached={() => void drivesQuery.fetchNextPage()}
+        onEndReached={handleLoadMore}
         hasMore={hasMore}
         loadingMore={drivesQuery.isFetchingNextPage}
         listContentStyle={styles.list}
@@ -207,7 +212,7 @@ export default function DrivesListScreen() {
         footer={
           <TouchableOpacity
             style={styles.loadMoreBtn}
-            onPress={() => void drivesQuery.fetchNextPage()}
+            onPress={handleLoadMore}
             disabled={drivesQuery.isFetchingNextPage}
           >
             {drivesQuery.isFetchingNextPage
