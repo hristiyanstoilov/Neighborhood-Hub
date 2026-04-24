@@ -139,7 +139,7 @@ export default function MessagesListScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              {searching && <ActivityIndicator size="small" color="#15803d" style={styles.spinner} />}
+              {searching && <ActivityIndicator size="small" color={mobileTheme.colors.primary} style={styles.spinner} />}
             </View>
             {searchResults.length > 0 && (
               <View style={styles.dropdown}>
@@ -191,13 +191,13 @@ export default function MessagesListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6', padding: 16 },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  container: { flex: 1, backgroundColor: mobileTheme.colors.canvas, padding: 16 },
+  title: { fontSize: 24, fontWeight: '700', color: mobileTheme.colors.textPrimary, marginBottom: 12 },
 
   searchBox: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: mobileTheme.colors.border,
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
@@ -208,13 +208,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
   },
   spinner: { marginLeft: 8 },
   dropdown: {
     marginTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: mobileTheme.colors.canvas,
   },
   dropdownItem: {
     flexDirection: 'row',
@@ -227,50 +227,50 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#dcfce7',
+    backgroundColor: mobileTheme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSmText: { color: '#15803d', fontWeight: '700', fontSize: 13 },
-  dropdownName: { fontSize: 14, color: '#111827' },
-  noResults: { marginTop: 6, fontSize: 12, color: '#6b7280', paddingHorizontal: 4 },
+  avatarSmText: { color: mobileTheme.colors.primary, fontWeight: '700', fontSize: 13 },
+  dropdownName: { fontSize: 14, color: mobileTheme.colors.textPrimary },
+  noResults: { marginTop: 6, fontSize: 12, color: mobileTheme.colors.textMuted, paddingHorizontal: 4 },
 
   selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  selectedName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
+  avatarText: { color: mobileTheme.colors.onPrimary, fontWeight: '700', fontSize: 14 },
+  selectedName: { flex: 1, fontSize: 14, fontWeight: '600', color: mobileTheme.colors.textPrimary },
   changeBtn: { paddingHorizontal: 6, paddingVertical: 4 },
-  changeBtnText: { fontSize: 13, color: '#6b7280' },
+  changeBtnText: { fontSize: 13, color: mobileTheme.colors.textMuted },
   startBtn: {
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   btnDisabled: { opacity: 0.6 },
-  startBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  startBtnText: { color: mobileTheme.colors.onPrimary, fontWeight: '600', fontSize: 13 },
 
-  state: { color: '#6b7280', textAlign: 'center', marginTop: 8 },
+  state: { color: mobileTheme.colors.textMuted, textAlign: 'center', marginTop: 8 },
   emptyContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 24, gap: 10 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: mobileTheme.colors.borderSoft,
     borderRadius: 10,
     padding: 12,
   },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  badge: { backgroundColor: '#dcfce7', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { color: '#15803d', fontSize: 12, fontWeight: '700' },
-  snippet: { marginTop: 4, color: '#4b5563', fontSize: 13 },
-  date: { marginTop: 4, color: '#6b7280', fontSize: 12 },
+  name: { fontSize: 15, fontWeight: '700', color: mobileTheme.colors.textPrimary },
+  badge: { backgroundColor: mobileTheme.colors.primarySoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { color: mobileTheme.colors.primary, fontSize: 12, fontWeight: '700' },
+  snippet: { marginTop: 4, color: mobileTheme.colors.textSecondary, fontSize: 13 },
+  date: { marginTop: 4, color: mobileTheme.colors.textMuted, fontSize: 12 },
 })

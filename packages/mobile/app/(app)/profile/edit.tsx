@@ -211,7 +211,7 @@ export default function EditProfileScreen() {
           disabled={submitting}
         >
           {submitting
-            ? <ActivityIndicator color="#fff" />
+            ? <ActivityIndicator color={mobileTheme.colors.onPrimary} />
             : <Text style={styles.submitBtnText}>Save changes</Text>
           }
         </TouchableOpacity>
@@ -225,23 +225,23 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: mobileTheme.colors.canvas },
   content: { padding: 20, paddingBottom: 48 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: mobileTheme.colors.canvas },
   errorText: { fontSize: 14, color: '#dc2626', marginBottom: 10 },
-  pageTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 20 },
+  pageTitle: { fontSize: 22, fontWeight: '700', color: mobileTheme.colors.textPrimary, marginBottom: 20 },
   field: { marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  hint: { fontSize: 11, color: '#9ca3af', marginTop: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: mobileTheme.colors.textSecondary, marginBottom: 6 },
+  hint: { fontSize: 11, color: mobileTheme.colors.textSubtle, marginTop: 4 },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: mobileTheme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
   },
   textarea: { minHeight: 90, paddingTop: 10 },
   chipScroll: { flexDirection: 'row' },
@@ -250,42 +250,42 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 99,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    borderColor: mobileTheme.colors.border,
+    backgroundColor: mobileTheme.colors.surface,
     marginRight: 8,
   },
-  chipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
-  chipText: { fontSize: 13, color: '#374151' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
+  chipText: { fontSize: 13, color: mobileTheme.colors.textSecondary },
+  chipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggleChip: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    borderColor: mobileTheme.colors.border,
+    backgroundColor: mobileTheme.colors.surface,
     alignItems: 'center',
   },
-  toggleChipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
-  toggleChipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  toggleChipTextActive: { color: '#fff', fontWeight: '600' },
+  toggleChipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
+  toggleChipText: { fontSize: 13, color: mobileTheme.colors.textSecondary, fontWeight: '500' },
+  toggleChipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   actions: { gap: 10, marginTop: 8 },
   submitBtn: {
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  submitBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  submitBtnText: { color: mobileTheme.colors.onPrimary, fontWeight: '600', fontSize: 16 },
   disabled: { opacity: 0.6 },
   cancelBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: mobileTheme.colors.borderSoft,
   },
-  cancelBtnText: { color: '#374151', fontWeight: '500', fontSize: 14 },
+  cancelBtnText: { color: mobileTheme.colors.textSecondary, fontWeight: '500', fontSize: 14 },
 })

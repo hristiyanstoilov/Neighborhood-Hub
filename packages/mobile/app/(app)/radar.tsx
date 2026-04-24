@@ -21,10 +21,10 @@ const SOFIA_REGION: Region = {
 }
 
 function markerColor(count: number): string {
-  if (count === 0) return '#d1d5db'
+  if (count === 0) return mobileTheme.colors.border
   if (count < 3)  return '#86efac'
   if (count < 8)  return '#22c55e'
-  return '#15803d'
+  return mobileTheme.colors.primary
 }
 
 function markerRadius(count: number): number {
@@ -131,10 +131,10 @@ export default function RadarScreen() {
       {/* Legend */}
       <View style={styles.legend}>
         {[
-          { color: '#d1d5db', label: 'None' },
+          { color: mobileTheme.colors.border, label: 'None' },
           { color: '#86efac', label: '1–2' },
           { color: '#22c55e', label: '3–7' },
-          { color: '#15803d', label: '8+' },
+          { color: mobileTheme.colors.primary, label: '8+' },
         ].map(({ color, label }) => (
           <View key={label} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: color }]} />
@@ -150,30 +150,30 @@ export default function RadarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: mobileTheme.colors.canvas,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: mobileTheme.colors.canvas,
     padding: 24,
   },
   statsBar: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: mobileTheme.colors.borderSoft,
   },
   statsText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
     textAlign: 'center',
   },
   statsNum: {
     fontWeight: '700',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
   },
   map: {
     flex: 1,
@@ -185,31 +185,31 @@ const styles = StyleSheet.create({
   calloutNeighborhood: {
     fontWeight: '700',
     fontSize: 13,
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
     marginBottom: 2,
   },
   calloutCity: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: mobileTheme.colors.textSubtle,
     marginBottom: 4,
   },
   calloutSkills: {
     fontSize: 12,
-    color: '#15803d',
+    color: mobileTheme.colors.primary,
     fontWeight: '600',
   },
   calloutEmpty: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: mobileTheme.colors.textSubtle,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: mobileTheme.colors.borderSoft,
   },
   legendItem: {
     flexDirection: 'row',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 11,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
   errorText: {
     fontSize: 14,
@@ -231,13 +231,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   btn: {
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
   btnText: {
-    color: '#fff',
+    color: mobileTheme.colors.onPrimary,
     fontWeight: '500',
     fontSize: 14,
   },

@@ -10,6 +10,8 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
+import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 import RequestCard from '../../../components/RequestCard'
 import { Skeleton } from '../../../components/Skeleton'
 import {
@@ -48,16 +50,19 @@ export default function MyRequestsScreen() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Please log in to view your requests.</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/(auth)/login')}>
-          <Text style={styles.retryText}>Go to Login</Text>
-        </TouchableOpacity>
-      </View>
+      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>Please log in to view your requests.</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/(auth)/login')}>
+            <Text style={styles.retryText}>Go to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </AppScreen>
     )
   }
 
   return (
+    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <View style={styles.container}>
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -141,24 +146,25 @@ export default function MyRequestsScreen() {
           }
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor={mobileTheme.colors.primary} />
           }
         />
       )}
     </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: mobileTheme.colors.canvas,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: mobileTheme.colors.borderSoft,
   },
   tab: {
     flex: 1,
@@ -167,15 +173,15 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#15803d',
+    borderBottomColor: mobileTheme.colors.primary,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
   tabTextActive: {
-    color: '#15803d',
+    color: mobileTheme.colors.primary,
   },
   list: {
     padding: 16,
@@ -204,10 +210,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: mobileTheme.colors.borderSoft,
     padding: 16,
     gap: 12,
   },
@@ -233,11 +239,11 @@ const styles = StyleSheet.create({
   retryBtn: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: mobileTheme.colors.onPrimary,
     fontWeight: '500',
     fontSize: 14,
   },
@@ -246,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#9ca3af',
+    color: mobileTheme.colors.textSubtle,
     fontSize: 14,
     textAlign: 'center',
   },

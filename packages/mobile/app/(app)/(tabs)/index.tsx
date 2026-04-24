@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import SkillCard from '../../../components/SkillCard'
 import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 import { fetchNotifications, notificationsKeys } from '../../../lib/queries/notifications'
 import { SkillsHeader } from './_components/skills-header'
 import { SkillsLoadingState } from './_components/skills-loading-state'
@@ -164,14 +165,14 @@ export default function SkillListScreen() {
           hasMore ? (
             <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore} disabled={loadingMore}>
               {loadingMore
-                ? <ActivityIndicator color="#15803d" />
+                ? <ActivityIndicator color={mobileTheme.colors.primary} />
                 : <Text style={styles.loadMoreText}>Load more</Text>
               }
             </TouchableOpacity>
           ) : null
         }
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor={mobileTheme.colors.primary} />
         }
         contentContainerStyle={styles.list}
       />
@@ -191,7 +192,7 @@ export default function SkillListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: mobileTheme.colors.canvas },
   list: { paddingBottom: 24 },
   communityRow: {
     flexDirection: 'row',
@@ -205,28 +206,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: mobileTheme.colors.border,
     paddingVertical: 10,
   },
   communityBtnIcon:  { fontSize: 16 },
-  communityBtnLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  communityBtnLabel: { fontSize: 13, fontWeight: '600', color: mobileTheme.colors.textSecondary },
   loadMoreButton: {
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
     paddingVertical: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: mobileTheme.colors.primarySoft,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: mobileTheme.colors.primarySoftBorder,
   },
-  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
+  loadMoreText: { color: mobileTheme.colors.primary, fontWeight: '500', fontSize: 14 },
 
-  // FAB
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -234,14 +234,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: mobileTheme.colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
   },
-  fabText: { color: '#fff', fontSize: 28, lineHeight: 32, fontWeight: '400' },
+  fabText: { color: mobileTheme.colors.onPrimary, fontSize: 28, lineHeight: 32, fontWeight: '400' },
 })

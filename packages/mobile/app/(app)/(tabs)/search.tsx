@@ -11,6 +11,8 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
+import { AppScreen } from '../../../components/AppScreen'
+import { mobileTheme } from '../../../lib/theme'
 import { humanizeValue, formatDateOnly } from '../../../lib/format'
 import {
   fetchSearchResults,
@@ -142,6 +144,7 @@ export default function SearchScreen() {
   }
 
   return (
+    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <View style={styles.container}>
       <Text style={styles.title}>Search</Text>
       <Text style={styles.subtitle}>Search across skills, tools, events, drives, and food shares.</Text>
@@ -182,7 +185,7 @@ export default function SearchScreen() {
 
       {debouncedText.length >= 2 && isLoading && (
         <View style={styles.stateBox}>
-          <ActivityIndicator color="#15803d" />
+          <ActivityIndicator color={mobileTheme.colors.primary} />
           <Text style={styles.stateText}>Searching...</Text>
         </View>
       )}
@@ -215,20 +218,21 @@ export default function SearchScreen() {
         />
       )}
     </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: mobileTheme.colors.canvas,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
   },
   subtitle: {
     marginTop: 4,
@@ -236,9 +240,9 @@ const styles = StyleSheet.create({
     color: '#4b5563',
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: mobileTheme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -256,35 +260,35 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   tabChipActive: {
-    borderColor: '#15803d',
-    backgroundColor: '#15803d',
+    borderColor: mobileTheme.colors.primary,
+    backgroundColor: mobileTheme.colors.primary,
   },
   tabChipIdle: {
-    borderColor: '#d1d5db',
-    backgroundColor: '#ffffff',
+    borderColor: mobileTheme.colors.border,
+    backgroundColor: mobileTheme.colors.surface,
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#ffffff',
+    color: mobileTheme.colors.onPrimary,
   },
   tabTextIdle: {
-    color: '#374151',
+    color: mobileTheme.colors.textSecondary,
   },
   stateBox: {
     marginTop: 16,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderColor: mobileTheme.colors.borderSoft,
+    backgroundColor: mobileTheme.colors.surface,
     padding: 16,
     alignItems: 'center',
     gap: 8,
   },
   stateText: {
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
   stateError: {
     color: '#b91c1c',
@@ -298,21 +302,21 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderColor: mobileTheme.colors.borderSoft,
+    backgroundColor: mobileTheme.colors.surface,
     padding: 12,
     gap: 4,
   },
   cardType: {
     fontSize: 10,
-    color: '#15803d',
+    color: mobileTheme.colors.primary,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
   },
   cardSubtitle: {
     fontSize: 13,
@@ -320,6 +324,6 @@ const styles = StyleSheet.create({
   },
   cardMeta: {
     fontSize: 12,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
 })
