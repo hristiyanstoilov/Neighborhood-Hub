@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { toIsoStringFromLocalInput } from '@/lib/format'
 import { useToast } from '@/components/ui/toast'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 type LocationOption = { id: string; city: string; neighborhood: string }
 
@@ -83,8 +84,8 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
         <Field label="Pickup instructions">
           <textarea value={pickupInstructions} onChange={(e) => setPickupInstructions(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm text-gray-900 bg-white min-h-24" maxLength={500} placeholder="Entry code, contact preferences, pickup timing..." />
         </Field>
-        <Field label="Image URL">
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm text-gray-900 bg-white" placeholder="https://..." maxLength={2048} />
+        <Field label="Image">
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </Field>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

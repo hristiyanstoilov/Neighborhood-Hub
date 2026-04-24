@@ -23,6 +23,7 @@ import { fetchProfileLocations, profileKeys } from '../../../lib/queries/profile
 import { useToast } from '../../../lib/toast'
 import { mobileTheme } from '../../../lib/theme'
 import { formatDateTime } from '../../../lib/format'
+import { ImageUpload } from '../../../components/ImageUpload'
 
 export default function NewFoodScreen() {
   const router = useRouter()
@@ -187,8 +188,8 @@ export default function NewFoodScreen() {
         <TextInput style={[styles.input, styles.textarea]} value={pickupInstructions} onChangeText={setPickupInstructions} placeholder="Pickup time, contact, access code…" maxLength={500} multiline numberOfLines={4} textAlignVertical="top" />
       </Field>
 
-      <Field label="Image URL">
-        <TextInput style={styles.input} value={imageUrl} onChangeText={setImageUrl} placeholder="https://…" maxLength={2048} autoCapitalize="none" />
+      <Field label="Image">
+        <ImageUpload value={imageUrl} onChange={setImageUrl} />
       </Field>
 
       <TouchableOpacity

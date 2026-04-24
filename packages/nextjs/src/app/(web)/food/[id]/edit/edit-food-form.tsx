@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { formatDateTimeLocalInput, toIsoStringFromLocalInput } from '@/lib/format'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 type LocationOption = { id: string; city: string; neighborhood: string }
 
@@ -121,8 +122,8 @@ export default function EditFoodForm({ foodShare, locations }: { foodShare: Food
         <Field label="Pickup instructions">
           <textarea value={pickupInstructions} onChange={(e) => setPickupInstructions(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm text-gray-900 bg-white min-h-24" maxLength={500} />
         </Field>
-        <Field label="Image URL">
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm text-gray-900 bg-white" maxLength={2048} />
+        <Field label="Image">
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </Field>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
