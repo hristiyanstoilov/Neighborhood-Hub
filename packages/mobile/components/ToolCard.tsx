@@ -1,5 +1,6 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
-import { TOOL_STATUS_COLORS, TOOL_STATUS_LABELS } from '../lib/format'
+import { TOOL_STATUS_LABELS } from '../lib/format'
+import { mobileTheme } from '../lib/theme'
 
 interface ToolCardProps {
   title: string
@@ -19,7 +20,7 @@ const CONDITION_LABELS: Record<string, string> = {
 }
 
 export default function ToolCard({ title, ownerName, categoryLabel, condition, status, imageUrl, onPress }: ToolCardProps) {
-  const statusStyle = TOOL_STATUS_COLORS[status] ?? TOOL_STATUS_COLORS.available
+  const statusStyle = mobileTheme.status.tool[status as keyof typeof mobileTheme.status.tool] ?? mobileTheme.status.tool.available
   const statusLabel = TOOL_STATUS_LABELS[status] ?? status
 
   return (
@@ -54,12 +55,12 @@ export default function ToolCard({ title, ownerName, categoryLabel, condition, s
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: mobileTheme.colors.surface,
+    borderRadius: mobileTheme.radius.md,
     overflow: 'hidden',
     marginHorizontal: 16,
     marginVertical: 6,
-    shadowColor: '#000',
+    shadowColor: mobileTheme.colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 1 },
@@ -79,18 +80,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   categoryBadge: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 99,
+    backgroundColor: mobileTheme.colors.primarySoft,
+    borderRadius: mobileTheme.radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   categoryText: {
     fontSize: 11,
-    color: '#15803d',
+    color: mobileTheme.colors.primary,
     fontWeight: '500',
   },
   statusBadge: {
-    borderRadius: 99,
+    borderRadius: mobileTheme.radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
     marginBottom: 4,
   },
   meta: {
@@ -111,6 +112,6 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
 })

@@ -1,5 +1,5 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
-import { SKILL_STATUS_COLORS } from '../lib/format'
+import { mobileTheme } from '../lib/theme'
 
 interface SkillCardProps {
   title: string
@@ -11,7 +11,7 @@ interface SkillCardProps {
 }
 
 export default function SkillCard({ title, ownerName, category, status, imageUrl, onPress }: SkillCardProps) {
-  const statusStyle = SKILL_STATUS_COLORS[status] ?? SKILL_STATUS_COLORS.available
+  const statusStyle = mobileTheme.status.skill[status as keyof typeof mobileTheme.status.skill] ?? mobileTheme.status.skill.available
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
@@ -40,12 +40,12 @@ export default function SkillCard({ title, ownerName, category, status, imageUrl
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: mobileTheme.colors.surface,
+    borderRadius: mobileTheme.radius.md,
     overflow: 'hidden',
     marginHorizontal: 16,
     marginVertical: 6,
-    shadowColor: '#000',
+    shadowColor: mobileTheme.colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 1 },
@@ -65,18 +65,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   categoryBadge: {
-    backgroundColor: '#f0fdf4',
-    borderRadius: 99,
+    backgroundColor: mobileTheme.colors.primarySoft,
+    borderRadius: mobileTheme.radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   categoryText: {
     fontSize: 11,
-    color: '#15803d',
+    color: mobileTheme.colors.primary,
     fontWeight: '500',
   },
   statusBadge: {
-    borderRadius: 99,
+    borderRadius: mobileTheme.radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
     marginBottom: 4,
   },
   owner: {
     fontSize: 12,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
 })

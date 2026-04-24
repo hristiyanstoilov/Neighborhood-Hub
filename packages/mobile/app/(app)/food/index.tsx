@@ -12,6 +12,9 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
+import { AppScreen } from '../../../components/AppScreen'
+import { PagedListView } from '../../../components/PagedListView'
+import { mobileTheme } from '../../../lib/theme'
 import { fetchFoodList, foodKeys, type FoodShareListItem } from '../../../lib/queries/food'
 
 const PAGE_SIZE = 20
@@ -23,9 +26,9 @@ const STATUS_TABS = [
 ]
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  available: { bg: '#d1fae5', text: '#065f46' },
-  reserved: { bg: '#fef3c7', text: '#92400e' },
-  picked_up: { bg: '#e5e7eb', text: '#374151' },
+  available: { bg: mobileTheme.colors.statusSuccessBg, text: mobileTheme.colors.statusSuccessText },
+  reserved: { bg: mobileTheme.colors.statusWarningBg, text: mobileTheme.colors.statusWarningText },
+  picked_up: { bg: mobileTheme.colors.borderSoft, text: mobileTheme.colors.textSecondary },
 }
 
 function getStatusLabel(item: { status: string; remainingQuantity?: number }) {
@@ -68,7 +71,7 @@ export default function FoodListScreen() {
   const hasMore = foodShares.length < total
 
   function renderFood({ item }: { item: FoodShareListItem }) {
-    const sc = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
+    const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     return (
       <TouchableOpacity style={styles.card} onPress={() => router.push(`/(app)/food/${item.id}`)} activeOpacity={0.75}>
         <View style={styles.cardTop}>
@@ -89,7 +92,7 @@ export default function FoodListScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen backgroundColor={mobileTheme.colors.canvasAlt}>
       <View style={styles.header}>
         <Text style={styles.title}>Food Sharing</Text>
         {user && (
@@ -114,84 +117,79 @@ export default function FoodListScreen() {
         </ScrollView>
       </View>
 
-      {isInitial ? (
-        <View style={styles.center}><ActivityIndicator color="#15803d" /></View>
-      ) : foodQuery.isError ? (
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Could not load food listings.</Text>
-          <TouchableOpacity onPress={() => void foodQuery.refetch()} style={styles.retryBtn}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={foodShares}
-          keyExtractor={(item) => item.id}
-          renderItem={renderFood}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void foodQuery.refetch()} tintColor="#15803d" />}
-          contentContainerStyle={foodShares.length === 0 ? styles.emptyContainer : styles.list}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No food listings yet.</Text>
-              {user && (
-                <TouchableOpacity onPress={() => router.push('/(app)/food/new')}>
-                  <Text style={styles.emptyLink}>Be the first to share food →</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          }
-          ListFooterComponent={
-            hasMore ? (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => void foodQuery.fetchNextPage()} disabled={foodQuery.isFetchingNextPage}>
-                {foodQuery.isFetchingNextPage ? <ActivityIndicator color="#15803d" /> : <Text style={styles.loadMoreText}>Load more</Text>}
-              </TouchableOpacity>
-            ) : null
-          }
-        />
-      )}
+      <PagedListView
+        data={foodShares}
+        keyExtractor={(item) => item.id}
+        renderItem={renderFood}
+        loading={isInitial}
+        error={foodQuery.isError}
+        errorMessage="Could not load food listings."
+        onRetry={() => void foodQuery.refetch()}
+        refreshing={isRefreshing}
+        onRefresh={() => void foodQuery.refetch()}
+        onEndReached={() => void foodQuery.fetchNextPage()}
+        hasMore={hasMore}
+        loadingMore={foodQuery.isFetchingNextPage}
+        listContentStyle={styles.list}
+        emptyMessage="No food listings yet."
+        emptyAction={
+          user ? (
+            <TouchableOpacity onPress={() => router.push('/(app)/food/new')}>
+              <Text style={styles.emptyLink}>Be the first to share food →</Text>
+            </TouchableOpacity>
+          ) : null
+        }
+        footer={
+          <TouchableOpacity style={styles.loadMoreBtn} onPress={() => void foodQuery.fetchNextPage()} disabled={foodQuery.isFetchingNextPage}>
+            {foodQuery.isFetchingNextPage
+              ? <ActivityIndicator color={mobileTheme.colors.primary} />
+              : <Text style={styles.loadMoreText}>Load more</Text>
+            }
+          </TouchableOpacity>
+        }
+      />
 
       {user && (
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/(app)/food/new')} activeOpacity={0.85}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: mobileTheme.colors.canvasAlt },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 20, fontWeight: '700', color: mobileTheme.colors.textPrimary },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  secondaryBtn: { backgroundColor: '#fff', borderColor: '#d1d5db', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  secondaryBtnText: { color: '#374151', fontSize: 12, fontWeight: '600' },
-  createBtn: { backgroundColor: '#15803d', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  createBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  secondaryBtn: { backgroundColor: mobileTheme.colors.surface, borderColor: mobileTheme.colors.border, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  secondaryBtnText: { color: mobileTheme.colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  createBtn: { backgroundColor: mobileTheme.colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  createBtnText: { color: mobileTheme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
   filterRow: { paddingBottom: 8 },
   filterScroll: { paddingHorizontal: 16, gap: 6 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  chipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
-  chipText: { fontSize: 13, color: '#374151' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: mobileTheme.colors.border, backgroundColor: mobileTheme.colors.surface },
+  chipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
+  chipText: { fontSize: 13, color: mobileTheme.colors.textSecondary },
+  chipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   list: { paddingBottom: 100 },
   emptyContainer: { flex: 1 },
-  card: { backgroundColor: '#fff', marginHorizontal: 16, marginVertical: 6, borderRadius: 10, padding: 14, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  card: { backgroundColor: mobileTheme.colors.surface, marginHorizontal: 16, marginVertical: 6, borderRadius: 10, padding: 14, shadowColor: mobileTheme.colors.shadow, shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
-  cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: '#111827' },
+  cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: mobileTheme.colors.textPrimary },
   badge: { alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { fontSize: 11, fontWeight: '500' },
   cardDesc: { fontSize: 13, color: '#4b5563', marginBottom: 4 },
-  metaText: { fontSize: 13, color: '#15803d', fontWeight: '500', marginBottom: 3 },
-  metaSubtle: { fontSize: 12, color: '#6b7280', marginBottom: 3 },
-  locationText: { fontSize: 12, color: '#6b7280', marginBottom: 3 },
-  organizer: { fontSize: 12, color: '#9ca3af' },
-  loadMoreBtn: { marginHorizontal: 16, marginTop: 8, marginBottom: 16, paddingVertical: 12, backgroundColor: '#f0fdf4', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#bbf7d0' },
-  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: '#15803d', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
-  fabText: { color: '#fff', fontSize: 28, lineHeight: 32, fontWeight: '400' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12 },
-  errorText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 8, backgroundColor: '#15803d' },
-  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  emptyText: { fontSize: 14, color: '#9ca3af' },
-  emptyLink: { fontSize: 14, color: '#15803d', fontWeight: '500' },
+  metaText: { fontSize: 13, color: mobileTheme.colors.primary, fontWeight: '500', marginBottom: 3 },
+  metaSubtle: { fontSize: 12, color: mobileTheme.colors.textMuted, marginBottom: 3 },
+  locationText: { fontSize: 12, color: mobileTheme.colors.textMuted, marginBottom: 3 },
+  organizer: { fontSize: 12, color: mobileTheme.colors.textSubtle },
+  loadMoreBtn: { marginHorizontal: 16, marginTop: 8, marginBottom: 16, paddingVertical: 12, backgroundColor: mobileTheme.colors.primarySoft, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: mobileTheme.colors.primarySoftBorder },
+  loadMoreText: { color: mobileTheme.colors.primary, fontWeight: '500', fontSize: 14 },
+  fab: { position: 'absolute', bottom: 24, right: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: mobileTheme.colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: mobileTheme.colors.shadow, shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 5 },
+  fabText: { color: mobileTheme.colors.onPrimary, fontSize: 28, lineHeight: 32, fontWeight: '400' },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 8, backgroundColor: mobileTheme.colors.primary },
+  retryText: { color: mobileTheme.colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  emptyLink: { fontSize: 14, color: mobileTheme.colors.primary, fontWeight: '500' },
 })

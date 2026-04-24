@@ -12,6 +12,9 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
+import { AppScreen } from '../../../components/AppScreen'
+import { PagedListView } from '../../../components/PagedListView'
+import { mobileTheme } from '../../../lib/theme'
 import { fetchEventsList, eventsKeys, type EventListItem } from '../../../lib/queries/events'
 import { formatDateTime } from '../../../lib/format'
 
@@ -24,9 +27,9 @@ const STATUS_TABS = [
 ]
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  published: { bg: '#d1fae5', text: '#065f46' },
-  completed: { bg: '#dbeafe', text: '#1e40af' },
-  cancelled: { bg: '#fee2e2', text: '#991b1b' },
+  published: { bg: mobileTheme.colors.statusSuccessBg, text: mobileTheme.colors.statusSuccessText },
+  completed: { bg: mobileTheme.colors.statusInfoBg, text: mobileTheme.colors.statusInfoText },
+  cancelled: { bg: mobileTheme.colors.statusDangerBg, text: mobileTheme.colors.statusDangerText },
 }
 
 export default function EventsListScreen() {
@@ -72,7 +75,7 @@ export default function EventsListScreen() {
   }
 
   function renderEvent({ item }: { item: EventListItem }) {
-    const sc = STATUS_COLORS[item.status] ?? { bg: '#f3f4f6', text: '#6b7280' }
+    const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     return (
       <TouchableOpacity
         style={styles.card}
@@ -101,7 +104,7 @@ export default function EventsListScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen backgroundColor={mobileTheme.colors.canvasAlt}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Events</Text>
@@ -132,56 +135,41 @@ export default function EventsListScreen() {
         </ScrollView>
       </View>
 
-      {isInitial ? (
-        <View style={styles.center}>
-          <ActivityIndicator color="#15803d" />
-        </View>
-      ) : eventsQuery.isError ? (
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Could not load events.</Text>
-          <TouchableOpacity onPress={() => void eventsQuery.refetch()} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
+      <PagedListView
+        data={events}
+        keyExtractor={(item) => item.id}
+        renderItem={renderEvent}
+        loading={isInitial}
+        error={eventsQuery.isError}
+        errorMessage="Could not load events."
+        onRetry={() => void eventsQuery.refetch()}
+        refreshing={isRefreshing}
+        onRefresh={() => void eventsQuery.refetch()}
+        onEndReached={() => void eventsQuery.fetchNextPage()}
+        hasMore={hasMore}
+        loadingMore={eventsQuery.isFetchingNextPage}
+        listContentStyle={styles.list}
+        emptyMessage="No events yet."
+        emptyAction={
+          user ? (
+            <TouchableOpacity onPress={() => router.push('/(app)/events/new')}>
+              <Text style={styles.emptyLink}>Be the first to create one →</Text>
+            </TouchableOpacity>
+          ) : null
+        }
+        footer={
+          <TouchableOpacity
+            style={styles.loadMoreBtn}
+            onPress={() => void eventsQuery.fetchNextPage()}
+            disabled={eventsQuery.isFetchingNextPage}
+          >
+            {eventsQuery.isFetchingNextPage
+              ? <ActivityIndicator color={mobileTheme.colors.primary} />
+              : <Text style={styles.loadMoreText}>Load more</Text>
+            }
           </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={renderEvent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => void eventsQuery.refetch()}
-              tintColor="#15803d"
-            />
-          }
-          contentContainerStyle={events.length === 0 ? styles.emptyContainer : styles.list}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No events yet.</Text>
-              {user && (
-                <TouchableOpacity onPress={() => router.push('/(app)/events/new')}>
-                  <Text style={styles.emptyLink}>Be the first to create one →</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          }
-          ListFooterComponent={
-            hasMore ? (
-              <TouchableOpacity
-                style={styles.loadMoreBtn}
-                onPress={() => void eventsQuery.fetchNextPage()}
-                disabled={eventsQuery.isFetchingNextPage}
-              >
-                {eventsQuery.isFetchingNextPage
-                  ? <ActivityIndicator color="#15803d" />
-                  : <Text style={styles.loadMoreText}>Load more</Text>
-                }
-              </TouchableOpacity>
-            ) : null
-          }
-        />
-      )}
+        }
+      />
 
       {/* FAB */}
       {user && (
@@ -193,12 +181,12 @@ export default function EventsListScreen() {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: mobileTheme.colors.canvasAlt },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -207,14 +195,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827' },
+  title: { fontSize: 20, fontWeight: '700', color: mobileTheme.colors.textPrimary },
   createBtn: {
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  createBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  createBtnText: { color: mobileTheme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
   filterRow: { paddingBottom: 8 },
   filterScroll: { paddingHorizontal: 16, gap: 6 },
   chip: {
@@ -222,56 +210,45 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 99,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    borderColor: mobileTheme.colors.border,
+    backgroundColor: mobileTheme.colors.surface,
   },
-  chipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
-  chipText: { fontSize: 13, color: '#374151' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
+  chipText: { fontSize: 13, color: mobileTheme.colors.textSecondary },
+  chipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   list: { paddingBottom: 100 },
-  emptyContainer: { flex: 1 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: mobileTheme.colors.surface,
     marginHorizontal: 16,
     marginVertical: 6,
     borderRadius: 10,
     padding: 14,
-    shadowColor: '#000',
+    shadowColor: mobileTheme.colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
-  cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: '#111827' },
+  cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: mobileTheme.colors.textPrimary },
   badge: { alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { fontSize: 11, fontWeight: '500' },
-  dateText: { fontSize: 13, color: '#15803d', fontWeight: '500', marginBottom: 3 },
-  locationText: { fontSize: 12, color: '#6b7280', marginBottom: 3 },
-  organizer: { fontSize: 12, color: '#9ca3af' },
+  dateText: { fontSize: 13, color: mobileTheme.colors.primary, fontWeight: '500', marginBottom: 3 },
+  locationText: { fontSize: 12, color: mobileTheme.colors.textMuted, marginBottom: 3 },
+  organizer: { fontSize: 12, color: mobileTheme.colors.textSubtle },
   loadMoreBtn: {
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
     paddingVertical: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: mobileTheme.colors.primarySoft,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: mobileTheme.colors.primarySoftBorder,
   },
-  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
-  errorText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
-  emptyText: { fontSize: 15, color: '#9ca3af' },
-  emptyLink: { fontSize: 13, color: '#15803d', fontWeight: '500' },
-  retryBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 9,
-    borderRadius: 8,
-    backgroundColor: '#15803d',
-  },
-  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  loadMoreText: { color: mobileTheme.colors.primary, fontWeight: '500', fontSize: 14 },
+  emptyLink: { fontSize: 13, color: mobileTheme.colors.primary, fontWeight: '500' },
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -279,14 +256,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#15803d',
+    backgroundColor: mobileTheme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: mobileTheme.colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
   },
-  fabText: { fontSize: 26, color: '#fff', lineHeight: 30 },
+  fabText: { fontSize: 26, color: mobileTheme.colors.onPrimary, lineHeight: 30 },
 })

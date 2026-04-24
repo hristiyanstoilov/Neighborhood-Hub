@@ -17,8 +17,9 @@ import {
 } from '../lib/queries/skill-requests'
 import { fetchRatingCheck, ratingsKeys } from '../lib/queries/ratings'
 import { useToast } from '../lib/toast'
-import { formatDateTime, formatMeetingType, REQUEST_STATUS_COLORS } from '../lib/format'
+import { formatDateTime, formatMeetingType } from '../lib/format'
 import { RatingModal } from '../app/(app)/_components/RatingModal'
+import { mobileTheme } from '../lib/theme'
 
 interface Props {
   request: SkillRequestRow
@@ -50,7 +51,7 @@ export default function RequestCard({ request, viewerId }: Props) {
   const otherName = isOwner ? request.requesterName : request.ownerName
   const ratedUserId = isOwner ? request.userFromId : request.userToId
   const ratedUserName = otherName ?? 'neighbor'
-  const statusStyle = REQUEST_STATUS_COLORS[request.status] ?? REQUEST_STATUS_COLORS.cancelled
+  const statusStyle = mobileTheme.status.request[request.status as keyof typeof mobileTheme.status.request] ?? mobileTheme.status.request.cancelled
   const isTerminal = TERMINAL.includes(request.status)
 
   const ratingCheckQuery = useQuery({
@@ -183,7 +184,7 @@ export default function RequestCard({ request, viewerId }: Props) {
 
       {mutation.isPending && (
         <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color="#15803d" />
+          <ActivityIndicator size="small" color={mobileTheme.colors.primary} />
         </View>
       )}
 
@@ -194,7 +195,7 @@ export default function RequestCard({ request, viewerId }: Props) {
           </Text>
         ) : (
           <TouchableOpacity style={[styles.btn, styles.btnAmber]} onPress={() => setRatingVisible(true)}>
-            <Text style={styles.btnTextWhite}>Rate {ratedUserName}</Text>
+            <Text style={styles.btnTextAmber}>Rate {ratedUserName}</Text>
           </TouchableOpacity>
         )
       )}
@@ -214,12 +215,12 @@ export default function RequestCard({ request, viewerId }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: mobileTheme.colors.surface,
+    borderRadius: mobileTheme.radius.md,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: mobileTheme.colors.borderSoft,
   },
   header: {
     flexDirection: 'row',
@@ -234,15 +235,15 @@ const styles = StyleSheet.create({
   skillTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: mobileTheme.colors.textPrimary,
     marginBottom: 2,
   },
   otherParty: {
     fontSize: 12,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
   },
   badge: {
-    borderRadius: 99,
+    borderRadius: mobileTheme.radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
@@ -258,28 +259,28 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: mobileTheme.colors.textSubtle,
     width: 50,
   },
   detailValue: {
     fontSize: 12,
-    color: '#374151',
+    color: mobileTheme.colors.textSecondary,
     flex: 1,
     minWidth: 120,
     marginBottom: 2,
   },
   notes: {
     fontSize: 12,
-    color: '#6b7280',
+    color: mobileTheme.colors.textMuted,
     fontStyle: 'italic',
     borderLeftWidth: 2,
-    borderLeftColor: '#e5e7eb',
+    borderLeftColor: mobileTheme.colors.borderSoft,
     paddingLeft: 8,
     marginBottom: 8,
   },
   cancelReason: {
     fontSize: 12,
-    color: '#dc2626',
+    color: mobileTheme.colors.statusDangerText,
     marginBottom: 8,
   },
   actions: {
@@ -293,17 +294,18 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 8,
   },
-  btnGreen: { backgroundColor: '#15803d' },
-  btnRed:   { backgroundColor: '#dc2626' },
-  btnBlue:  { backgroundColor: '#2563eb' },
-  btnAmber: { backgroundColor: '#b45309' },
-  btnGray:  { borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#fff' },
-  btnTextWhite: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  btnTextGray:  { color: '#374151', fontSize: 13, fontWeight: '500' },
+  btnGreen: { backgroundColor: mobileTheme.colors.primary },
+  btnRed:   { backgroundColor: mobileTheme.colors.statusDangerText },
+  btnBlue:  { backgroundColor: mobileTheme.colors.statusInfoText },
+  btnAmber: { backgroundColor: mobileTheme.colors.statusWarningBg },
+  btnGray:  { borderWidth: 1, borderColor: mobileTheme.colors.border, backgroundColor: mobileTheme.colors.surface },
+  btnTextWhite: { color: mobileTheme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
+  btnTextAmber: { color: mobileTheme.colors.statusWarningText, fontSize: 13, fontWeight: '600' },
+  btnTextGray:  { color: mobileTheme.colors.textSecondary, fontSize: 13, fontWeight: '500' },
   ratedText: {
     marginTop: 8,
     fontSize: 12,
-    color: '#92400e',
+    color: mobileTheme.colors.statusWarningText,
     fontWeight: '600',
   },
   loadingRow: {

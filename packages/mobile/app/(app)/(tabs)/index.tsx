@@ -12,6 +12,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import SkillCard from '../../../components/SkillCard'
+import { AppScreen } from '../../../components/AppScreen'
 import { fetchNotifications, notificationsKeys } from '../../../lib/queries/notifications'
 import { SkillsHeader } from './_components/skills-header'
 import { SkillsLoadingState } from './_components/skills-loading-state'
@@ -119,23 +120,29 @@ export default function SkillListScreen() {
   )
 
   if (isInitialLoading) {
-    return <SkillsLoadingState header={header} />
+    return (
+      <AppScreen>
+        <SkillsLoadingState header={header} />
+      </AppScreen>
+    )
   }
 
   if (isError) {
     return (
-      <SkillsErrorState
-        message={errorMessage}
-        header={header}
-        onRetry={() => {
-          void retry()
-        }}
-      />
+      <AppScreen>
+        <SkillsErrorState
+          message={errorMessage}
+          header={header}
+          onRetry={() => {
+            void retry()
+          }}
+        />
+      </AppScreen>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <AppScreen>
       <FlatList
         data={skills}
         keyExtractor={(item) => item.id}
@@ -179,7 +186,7 @@ export default function SkillListScreen() {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </AppScreen>
   )
 }
 

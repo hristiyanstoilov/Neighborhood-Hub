@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '../contexts/auth'
 import { QueryProvider } from '../components/query-provider'
 import { ToastProvider } from '../lib/toast'
@@ -27,13 +28,15 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <StatusBar style="auto" />
-          <RootNavigation />
-        </ToastProvider>
-      </AuthProvider>
-    </QueryProvider>
+    <SafeAreaProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <StatusBar style="auto" />
+            <RootNavigation />
+          </ToastProvider>
+        </AuthProvider>
+      </QueryProvider>
+    </SafeAreaProvider>
   )
 }

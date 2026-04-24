@@ -13,7 +13,10 @@ import { useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import ToolCard from '../../../components/ToolCard'
+import { AppScreen } from '../../../components/AppScreen'
+import { PagedListView } from '../../../components/PagedListView'
 import { fetchToolsPage, toolsKeys, type ToolsFilters } from '../../../lib/queries/tools'
+import { mobileTheme } from '../../../lib/theme'
 
 const PAGE_SIZE = 20
 
@@ -67,7 +70,7 @@ export default function ToolListScreen() {
   }, [hasMore, query])
 
   return (
-    <View style={styles.container}>
+    <AppScreen backgroundColor={mobileTheme.colors.canvasAlt}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.heading}>Tool Library</Text>
@@ -111,60 +114,39 @@ export default function ToolListScreen() {
       </View>
 
       {/* List */}
-      {query.isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color="#15803d" size="large" />
-        </View>
-      ) : query.isError ? (
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Could not load tools.</Text>
-          <TouchableOpacity onPress={() => query.refetch()} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Try again</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={tools}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ToolCard
-              title={item.title}
-              ownerName={item.ownerName}
-              categoryLabel={item.categoryLabel}
-              condition={item.condition}
-              status={item.status}
-              imageUrl={item.imageUrl}
-              onPress={() => router.push(`/tools/${item.id}` as never)}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No tools found.</Text>
-            </View>
-          }
-          ListFooterComponent={
-            query.isFetchingNextPage
-              ? <ActivityIndicator color="#15803d" style={styles.footerLoader} />
-              : null
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.3}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              tintColor="#15803d"
-            />
-          }
-          contentContainerStyle={tools.length === 0 ? styles.emptyContainer : styles.listContent}
-        />
-      )}
-    </View>
+      <PagedListView
+        data={tools}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ToolCard
+            title={item.title}
+            ownerName={item.ownerName}
+            categoryLabel={item.categoryLabel}
+            condition={item.condition}
+            status={item.status}
+            imageUrl={item.imageUrl}
+            onPress={() => router.push(`/tools/${item.id}` as never)}
+          />
+        )}
+        loading={query.isLoading}
+        error={query.isError}
+        errorMessage="Could not load tools."
+        onRetry={() => query.refetch()}
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        hasMore={query.hasNextPage}
+        loadingMore={query.isFetchingNextPage}
+        listContentStyle={styles.listContent}
+        emptyMessage="No tools found."
+        emptyAction={null}
+        footer={null}
+      />
+    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: '#f9fafb' },
   header:         { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   heading:        { fontSize: 22, fontWeight: '700', color: '#111827' },
   searchRow:      { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff' },
@@ -176,12 +158,6 @@ const styles = StyleSheet.create({
   statusTabActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
   statusTabText:  { fontSize: 13, color: '#6b7280', fontWeight: '500' },
   statusTabTextActive: { color: '#fff' },
-  center:         { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
-  emptyContainer: { flexGrow: 1 },
   listContent:    { paddingTop: 8, paddingBottom: 24 },
-  emptyText:      { fontSize: 15, color: '#9ca3af' },
-  errorText:      { fontSize: 15, color: '#6b7280', marginBottom: 12 },
-  retryBtn:       { paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#15803d', borderRadius: 8 },
-  retryText:      { color: '#fff', fontWeight: '600', fontSize: 14 },
-  footerLoader:   { paddingVertical: 16 },
+  emptyContainer: { flexGrow: 1 },
 })
