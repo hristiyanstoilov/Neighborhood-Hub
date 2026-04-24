@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
+
+export const metadata: Metadata = {
+  title: 'Notifications',
+  description: 'Your unread notifications and activity updates.',
+}
 import { redirect } from 'next/navigation'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { signAccessToken } from '@/lib/auth'

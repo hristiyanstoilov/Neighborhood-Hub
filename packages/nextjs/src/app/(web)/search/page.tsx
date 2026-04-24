@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { ListPageSkeleton } from '@/components/ui/skeletons'
 import { SearchResultsView } from './_components/search-results-view'
+
+export const metadata: Metadata = {
+  title: 'Search',
+  description: 'Search for skills, tools, events, drives, and food shares across your neighborhood.',
+}
 
 type SearchPageProps = {
   searchParams: Promise<{

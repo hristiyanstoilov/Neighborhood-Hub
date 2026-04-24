@@ -1,9 +1,15 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import ChatClient from './chat-client'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'AI Assistant',
+  description: 'Ask the neighborhood AI assistant anything about the community.',
+}
 
 export default async function ChatPage() {
   const cookieStore = await cookies()
