@@ -62,11 +62,12 @@ export default function SkillListScreen() {
     queryKey: notificationsKeys.list(),
     queryFn: fetchNotifications,
     enabled: Boolean(user),
+    refetchInterval: 30_000,
   })
 
   const unreadCount = notificationsQuery.data?.length ?? 0
 
-  // Refresh unread notification count when screen is focused
+  // Also refresh on focus for snappier feel when switching tabs
   useFocusEffect(
     useCallback(() => {
       if (!user) return

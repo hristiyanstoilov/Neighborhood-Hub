@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 import { queryKeys } from '@/lib/query-keys'
+import { useNotificationStream } from '@/lib/use-notification-stream'
 
 interface NotificationRow {
   id: string
@@ -15,18 +16,13 @@ interface NotificationRow {
   createdAt: string
 }
 
-const POLL_INTERVAL_MS = 30_000
-
 export default function NotificationsBell() {
   const { user, loading } = useAuth()
 
   const { data: items = [] } = useQuery<NotificationRow[]>({
     queryKey: queryKeys.notifications.unread(user?.id ?? 'anonymous'),
     enabled: !loading && !!user,
-    refetchInterval: POLL_INTERVAL_MS,
     retry: 2,
-    // Throw on failure so TanStack Query retries automatically.
-    // The `data = []` default means the bell shows 0 on error — no nav crash.
     queryFn: async () => {
       const res = await apiFetch('/api/notifications')
       if (!res.ok) throw new Error('NOTIFICATIONS_FETCH_FAILED')
@@ -34,6 +30,9 @@ export default function NotificationsBell() {
       return json.data ?? []
     },
   })
+
+  // Open SSE stream — invalidates the query above when new notifications arrive
+  useNotificationStream(user?.id)
 
   const unreadCount = items.filter((item) => !item.isRead).length
 
