@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const createToolSchema = z.object({
-  title:         z.string().min(3).max(200),
-  description:   z.string().max(2000).optional(),
+  title:         z.string().trim().min(3).max(200),
+  description:   z.string().trim().max(2000).optional(),
   categoryId:    z.string().uuid().optional(),
   locationId:    z.string().uuid().optional(),
   condition:     z.enum(['new', 'good', 'fair', 'worn']).optional(),
@@ -18,7 +18,7 @@ export const listToolsSchema = z.object({
   categoryId: z.string().uuid().optional(),
   locationId: z.string().uuid().optional(),
   status:     z.enum(['available', 'in_use', 'on_loan']).optional(),
-  search:     z.string().max(100).optional(),
+  search:     z.string().trim().max(100).optional(),
   page:       z.coerce.number().int().min(1).default(1),
   limit:      z.coerce.number().int().min(1).max(50).default(20),
 })

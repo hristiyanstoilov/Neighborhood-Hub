@@ -7,7 +7,7 @@ export const createSkillRequestSchema = z
     scheduledEnd: z.string().datetime(),
     meetingType: z.enum(['in_person', 'online', 'hybrid']),
     meetingUrl: z.string().url().max(2048).optional(),
-    notes: z.string().max(1000).optional(),
+    notes: z.string().trim().max(1000).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.meetingType !== 'in_person' && !data.meetingUrl) {
@@ -29,7 +29,7 @@ export const createSkillRequestSchema = z
 export const patchSkillRequestSchema = z
   .object({
     action: z.enum(['accept', 'reject', 'complete', 'cancel']),
-    cancellationReason: z.string().max(500).optional(),
+    cancellationReason: z.string().trim().max(500).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.action === 'cancel' && !data.cancellationReason?.trim()) {

@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { skillRequests, skills, profiles } from '@/db/schema'
-import { eq, or, and, desc, isNull } from 'drizzle-orm'
+import { eq, or, and, desc, isNull, count, SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 const requesterProfile = alias(profiles, 'requester_profile')
@@ -37,10 +37,9 @@ interface ListOpts {
   limit: number
 }
 
-export async function querySkillRequestsByUser(userId: string, opts: ListOpts) {
-  const { role, status, page, limit } = opts
-
-  const conditions = [isNull(skills.deletedAt)]
+function buildSkillRequestConditions(userId: string, opts: Pick<ListOpts, 'role' | 'status'>): SQL[] {
+  const { role, status } = opts
+  const conditions: SQL[] = [isNull(skills.deletedAt)]
 
   if (role === 'requester') {
     conditions.push(eq(skillRequests.userFromId, userId))
@@ -54,6 +53,13 @@ export async function querySkillRequestsByUser(userId: string, opts: ListOpts) {
     conditions.push(eq(skillRequests.status, status))
   }
 
+  return conditions
+}
+
+export async function querySkillRequestsByUser(userId: string, opts: ListOpts) {
+  const { page, limit } = opts
+  const conditions = buildSkillRequestConditions(userId, opts)
+
   return db
     .select(skillRequestSelect)
     .from(skillRequests)
@@ -64,6 +70,16 @@ export async function querySkillRequestsByUser(userId: string, opts: ListOpts) {
     .orderBy(desc(skillRequests.createdAt))
     .limit(limit)
     .offset((page - 1) * limit)
+}
+
+export async function countSkillRequestsByUser(userId: string, opts: Pick<ListOpts, 'role' | 'status'>) {
+  const conditions = buildSkillRequestConditions(userId, opts)
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(skillRequests)
+    .innerJoin(skills, eq(skills.id, skillRequests.skillId))
+    .where(and(...conditions))
+  return total
 }
 
 export type SkillRequestRow = Awaited<ReturnType<typeof querySkillRequestsByUser>>[number]

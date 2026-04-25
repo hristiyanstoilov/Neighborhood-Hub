@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, skills, notifications, users } from '@/db/schema'
+import { skillRequests, skills, users } from '@/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
-import { querySkillRequestsByUser } from '@/lib/queries/skill-requests'
+import { querySkillRequestsByUser, countSkillRequestsByUser } from '@/lib/queries/skill-requests'
 import { createNotification } from '@/lib/create-notification'
 
 // ─── GET /api/skill-requests — list requests visible to the current user ─────
@@ -24,8 +24,11 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const rows = await querySkillRequestsByUser(user.sub, parsed.data)
-    return NextResponse.json({ data: rows, page: parsed.data.page, limit: parsed.data.limit })
+    const [rows, total] = await Promise.all([
+      querySkillRequestsByUser(user.sub, parsed.data),
+      countSkillRequestsByUser(user.sub, parsed.data),
+    ])
+    return NextResponse.json({ data: rows, page: parsed.data.page, limit: parsed.data.limit, total })
   } catch (err) {
     console.error('[GET /api/skill-requests]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
@@ -65,7 +68,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'SKILL_NOT_AVAILABLE' }, { status: 409 })
     }
     if (skill.ownerId === user.sub) {
-      return NextResponse.json({ error: 'CANNOT_REQUEST_OWN_SKILL' }, { status: 400 })
+      return NextResponse.json({ error: 'CANNOT_REQUEST_OWN_SKILL' }, { status: 422 })
     }
 
     // Duplicate check — one active request per user+skill

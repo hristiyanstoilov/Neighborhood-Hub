@@ -15,10 +15,10 @@ export const createToolReservationSchema = z.object({
   toolId:    z.string().uuid(),
   startDate: dateOrDatetime,
   endDate:   dateOrDatetime,
-  notes:     z.string().max(1000).optional(),
+  notes:     z.string().trim().max(1000).optional(),
 })
 
 export const patchToolReservationSchema = z.object({
   action:             z.enum(['approve', 'reject', 'return', 'cancel']),
-  cancellationReason: z.string().max(500).optional(),
+  cancellationReason: z.string().trim().max(500).optional(),
 })

@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
 export const createEventSchema = z.object({
-  title:       z.string().min(3).max(200),
-  description: z.string().max(5000).optional(),
+  title:       z.string().trim().min(3).max(200),
+  description: z.string().trim().max(5000).optional(),
   locationId:  z.string().uuid().optional(),
-  address:     z.string().max(300).optional(),
+  address:     z.string().trim().max(300).optional(),
   startsAt:    z.string().datetime(),
   endsAt:      z.string().datetime().optional(),
   maxCapacity: z.coerce.number().int().min(1).optional(),
@@ -12,10 +12,10 @@ export const createEventSchema = z.object({
 })
 
 export const updateEventSchema = z.object({
-  title:       z.string().min(3).max(200).optional(),
-  description: z.string().max(5000).nullable().optional(),
+  title:       z.string().trim().min(3).max(200).optional(),
+  description: z.string().trim().max(5000).nullable().optional(),
   locationId:  z.string().uuid().nullable().optional(),
-  address:     z.string().max(300).nullable().optional(),
+  address:     z.string().trim().max(300).nullable().optional(),
   startsAt:    z.string().datetime().optional(),
   endsAt:      z.string().datetime().nullable().optional(),
   maxCapacity: z.coerce.number().int().min(1).nullable().optional(),
