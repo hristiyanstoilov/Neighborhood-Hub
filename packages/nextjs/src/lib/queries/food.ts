@@ -158,7 +158,7 @@ export async function queryFoodReservationsForUser(userId: string, role: 'reques
     .from(foodReservations)
     .leftJoin(foodShares, eq(foodShares.id, foodReservations.foodShareId))
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
-    .where(eq(filterCol, userId))
+    .where(and(eq(filterCol, userId), isNull(foodShares.deletedAt)))
     .orderBy(desc(foodReservations.createdAt))
     .limit(50)
 }

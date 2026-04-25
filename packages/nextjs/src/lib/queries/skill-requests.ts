@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { skillRequests, skills, profiles } from '@/db/schema'
-import { eq, or, and, desc } from 'drizzle-orm'
+import { eq, or, and, desc, isNull } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 const requesterProfile = alias(profiles, 'requester_profile')
@@ -40,7 +40,7 @@ interface ListOpts {
 export async function querySkillRequestsByUser(userId: string, opts: ListOpts) {
   const { role, status, page, limit } = opts
 
-  const conditions = []
+  const conditions = [isNull(skills.deletedAt)]
 
   if (role === 'requester') {
     conditions.push(eq(skillRequests.userFromId, userId))

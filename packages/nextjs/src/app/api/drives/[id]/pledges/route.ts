@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { communityDrives, drivePledges, users } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -44,6 +44,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
+    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
+    if (!dbUser?.emailVerifiedAt) {
+      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
+    }
 
     const driveId = extractDriveId(req.url)
     const drive = await db.query.communityDrives.findFirst({

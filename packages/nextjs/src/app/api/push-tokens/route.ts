@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { pushTokens } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, asc, inArray } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 
@@ -38,6 +38,20 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     if (existing.length > 0 && existing[0].userId !== user.sub) {
       // Token belongs to another user — refuse, don't re-assign ownership
       return NextResponse.json({ error: 'TOKEN_CONFLICT' }, { status: 409 })
+    }
+
+    // Cap at 10 tokens per user — delete oldest if at limit before inserting a new one
+    if (existing.length === 0) {
+      const userTokens = await db
+        .select({ token: pushTokens.token })
+        .from(pushTokens)
+        .where(eq(pushTokens.userId, user.sub))
+        .orderBy(asc(pushTokens.createdAt))
+
+      if (userTokens.length >= 10) {
+        const surplus = userTokens.slice(0, userTokens.length - 9).map((r) => r.token)
+        await db.delete(pushTokens).where(and(eq(pushTokens.userId, user.sub), inArray(pushTokens.token, surplus)))
+      }
     }
 
     // Safe to upsert — only update platform, never userId

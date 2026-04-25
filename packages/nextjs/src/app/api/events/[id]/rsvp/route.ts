@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, notifications } from '@/db/schema'
+import { events, eventAttendees, users } from '@/db/schema'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -20,6 +20,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
+    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
+    if (!dbUser?.emailVerifiedAt) {
+      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
+    }
 
     const eventId = extractEventId(req.url)
     const event = await db.query.events.findFirst({ where: and(eq(events.id, eventId), isNull(events.deletedAt)) })
@@ -99,11 +104,11 @@ export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
       .returning()
 
     if (event) {
-      db.insert(notifications).values({
-        userId:     event.organizerId,
-        type:       'event_rsvp_cancelled' as const,
+      void createNotification({
+        userId: event.organizerId,
+        type: 'event_rsvp_cancelled',
         entityType: 'event_rsvp',
-        entityId:   eventId,
+        entityId: eventId,
       }).catch(() => {})
     }
 
