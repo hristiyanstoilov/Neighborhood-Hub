@@ -5,6 +5,8 @@ import { eq, and } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 
+const EXPO_TOKEN_RE = /^ExponentPushToken\[.+\]$/
+
 // ─── POST /api/push-tokens — register or refresh a push token ────────────────
 
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
@@ -16,19 +18,35 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     const body = await req.json().catch(() => null)
     const token = typeof body?.token === 'string' ? body.token.trim() : ''
-    const platform = typeof body?.platform === 'string' ? body.platform.trim() : ''
+    const platform = typeof body?.platform === 'string' ? body.platform.toLowerCase().trim() : ''
 
     if (!token || !['ios', 'android'].includes(platform)) {
       return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })
     }
 
-    // Upsert by token value — token may rotate (e.g. re-install)
+    if (!EXPO_TOKEN_RE.test(token)) {
+      return NextResponse.json({ error: 'INVALID_TOKEN_FORMAT' }, { status: 400 })
+    }
+
+    // Check if this token is already owned by a different user
+    const existing = await db
+      .select({ userId: pushTokens.userId })
+      .from(pushTokens)
+      .where(eq(pushTokens.token, token))
+      .limit(1)
+
+    if (existing.length > 0 && existing[0].userId !== user.sub) {
+      // Token belongs to another user — refuse, don't re-assign ownership
+      return NextResponse.json({ error: 'TOKEN_CONFLICT' }, { status: 409 })
+    }
+
+    // Safe to upsert — only update platform, never userId
     await db
       .insert(pushTokens)
       .values({ userId: user.sub, token, platform })
       .onConflictDoUpdate({
         target: pushTokens.token,
-        set: { userId: user.sub },
+        set: { platform },
       })
 
     return NextResponse.json({ data: { ok: true } }, { status: 201 })

@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { skills, tools, events, communityDrives, foodShares, profiles } from '@/db/schema'
-import { isNull, eq, desc } from 'drizzle-orm'
+import { isNull, eq, desc, count } from 'drizzle-orm'
 import { AdminPageHeader } from '../_components/admin-page-header'
 import { AdminPagination } from '../_components/admin-pagination'
 import { AdminState } from '../_components/admin-state'
@@ -38,6 +38,105 @@ const TYPE_COLORS: Record<ListingType, string> = {
   food: 'bg-green-50 text-green-700',
 }
 
+// ─── Filtered query: single table, DB-level LIMIT/OFFSET + COUNT ──────────────
+
+async function fetchFiltered(type: ListingType, offset: number): Promise<{ rows: Row[]; total: number }> {
+  const sel = { ownerJoin: profiles.userId, ownerName: profiles.name }
+
+  if (type === 'skill') {
+    const [rows, [{ total }]] = await Promise.all([
+      db.select({ id: skills.id, title: skills.title, status: skills.status, createdAt: skills.createdAt, ...sel })
+        .from(skills).leftJoin(profiles, eq(profiles.userId, skills.ownerId))
+        .where(isNull(skills.deletedAt)).orderBy(desc(skills.createdAt)).limit(PAGE_SIZE).offset(offset),
+      db.select({ total: count() }).from(skills).where(isNull(skills.deletedAt)),
+    ])
+    return { rows: rows.map((r) => ({ ...r, type: 'skill' as const, ownerName: r.ownerName ?? null })), total }
+  }
+  if (type === 'tool') {
+    const [rows, [{ total }]] = await Promise.all([
+      db.select({ id: tools.id, title: tools.title, status: tools.status, createdAt: tools.createdAt, ...sel })
+        .from(tools).leftJoin(profiles, eq(profiles.userId, tools.ownerId))
+        .where(isNull(tools.deletedAt)).orderBy(desc(tools.createdAt)).limit(PAGE_SIZE).offset(offset),
+      db.select({ total: count() }).from(tools).where(isNull(tools.deletedAt)),
+    ])
+    return { rows: rows.map((r) => ({ ...r, type: 'tool' as const, ownerName: r.ownerName ?? null })), total }
+  }
+  if (type === 'event') {
+    const [rows, [{ total }]] = await Promise.all([
+      db.select({ id: events.id, title: events.title, status: events.status, createdAt: events.createdAt, ...sel })
+        .from(events).leftJoin(profiles, eq(profiles.userId, events.organizerId))
+        .where(isNull(events.deletedAt)).orderBy(desc(events.createdAt)).limit(PAGE_SIZE).offset(offset),
+      db.select({ total: count() }).from(events).where(isNull(events.deletedAt)),
+    ])
+    return { rows: rows.map((r) => ({ ...r, type: 'event' as const, ownerName: r.ownerName ?? null })), total }
+  }
+  if (type === 'drive') {
+    const [rows, [{ total }]] = await Promise.all([
+      db.select({ id: communityDrives.id, title: communityDrives.title, status: communityDrives.status, createdAt: communityDrives.createdAt, ...sel })
+        .from(communityDrives).leftJoin(profiles, eq(profiles.userId, communityDrives.organizerId))
+        .where(isNull(communityDrives.deletedAt)).orderBy(desc(communityDrives.createdAt)).limit(PAGE_SIZE).offset(offset),
+      db.select({ total: count() }).from(communityDrives).where(isNull(communityDrives.deletedAt)),
+    ])
+    return { rows: rows.map((r) => ({ ...r, type: 'drive' as const, ownerName: r.ownerName ?? null })), total }
+  }
+  // food
+  const [rows, [{ total }]] = await Promise.all([
+    db.select({ id: foodShares.id, title: foodShares.title, status: foodShares.status, createdAt: foodShares.createdAt, ...sel })
+      .from(foodShares).leftJoin(profiles, eq(profiles.userId, foodShares.ownerId))
+      .where(isNull(foodShares.deletedAt)).orderBy(desc(foodShares.createdAt)).limit(PAGE_SIZE).offset(offset),
+    db.select({ total: count() }).from(foodShares).where(isNull(foodShares.deletedAt)),
+  ])
+  return { rows: rows.map((r) => ({ ...r, type: 'food' as const, ownerName: r.ownerName ?? null })), total }
+}
+
+// ─── All-types query: each table bounded to PAGE_SIZE, merged + sorted ────────
+
+async function fetchAll(page: number): Promise<{ rows: Row[]; total: number }> {
+  // Run all 5 data + count queries in parallel; each data query is bounded to PAGE_SIZE
+  const [
+    skillRows, toolRows, eventRows, driveRows, foodRows,
+    [{ total: skillTotal }], [{ total: toolTotal }],
+    [{ total: eventTotal }], [{ total: driveTotal }], [{ total: foodTotal }],
+  ] = await Promise.all([
+    db.select({ id: skills.id, title: skills.title, status: skills.status, createdAt: skills.createdAt, ownerName: profiles.name })
+      .from(skills).leftJoin(profiles, eq(profiles.userId, skills.ownerId))
+      .where(isNull(skills.deletedAt)).orderBy(desc(skills.createdAt)).limit(PAGE_SIZE),
+    db.select({ id: tools.id, title: tools.title, status: tools.status, createdAt: tools.createdAt, ownerName: profiles.name })
+      .from(tools).leftJoin(profiles, eq(profiles.userId, tools.ownerId))
+      .where(isNull(tools.deletedAt)).orderBy(desc(tools.createdAt)).limit(PAGE_SIZE),
+    db.select({ id: events.id, title: events.title, status: events.status, createdAt: events.createdAt, ownerName: profiles.name })
+      .from(events).leftJoin(profiles, eq(profiles.userId, events.organizerId))
+      .where(isNull(events.deletedAt)).orderBy(desc(events.createdAt)).limit(PAGE_SIZE),
+    db.select({ id: communityDrives.id, title: communityDrives.title, status: communityDrives.status, createdAt: communityDrives.createdAt, ownerName: profiles.name })
+      .from(communityDrives).leftJoin(profiles, eq(profiles.userId, communityDrives.organizerId))
+      .where(isNull(communityDrives.deletedAt)).orderBy(desc(communityDrives.createdAt)).limit(PAGE_SIZE),
+    db.select({ id: foodShares.id, title: foodShares.title, status: foodShares.status, createdAt: foodShares.createdAt, ownerName: profiles.name })
+      .from(foodShares).leftJoin(profiles, eq(profiles.userId, foodShares.ownerId))
+      .where(isNull(foodShares.deletedAt)).orderBy(desc(foodShares.createdAt)).limit(PAGE_SIZE),
+    db.select({ total: count() }).from(skills).where(isNull(skills.deletedAt)),
+    db.select({ total: count() }).from(tools).where(isNull(tools.deletedAt)),
+    db.select({ total: count() }).from(events).where(isNull(events.deletedAt)),
+    db.select({ total: count() }).from(communityDrives).where(isNull(communityDrives.deletedAt)),
+    db.select({ total: count() }).from(foodShares).where(isNull(foodShares.deletedAt)),
+  ])
+
+  const total = skillTotal + toolTotal + eventTotal + driveTotal + foodTotal
+  const offset = (page - 1) * PAGE_SIZE
+
+  const merged: Row[] = [
+    ...skillRows.map((r) => ({ ...r, type: 'skill' as const, ownerName: r.ownerName ?? null })),
+    ...toolRows.map((r) => ({ ...r, type: 'tool' as const, ownerName: r.ownerName ?? null })),
+    ...eventRows.map((r) => ({ ...r, type: 'event' as const, ownerName: r.ownerName ?? null })),
+    ...driveRows.map((r) => ({ ...r, type: 'drive' as const, ownerName: r.ownerName ?? null })),
+    ...foodRows.map((r) => ({ ...r, type: 'food' as const, ownerName: r.ownerName ?? null })),
+  ]
+  merged.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+  return { rows: merged.slice(offset, offset + PAGE_SIZE), total }
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function AdminListingsPage({
   searchParams,
 }: {
@@ -55,58 +154,15 @@ export default async function AdminListingsPage({
 
   try {
     const offset = (page - 1) * PAGE_SIZE
-
-    const allRows: Row[] = []
-
-    if (!filterType || filterType === 'skill') {
-      const r = await db
-        .select({ id: skills.id, title: skills.title, status: skills.status, createdAt: skills.createdAt, ownerName: profiles.name })
-        .from(skills)
-        .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
-        .where(isNull(skills.deletedAt))
-        .orderBy(desc(skills.createdAt))
-      allRows.push(...r.map((x) => ({ ...x, type: 'skill' as const, ownerName: x.ownerName ?? null })))
+    if (filterType) {
+      const result = await fetchFiltered(filterType, offset)
+      rows = result.rows
+      total = result.total
+    } else {
+      const result = await fetchAll(page)
+      rows = result.rows
+      total = result.total
     }
-    if (!filterType || filterType === 'tool') {
-      const r = await db
-        .select({ id: tools.id, title: tools.title, status: tools.status, createdAt: tools.createdAt, ownerName: profiles.name })
-        .from(tools)
-        .leftJoin(profiles, eq(profiles.userId, tools.ownerId))
-        .where(isNull(tools.deletedAt))
-        .orderBy(desc(tools.createdAt))
-      allRows.push(...r.map((x) => ({ ...x, type: 'tool' as const, ownerName: x.ownerName ?? null })))
-    }
-    if (!filterType || filterType === 'event') {
-      const r = await db
-        .select({ id: events.id, title: events.title, status: events.status, createdAt: events.createdAt, ownerName: profiles.name })
-        .from(events)
-        .leftJoin(profiles, eq(profiles.userId, events.organizerId))
-        .where(isNull(events.deletedAt))
-        .orderBy(desc(events.createdAt))
-      allRows.push(...r.map((x) => ({ ...x, type: 'event' as const, ownerName: x.ownerName ?? null })))
-    }
-    if (!filterType || filterType === 'drive') {
-      const r = await db
-        .select({ id: communityDrives.id, title: communityDrives.title, status: communityDrives.status, createdAt: communityDrives.createdAt, ownerName: profiles.name })
-        .from(communityDrives)
-        .leftJoin(profiles, eq(profiles.userId, communityDrives.organizerId))
-        .where(isNull(communityDrives.deletedAt))
-        .orderBy(desc(communityDrives.createdAt))
-      allRows.push(...r.map((x) => ({ ...x, type: 'drive' as const, ownerName: x.ownerName ?? null })))
-    }
-    if (!filterType || filterType === 'food') {
-      const r = await db
-        .select({ id: foodShares.id, title: foodShares.title, status: foodShares.status, createdAt: foodShares.createdAt, ownerName: profiles.name })
-        .from(foodShares)
-        .leftJoin(profiles, eq(profiles.userId, foodShares.ownerId))
-        .where(isNull(foodShares.deletedAt))
-        .orderBy(desc(foodShares.createdAt))
-      allRows.push(...r.map((x) => ({ ...x, type: 'food' as const, ownerName: x.ownerName ?? null })))
-    }
-
-    allRows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    total = allRows.length
-    rows = allRows.slice(offset, offset + PAGE_SIZE)
   } catch {
     fetchError = true
   }
@@ -126,7 +182,6 @@ export default async function AdminListingsPage({
     <div>
       <AdminPageHeader title="Listings" description={`${total} active listing${total !== 1 ? 's' : ''}`} />
 
-      {/* Type filter pills */}
       <div className="flex gap-2 flex-wrap mb-4">
         {typeLinks.map(({ label, value }) => {
           const active = filterType === value || (!filterType && value === null)

@@ -7,7 +7,8 @@ import { queryKeys } from './query-keys'
 
 export function useNotificationStream(userId: string | undefined) {
   const queryClient = useQueryClient()
-  const lastIdRef = useRef<string | null>(null)
+  // Cursor is an ISO timestamp string — matches what the server emits as id:
+  const lastSeenAtRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -27,8 +28,8 @@ export function useNotificationStream(userId: string | undefined) {
       const token = getAccessToken()
       if (!token) return
 
-      const url = lastIdRef.current
-        ? `/api/notifications/stream?lastId=${encodeURIComponent(lastIdRef.current)}`
+      const url = lastSeenAtRef.current
+        ? `/api/notifications/stream?lastId=${encodeURIComponent(lastSeenAtRef.current)}`
         : '/api/notifications/stream'
 
       try {
@@ -55,21 +56,18 @@ export function useNotificationStream(userId: string | undefined) {
           buffer = lines.pop() ?? ''
 
           let eventType = 'message'
-          let dataLine = ''
           let idLine = ''
 
           for (const line of lines) {
             if (line.startsWith('event:')) {
               eventType = line.slice(6).trim()
-            } else if (line.startsWith('data:')) {
-              dataLine = line.slice(5).trim()
             } else if (line.startsWith('id:')) {
               idLine = line.slice(3).trim()
             } else if (line === '') {
-              if (idLine) lastIdRef.current = idLine
+              // id: carries the ISO timestamp cursor from the server
+              if (idLine) lastSeenAtRef.current = idLine
 
               if (eventType === 'notification') {
-                // Invalidate so bell count and notifications page refresh
                 void queryClient.invalidateQueries({
                   queryKey: queryKeys.notifications.unread(resolvedUserId),
                 })
@@ -77,10 +75,7 @@ export function useNotificationStream(userId: string | undefined) {
                 controller.abort()
               }
 
-              void dataLine // suppress unused-var lint
-
               eventType = 'message'
-              dataLine = ''
               idLine = ''
             }
           }

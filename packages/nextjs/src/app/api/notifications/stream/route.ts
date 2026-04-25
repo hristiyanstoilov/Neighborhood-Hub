@@ -15,6 +15,12 @@ function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 }
 
+function parseValidDate(raw: string | null): Date | null {
+  if (!raw) return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
+}
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) {
@@ -29,10 +35,12 @@ export async function GET(req: NextRequest) {
     return new Response('Invalid token', { status: 401 })
   }
 
-  const lastEventId = req.headers.get('last-event-id') ?? req.nextUrl.searchParams.get('lastId') ?? null
-
+  // Cursor is an ISO timestamp string — validated before use in queries
+  const rawCursor = req.headers.get('last-event-id') ?? req.nextUrl.searchParams.get('lastId') ?? null
   const encoder = new TextEncoder()
-  let lastId = lastEventId
+
+  // lastSeenAt is the timestamp of the most recent notification sent to this client
+  let lastSeenAt: Date | null = parseValidDate(rawCursor)
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -46,7 +54,6 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Initial heartbeat so client knows connection is live
       send(sseEvent('connected', { ok: true }))
 
       let pollTimer: ReturnType<typeof setTimeout> | null = null
@@ -75,17 +82,19 @@ export async function GET(req: NextRequest) {
             })
             .from(notifications)
             .where(
-              lastId
-                ? and(eq(notifications.userId, userId), gt(notifications.id, lastId))
+              lastSeenAt
+                ? and(eq(notifications.userId, userId), gt(notifications.createdAt, lastSeenAt))
                 : eq(notifications.userId, userId)
             )
             .orderBy(desc(notifications.createdAt))
             .limit(20)
 
           if (rows.length > 0) {
-            lastId = rows[0].id
+            // Update cursor to the most recent createdAt
+            lastSeenAt = rows[0].createdAt
             for (const row of rows.reverse()) {
-              send(`id: ${row.id}\n${sseEvent('notification', row)}`)
+              // Emit ISO timestamp as event ID so the client can resume from it
+              send(`id: ${row.createdAt.toISOString()}\n${sseEvent('notification', row)}`)
             }
           }
         } catch {
@@ -95,7 +104,6 @@ export async function GET(req: NextRequest) {
         if (!closed && Date.now() - startedAt < MAX_DURATION_MS) {
           pollTimer = setTimeout(() => void poll(), POLL_INTERVAL_MS)
         } else {
-          // Ask client to reconnect cleanly
           send(sseEvent('reconnect', { reason: 'timeout' }))
           close()
         }
@@ -112,7 +120,6 @@ export async function GET(req: NextRequest) {
       void poll()
       heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_INTERVAL_MS)
 
-      // Signal cleanup when client aborts
       req.signal.addEventListener('abort', close)
     },
   })
