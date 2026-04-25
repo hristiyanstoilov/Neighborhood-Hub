@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
 import { users } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, count } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAdmin } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -59,6 +59,15 @@ export const PATCH = requireAdmin(async (req: NextRequest, { user }) => {
     } else if (action === 'promote') {
       update = { ...update, role: 'admin' }
     } else if (action === 'demote') {
+      if (target.role === 'admin') {
+        const [{ adminCount }] = await db
+          .select({ adminCount: count() })
+          .from(users)
+          .where(and(eq(users.role, 'admin'), isNull(users.deletedAt)))
+        if (adminCount <= 1) {
+          return NextResponse.json({ error: 'CANNOT_DEMOTE_LAST_ADMIN' }, { status: 422 })
+        }
+      }
       update = { ...update, role: 'user' }
     } else if (action === 'delete') {
       update = { ...update, deletedAt: now }

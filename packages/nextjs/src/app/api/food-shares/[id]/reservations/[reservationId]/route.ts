@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations, notifications, users } from '@/db/schema'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -65,13 +65,6 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       if (reservation.status !== 'pending') return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
     }
 
-    if (parsed.data.action === 'approve') {
-      const { activeCount } = await queryFoodReservationUsage(foodShareId)
-      if (activeCount >= foodShare.quantity) {
-        return NextResponse.json({ error: 'FOOD_NOT_AVAILABLE' }, { status: 422 })
-      }
-    }
-
     if (parsed.data.action === 'picked_up') {
       if (!isOwner) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       if (reservation.status !== 'reserved') return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
@@ -103,7 +96,27 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       updates.pickedUpAt = new Date()
     }
 
-    const [updated] = await db.update(foodReservations).set(updates).where(eq(foodReservations.id, reservationId)).returning()
+    // For 'approve': embed the quantity check atomically in the WHERE clause so
+    // two concurrent approvals cannot both succeed when quantity=1.
+    const whereClause =
+      parsed.data.action === 'approve'
+        ? and(
+            eq(foodReservations.id, reservationId),
+            sql`(
+              SELECT COUNT(*) FROM food_reservations
+              WHERE food_share_id = ${foodShareId}
+              AND status IN ('reserved', 'picked_up')
+            ) < ${foodShare.quantity}`
+          )
+        : eq(foodReservations.id, reservationId)
+
+    const [updated] = await db.update(foodReservations).set(updates).where(whereClause).returning()
+
+    if (!updated) {
+      // Concurrent approval consumed the last slot between our read and write
+      return NextResponse.json({ error: 'FOOD_NOT_AVAILABLE' }, { status: 422 })
+    }
+
     await syncFoodShareStatus(foodShareId, foodShare.quantity)
 
     const recipient = isOwner ? reservation.requesterId : foodShare.ownerId

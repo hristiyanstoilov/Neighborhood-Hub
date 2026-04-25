@@ -80,11 +80,24 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ data: updated })
     }
 
-    const [pledge] = await db.insert(drivePledges).values({
-      driveId,
-      userId:            user.sub,
-      pledgeDescription: parsed.data.pledgeDescription,
-    }).returning()
+    let pledge: typeof drivePledges.$inferSelect
+    try {
+      const [inserted] = await db.insert(drivePledges).values({
+        driveId,
+        userId:            user.sub,
+        pledgeDescription: parsed.data.pledgeDescription,
+      }).returning()
+      pledge = inserted
+    } catch (insertErr) {
+      const code = (insertErr as { code?: string })?.code
+        ?? ((insertErr as { cause?: { code?: string } })?.cause?.code)
+      if (code === '23505') {
+        // Race: another request inserted first — return whatever exists now
+        const raceExisting = await queryUserPledge(driveId, user.sub)
+        if (raceExisting) return NextResponse.json({ data: raceExisting })
+      }
+      throw insertErr
+    }
 
     // Notify organizer
     void createNotification({
