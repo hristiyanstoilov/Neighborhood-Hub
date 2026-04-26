@@ -137,6 +137,13 @@ export default function Nav() {
             Feed
           </Link>
           <Link
+            href="/map"
+            aria-current={isActive('/map') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Map
+          </Link>
+          <Link
             href="/messages"
             aria-current={isActive('/messages') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
