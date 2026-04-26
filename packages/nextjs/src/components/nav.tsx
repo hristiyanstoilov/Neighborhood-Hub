@@ -6,8 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
 import Logo from '@/components/logo'
 import NotificationsBell from '@/components/notifications-bell'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslations } from 'next-intl'
 
 export default function Nav() {
+  const t = useTranslations('nav')
   const { user, loading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -79,7 +82,7 @@ export default function Nav() {
             type="search"
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="Search skills, tools, events..."
+            placeholder={t('search')}
             className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </form>
@@ -92,79 +95,20 @@ export default function Nav() {
             aria-expanded={mobileSearchOpen}
             aria-controls="mobile-search-panel"
           >
-            Search
+            {t('search')}
           </button>
-          <Link
-            href="/skills"
-            aria-current={isActive('/skills') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Skills
-          </Link>
-          <Link
-            href="/tools"
-            aria-current={isActive('/tools') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Tools
-          </Link>
-          <Link
-            href="/events"
-            aria-current={isActive('/events') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Events
-          </Link>
-          <Link
-            href="/drives"
-            aria-current={isActive('/drives') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Drives
-          </Link>
-          <Link
-            href="/food"
-            aria-current={isActive('/food') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Food
-          </Link>
-          <Link
-            href="/feed"
-            aria-current={isActive('/feed') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Feed
-          </Link>
-          <Link
-            href="/map"
-            aria-current={isActive('/map') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Map
-          </Link>
-          <Link
-            href="/leaderboard"
-            aria-current={isActive('/leaderboard') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Leaderboard
-          </Link>
-          <Link
-            href="/messages"
-            aria-current={isActive('/messages') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Messages
-          </Link>
-          <Link
-            href="/radar"
-            aria-current={isActive('/radar') ? 'page' : undefined}
-            className="text-gray-600 hover:text-green-700 transition-colors"
-          >
-            Radar
-          </Link>
+          <Link href="/skills" aria-current={isActive('/skills') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('skills')}</Link>
+          <Link href="/tools" aria-current={isActive('/tools') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('tools')}</Link>
+          <Link href="/events" aria-current={isActive('/events') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('events')}</Link>
+          <Link href="/drives" aria-current={isActive('/drives') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('drives')}</Link>
+          <Link href="/food" aria-current={isActive('/food') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('food')}</Link>
+          <Link href="/feed" aria-current={isActive('/feed') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('feed')}</Link>
+          <Link href="/map" aria-current={isActive('/map') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('map')}</Link>
+          <Link href="/leaderboard" aria-current={isActive('/leaderboard') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('leaderboard')}</Link>
+          <Link href="/messages" aria-current={isActive('/messages') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('messages')}</Link>
+          <Link href="/radar" aria-current={isActive('/radar') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('radar')}</Link>
 
+          <LanguageSwitcher />
           {!loading && (
             <>
               {user ? (
@@ -175,7 +119,7 @@ export default function Nav() {
                       aria-current={isActive('/admin') ? 'page' : undefined}
                       className="text-gray-600 hover:text-green-700 transition-colors"
                     >
-                      Admin
+                      {t('admin')}
                     </Link>
                   )}
                   <div className="relative" ref={dropdownRef}>
@@ -186,94 +130,28 @@ export default function Nav() {
                       aria-haspopup="menu"
                       aria-expanded={dropdownOpen}
                     >
-                      My Activity
+                      {t('my_activity')}
                       <span aria-hidden="true">▾</span>
                     </button>
                     {dropdownOpen && (
                       <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]">
-                        <Link
-                          href="/my-requests"
-                          aria-current={isActive('/my-requests') ? 'page' : undefined}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-requests') ? 'text-green-700' : 'text-gray-700'}`}
-                        >
-                          My Requests
-                        </Link>
-                        <Link
-                          href="/my-reservations"
-                          aria-current={isActive('/my-reservations') ? 'page' : undefined}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-reservations') ? 'text-green-700' : 'text-gray-700'}`}
-                        >
-                          My Tool Reservations
-                        </Link>
-                        <Link
-                          href="/food/reservations"
-                          aria-current={isActive('/food/reservations') ? 'page' : undefined}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/food/reservations') ? 'text-green-700' : 'text-gray-700'}`}
-                        >
-                          My Food Reservations
-                        </Link>
-                        <Link
-                          href="/my-events"
-                          aria-current={isActive('/my-events') ? 'page' : undefined}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-events') ? 'text-green-700' : 'text-gray-700'}`}
-                        >
-                          My Events
-                        </Link>
-                        <Link
-                          href="/my-drives"
-                          aria-current={isActive('/my-drives') ? 'page' : undefined}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-drives') ? 'text-green-700' : 'text-gray-700'}`}
-                        >
-                          My Pledges
-                        </Link>
+                        <Link href="/my-requests" aria-current={isActive('/my-requests') ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-requests') ? 'text-green-700' : 'text-gray-700'}`}>{t('my_requests')}</Link>
+                        <Link href="/my-reservations" aria-current={isActive('/my-reservations') ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-reservations') ? 'text-green-700' : 'text-gray-700'}`}>{t('my_tool_reservations')}</Link>
+                        <Link href="/food/reservations" aria-current={isActive('/food/reservations') ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/food/reservations') ? 'text-green-700' : 'text-gray-700'}`}>{t('my_food_reservations')}</Link>
+                        <Link href="/my-events" aria-current={isActive('/my-events') ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-events') ? 'text-green-700' : 'text-gray-700'}`}>{t('my_events')}</Link>
+                        <Link href="/my-drives" aria-current={isActive('/my-drives') ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive('/my-drives') ? 'text-green-700' : 'text-gray-700'}`}>{t('my_pledges')}</Link>
                       </div>
                     )}
                   </div>
-                  <Link
-                    href="/chat"
-                    aria-current={isActive('/chat') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    AI Chat
-                  </Link>
+                  <Link href="/chat" aria-current={isActive('/chat') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('ai_chat')}</Link>
                   <NotificationsBell />
-                  <Link
-                    href="/profile"
-                    aria-current={isActive('/profile') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    {user.profile?.name ?? user.email}
-                  </Link>
-                  
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="text-gray-500 hover:text-red-500 transition-colors"
-                  >
-                    Logout
-                  </button>
+                  <Link href="/profile" aria-current={isActive('/profile') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{user.profile?.name ?? user.email}</Link>
+                  <button type="button" onClick={handleLogout} className="text-gray-500 hover:text-red-500 transition-colors">{t('logout')}</button>
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/login"
-                    aria-current={isActive('/login') ? 'page' : undefined}
-                    className="text-gray-600 hover:text-green-700 transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    aria-current={isActive('/register') ? 'page' : undefined}
-                    className="bg-green-700 text-white px-3 py-1.5 rounded-md hover:bg-green-800 transition-colors"
-                  >
-                    Register
-                  </Link>
+                  <Link href="/login" aria-current={isActive('/login') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('login')}</Link>
+                  <Link href="/register" aria-current={isActive('/register') ? 'page' : undefined} className="bg-green-700 text-white px-3 py-1.5 rounded-md hover:bg-green-800 transition-colors">{t('register')}</Link>
                 </>
               )}
             </>
@@ -290,7 +168,7 @@ export default function Nav() {
               type="search"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
-              placeholder="Search skills, tools, events..."
+              placeholder={t('search')}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </form>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { querySkills } from '@/lib/queries/skills'
 import { queryRadarLocations } from '@/lib/queries/locations'
@@ -32,6 +33,8 @@ type SkillPreview = {
 }
 
 export default async function HomePage() {
+  const t = await getTranslations('landing')
+  const tMod = await getTranslations('modules')
   const cookieStore = await cookies()
   const refreshToken = cookieStore.get('refresh_token')?.value
   const user = refreshToken ? await queryUserByRefreshToken(refreshToken) : null
@@ -61,31 +64,21 @@ export default async function HomePage() {
         {/* Hero */}
         <div className="text-center py-20">
           <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-            Share skills with your<br />neighborhood
+            {t('hero_title')}
           </h1>
           <p className="text-lg text-gray-500 mb-8 max-w-md mx-auto">
-            Offer what you know. Find what you need. Share food. Connect with people nearby.
+            {t('hero_subtitle')}
           </p>
           <div className="flex gap-3 justify-center">
-            <Link
-              href="/register"
-              className="bg-green-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-800 transition-colors"
-            >
-              Get started
-            </Link>
-            <Link
-              href="/skills"
-              className="px-6 py-3 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Browse skills
-            </Link>
+            <Link href="/register" className="bg-green-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-800 transition-colors">{t('cta_start')}</Link>
+            <Link href="/skills" className="px-6 py-3 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">{t('cta_browse')}</Link>
           </div>
         </div>
 
         {/* Stats bar */}
         <div className="border-y border-gray-100 py-6 mb-12">
           <p className="text-center text-sm text-gray-400">
-            <span className="font-semibold text-gray-700">{skillCount}</span> skill{skillCount !== 1 ? 's' : ''} available in your community
+            {t('stats', { count: skillCount })}
           </p>
         </div>
 
@@ -99,8 +92,8 @@ export default async function HomePage() {
         {recentSkills.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Recently added</h2>
-              <Link href="/skills" className="text-sm text-green-700 hover:underline">View all →</Link>
+              <h2 className="text-lg font-semibold text-gray-800">{t('recently_added')}</h2>
+              <Link href="/skills" className="text-sm text-green-700 hover:underline">{t('view_all')}</Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {recentSkills.map((skill) => (
@@ -148,32 +141,28 @@ export default async function HomePage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, <span className="text-green-700">neighbor</span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {skillCount} skill{skillCount !== 1 ? 's' : ''} available in your community
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('welcome_back')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('stats', { count: skillCount })}</p>
         </div>
         <Link
           href="/skills/new"
           className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
         >
-          + Offer a skill
+          {t('offer_skill')}
         </Link>
       </div>
 
       {/* Browse modules */}
       <div className="mb-8">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Browse</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('browse')}</p>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {[
-            { href: '/skills',  label: 'Skills',  icon: 'skills' as AppIconName },
-            { href: '/tools',   label: 'Tools',   icon: 'tools' as AppIconName },
-            { href: '/events',  label: 'Events',  icon: 'events' as AppIconName },
-            { href: '/drives',  label: 'Drives',  icon: 'drives' as AppIconName },
-            { href: '/food',    label: 'Food',    icon: 'food' as AppIconName },
-            { href: '/radar',   label: 'Radar',   icon: 'radar' as AppIconName },
+            { href: '/skills',  label: tMod('skills'),  icon: 'skills' as AppIconName },
+            { href: '/tools',   label: tMod('tools'),   icon: 'tools' as AppIconName },
+            { href: '/events',  label: tMod('events'),  icon: 'events' as AppIconName },
+            { href: '/drives',  label: tMod('drives'),  icon: 'drives' as AppIconName },
+            { href: '/food',    label: tMod('food'),    icon: 'food' as AppIconName },
+            { href: '/radar',   label: tMod('radar'),   icon: 'radar' as AppIconName },
           ].map(({ href, label, icon }) => (
             <Link
               key={href}
@@ -191,15 +180,15 @@ export default async function HomePage() {
 
       {/* My Activity */}
       <div className="mb-10">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">My Activity</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t('my_activity')}</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { href: '/my-requests',     label: 'My Requests',            icon: 'requests' as AppIconName },
-            { href: '/my-reservations', label: 'My Tool Reservations',   icon: 'reservations' as AppIconName },
-            { href: '/food/reservations', label: 'My Food Reservations', icon: 'food' as AppIconName },
-            { href: '/my-events',       label: 'My Events',              icon: 'events' as AppIconName },
-            { href: '/my-drives',       label: 'My Pledges',             icon: 'pledge' as AppIconName },
-            { href: '/profile',         label: 'Profile',                icon: 'profile' as AppIconName },
+            { href: '/my-requests',       label: t('my_requests'),            icon: 'requests' as AppIconName },
+            { href: '/my-reservations',   label: t('my_tool_reservations'),   icon: 'reservations' as AppIconName },
+            { href: '/food/reservations', label: t('my_food_reservations'),   icon: 'food' as AppIconName },
+            { href: '/my-events',         label: t('my_events'),              icon: 'events' as AppIconName },
+            { href: '/my-drives',         label: t('my_pledges'),             icon: 'pledge' as AppIconName },
+            { href: '/profile',           label: tMod('profile'),             icon: 'profile' as AppIconName },
           ].map(({ href, label, icon }) => (
             <Link
               key={href}
@@ -219,8 +208,8 @@ export default async function HomePage() {
       {radarLocations.length > 0 && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-800">Neighborhood Radar</h2>
-            <Link href="/radar" className="text-sm text-green-700 hover:underline">Open map →</Link>
+            <h2 className="text-lg font-semibold text-gray-800">{t('radar_title')}</h2>
+            <Link href="/radar" className="text-sm text-green-700 hover:underline">{t('radar_link')}</Link>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex flex-wrap gap-2">
@@ -248,8 +237,8 @@ export default async function HomePage() {
             </div>
             {radarLocations.filter((l) => l.skillCount === 0).length > 0 && (
               <p className="text-xs text-gray-400 mt-3">
-                {radarLocations.filter((l) => l.skillCount === 0).length} neighborhoods with no skills yet.{' '}
-                <Link href="/skills/new" className="text-green-700 hover:underline">Be the first to offer one.</Link>
+                {t('neighborhoods_empty', { count: radarLocations.filter((l) => l.skillCount === 0).length })}{' '}
+                <Link href="/skills/new" className="text-green-700 hover:underline">{t('be_first')}</Link>
               </p>
             )}
           </div>
@@ -260,8 +249,8 @@ export default async function HomePage() {
       {recentSkills.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Recently added skills</h2>
-            <Link href="/skills" className="text-sm text-green-700 hover:underline">View all →</Link>
+            <h2 className="text-lg font-semibold text-gray-800">{t('recently_added_skills')}</h2>
+            <Link href="/skills" className="text-sm text-green-700 hover:underline">{t('view_all')}</Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recentSkills.map((skill) => (
