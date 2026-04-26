@@ -92,6 +92,13 @@
       "when": 1777186767978,
       "tag": "0012_curved_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777202888007,
+      "tag": "0013_quick_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

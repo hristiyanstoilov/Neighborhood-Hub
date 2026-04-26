@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { patchToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { queueNotification } from '@/lib/notifications'
+import { awardPoints } from '@/lib/points'
 
 const TERMINAL = ['rejected', 'returned', 'cancelled']
 
@@ -101,6 +102,10 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     // Notify the other party
     const recipient = isOwner ? existing.borrowerId : existing.ownerId
     queueNotification({ userId: recipient, type: notifTypeMap[action], entityType: 'tool_reservation', entityId: id })
+
+    if (action === 'return') {
+      void awardPoints(existing.ownerId, 'tool_lent', id).catch(() => undefined)
+    }
 
     await writeAuditLog({
       userId:    user.sub,

@@ -7,6 +7,7 @@ import { getClientIp, requireAuth } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 import { queueNotification } from '@/lib/notifications'
+import { awardPoints } from '@/lib/points'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -82,6 +83,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }).returning()
 
     queueNotification({ userId: drive.organizerId, type: 'drive_new_pledge', entityType: 'community_drive', entityId: driveId })
+    void awardPoints(user.sub, 'drive_pledged', pledge.id).catch(() => undefined)
 
     return NextResponse.json({ data: pledge }, { status: 201 })
   } catch (err) {

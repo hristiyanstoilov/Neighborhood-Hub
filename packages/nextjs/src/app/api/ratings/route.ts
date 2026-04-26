@@ -6,6 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { createRatingSchema, listRatingsQuerySchema, type RatingContextType } from '@/lib/schemas/rating'
 import { requireAuth } from '@/lib/middleware'
 import { isUniqueViolation } from '@/lib/db-errors'
+import { awardPoints } from '@/lib/points'
 
 type ContextParticipantInfo = {
   participantA: string
@@ -113,6 +114,11 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
         ratingCount: agg?.count ?? 0,
       })
       .where(eq(profiles.userId, payload.ratedUserId))
+
+    void awardPoints(user.sub, 'rating_given', inserted.id).catch(() => undefined)
+    if (payload.score === 5) {
+      void awardPoints(payload.ratedUserId, 'five_star_received', inserted.id).catch(() => undefined)
+    }
 
     return NextResponse.json({ data: inserted }, { status: 201 })
   } catch (err) {

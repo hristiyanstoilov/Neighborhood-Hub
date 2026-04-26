@@ -764,3 +764,52 @@ export const contentReports = pgTable(
     ),
   ]
 )
+
+// ─────────────────────────────────────────────
+// 24. POINT EVENTS
+// ─────────────────────────────────────────────
+
+export const pointEvents = pgTable(
+  'point_events',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 50 }).notNull(),
+    points: integer('points').notNull(),
+    entityId: uuid('entity_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('point_events_user_idx').on(t.userId, t.createdAt),
+    check('point_events_points_check', sql`${t.points} != 0`),
+    check(
+      'point_events_type_check',
+      sql`${t.type} IN ('skill_shared', 'tool_lent', 'food_donated', 'drive_pledged', 'rating_given', 'five_star_received')`
+    ),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 25. USER STATS (denormalized points + level)
+// ─────────────────────────────────────────────
+
+export const userStats = pgTable(
+  'user_stats',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    totalPoints: integer('total_points').default(0).notNull(),
+    level: integer('level').default(1).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('user_stats_user_idx').on(t.userId),
+    index('user_stats_points_idx').on(t.totalPoints),
+    check('user_stats_level_check', sql`${t.level} BETWEEN 1 AND 5`),
+    check('user_stats_points_pos_check', sql`${t.totalPoints} >= 0`),
+  ]
+)

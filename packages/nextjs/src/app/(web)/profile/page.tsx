@@ -7,6 +7,7 @@ import { ProfilePageHeader } from './_components/profile-page-header'
 import { ProfileSummaryCard } from './_components/profile-summary-card'
 import { ProfileEmailWarning } from './_components/profile-email-warning'
 import { DangerZone } from './_components/danger-zone'
+import { PointsBadge } from './_components/points-badge'
 import { ProfilePageSkeleton } from '@/components/ui/skeletons'
 
 export default function ProfilePage() {
@@ -27,6 +28,7 @@ export default function ProfilePage() {
     <div className="max-w-lg">
       <ProfilePageHeader />
       <ProfileSummaryCard user={user} />
+      <PointsBadge />
       {!user.emailVerifiedAt && <ProfileEmailWarning />}
       <DangerZone />
     </div>

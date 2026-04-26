@@ -144,6 +144,13 @@ export default function Nav() {
             Map
           </Link>
           <Link
+            href="/leaderboard"
+            aria-current={isActive('/leaderboard') ? 'page' : undefined}
+            className="text-gray-600 hover:text-green-700 transition-colors"
+          >
+            Leaderboard
+          </Link>
+          <Link
             href="/messages"
             aria-current={isActive('/messages') ? 'page' : undefined}
             className="text-gray-600 hover:text-green-700 transition-colors"
