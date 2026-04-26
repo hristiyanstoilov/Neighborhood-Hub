@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -87,7 +89,12 @@ export default function NewEventScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.kav}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
       <Field label="Title *">
         <TextInput
@@ -171,7 +178,8 @@ export default function NewEventScreen() {
       <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
         <Text style={styles.cancelBtnText}>Cancel</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -192,6 +200,7 @@ const fieldStyles = StyleSheet.create({
 })
 
 const styles = StyleSheet.create({
+  kav: { flex: 1 },
   container: { flex: 1, backgroundColor: '#f9fafb' },
   content:   { padding: 16, gap: 16, paddingBottom: 40 },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center' },

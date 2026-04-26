@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../lib/api'
@@ -48,7 +48,12 @@ export default function NewFoodScreen() {
   })
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      style={styles.kav}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Share Food</Text>
 
       <Field label="Title" required>
@@ -78,7 +83,8 @@ export default function NewFoodScreen() {
       <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.back()}>
         <Text style={styles.secondaryBtnText}>Cancel</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -92,6 +98,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 const styles = StyleSheet.create({
+  kav: { flex: 1 },
   container: { flex: 1, backgroundColor: '#f9fafb' },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
   title: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 6 },

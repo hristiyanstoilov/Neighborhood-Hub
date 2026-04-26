@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -151,7 +153,12 @@ export default function NewSkillScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.kav}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.pageTitle}>Offer a skill</Text>
       <SkillTitleField title={title} onChangeTitle={setTitle} />
       <SkillDescriptionField description={description} onChangeDescription={setDescription} />
@@ -175,11 +182,13 @@ export default function NewSkillScreen() {
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
+  kav: { flex: 1 },
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   content: { padding: 20, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#f3f4f6' },
