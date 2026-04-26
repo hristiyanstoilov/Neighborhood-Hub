@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { feedEvents, profiles } from '@/db/schema'
+import { communityDrives, events as eventsTable, feedEvents, foodShares, profiles, skills, tools } from '@/db/schema'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { feedPublicRatelimit } from '@/lib/ratelimit'
 import { createFeedSchema, listFeedSchema } from '@/lib/schemas/feed'
@@ -46,6 +46,33 @@ export async function GET(req: NextRequest) {
   }
 }
 
+async function verifyFeedOwnership(eventType: string, targetId: string, userId: string): Promise<boolean> {
+  switch (eventType) {
+    case 'skill_listed': {
+      const row = await db.query.skills.findFirst({ where: and(eq(skills.id, targetId), isNull(skills.deletedAt)), columns: { ownerId: true } })
+      return row?.ownerId === userId
+    }
+    case 'tool_listed': {
+      const row = await db.query.tools.findFirst({ where: and(eq(tools.id, targetId), isNull(tools.deletedAt)), columns: { ownerId: true } })
+      return row?.ownerId === userId
+    }
+    case 'food_shared': {
+      const row = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, targetId), isNull(foodShares.deletedAt)), columns: { ownerId: true } })
+      return row?.ownerId === userId
+    }
+    case 'drive_opened': {
+      const row = await db.query.communityDrives.findFirst({ where: eq(communityDrives.id, targetId), columns: { organizerId: true } })
+      return row?.organizerId === userId
+    }
+    case 'event_created': {
+      const row = await db.query.events.findFirst({ where: and(eq(eventsTable.id, targetId), isNull(eventsTable.deletedAt)), columns: { organizerId: true } })
+      return row?.organizerId === userId
+    }
+    default:
+      return false
+  }
+}
+
 export const POST = requireAuth(async (req: NextRequest, { user }) => {
   try {
     const body = await req.json().catch(() => null)
@@ -53,6 +80,10 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
+
+    // Verify caller owns the referenced entity to prevent feed injection.
+    const isOwner = await verifyFeedOwnership(parsed.data.eventType, parsed.data.targetId, user.sub)
+    if (!isOwner) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     const actorProfile = await db.query.profiles.findFirst({
       where: eq(profiles.userId, user.sub),

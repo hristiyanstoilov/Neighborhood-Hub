@@ -86,7 +86,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       type:       'drive_new_pledge' as const,
       entityType: 'community_drive',
       entityId:   driveId,
-    }).catch(() => {})
+    }).catch((e) => console.error('[POST /api/drives/[id]/pledges] notification insert failed', e))
 
     return NextResponse.json({ data: pledge }, { status: 201 })
   } catch (err) {

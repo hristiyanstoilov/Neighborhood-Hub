@@ -101,7 +101,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
         entityType: 'skill_request',
         entityId: newRequest.id,
       })
-      .catch(() => {})
+      .catch((e) => console.error('[POST /api/skill-requests] notification insert failed', e))
 
     await writeAuditLog({
       userId: user.sub,
