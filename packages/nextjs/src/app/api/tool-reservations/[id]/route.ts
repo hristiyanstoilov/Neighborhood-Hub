@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, notifications, users } from '@/db/schema'
+import { toolReservations, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { patchToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { uuidSchema } from '@/lib/schemas/skill'
+import { queueNotification } from '@/lib/notifications'
 
 const TERMINAL = ['rejected', 'returned', 'cancelled']
 
@@ -99,12 +100,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
     // Notify the other party
     const recipient = isOwner ? existing.borrowerId : existing.ownerId
-    db.insert(notifications).values({
-      userId:     recipient,
-      type:       notifTypeMap[action],
-      entityType: 'tool_reservation',
-      entityId:   id,
-    }).catch(() => {})
+    queueNotification({ userId: recipient, type: notifTypeMap[action], entityType: 'tool_reservation', entityId: id })
 
     await writeAuditLog({
       userId:    user.sub,

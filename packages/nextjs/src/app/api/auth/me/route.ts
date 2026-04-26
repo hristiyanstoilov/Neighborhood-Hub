@@ -27,6 +27,7 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
         email: user.email,
         role: user.role,
         emailVerifiedAt: dbUser.emailVerifiedAt,
+        notificationsEnabled: dbUser.notificationsEnabled,
         profile: profile
           ? {
               name: profile.name,

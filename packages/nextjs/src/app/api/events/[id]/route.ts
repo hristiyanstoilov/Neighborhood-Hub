@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, notifications } from '@/db/schema'
+import { events, eventAttendees } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateEventSchema } from '@/lib/schemas/event'
 import { queryEventById } from '@/lib/queries/events'
+import { queueNotificationBulk } from '@/lib/notifications'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -70,16 +71,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
         .from(eventAttendees)
         .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
 
-      if (attendees.length > 0) {
-        db.insert(notifications).values(
-          attendees.map((a) => ({
-            userId:     a.userId,
-            type:       'event_cancelled' as const,
-            entityType: 'event',
-            entityId:   id,
-          }))
-        ).catch(() => {})
-      }
+      queueNotificationBulk(attendees.map((a) => ({ userId: a.userId, type: 'event_cancelled', entityType: 'event', entityId: id })))
     }
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'update', entity: 'events', entityId: id, ipAddress: ip })

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, skills, notifications, users } from '@/db/schema'
+import { skillRequests, skills, users } from '@/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
 import { querySkillRequestsByUser } from '@/lib/queries/skill-requests'
+import { queueNotification } from '@/lib/notifications'
 
 // ─── GET /api/skill-requests — list requests visible to the current user ─────
 
@@ -93,15 +94,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       })
       .returning()
 
-    // Notify the skill owner — fire and forget
-    db.insert(notifications)
-      .values({
-        userId: skill.ownerId,
-        type: 'new_request',
-        entityType: 'skill_request',
-        entityId: newRequest.id,
-      })
-      .catch((e) => console.error('[POST /api/skill-requests] notification insert failed', e))
+    queueNotification({ userId: skill.ownerId, type: 'new_request', entityType: 'skill_request', entityId: newRequest.id })
 
     await writeAuditLog({
       userId: user.sub,

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
+import { queueNotification } from '@/lib/notifications'
 
 // URL: /api/drives/[id]/pledges/[pledgeId]
 // parts: ['api', 'drives', '{id}', 'pledges', '{pledgeId}']
@@ -61,14 +62,8 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       .where(eq(drivePledges.id, pledgeId))
       .returning()
 
-    // Notify pledger when organizer marks fulfilled
     if (status === 'fulfilled') {
-      db.insert(notifications).values({
-        userId:     pledge.userId,
-        type:       'drive_pledge_fulfilled' as const,
-        entityType: 'community_drive',
-        entityId:   driveId,
-      }).catch(() => {})
+      queueNotification({ userId: pledge.userId, type: 'drive_pledge_fulfilled', entityType: 'community_drive', entityId: driveId })
     }
 
     return NextResponse.json({ data: updated })

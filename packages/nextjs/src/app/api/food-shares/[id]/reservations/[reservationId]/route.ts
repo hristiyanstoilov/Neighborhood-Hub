@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations, notifications, users } from '@/db/schema'
+import { foodShares, foodReservations, users } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
+import { queueNotification } from '@/lib/notifications'
 
 type Ctx = { params: Promise<{ id: string; reservationId: string }> }
 
@@ -143,12 +144,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       picked_up: 'food_reservation_picked_up',
     }
 
-    db.insert(notifications).values({
-      userId: recipient,
-      type: typeMap[parsed.data.action],
-      entityType: 'food_reservation',
-      entityId: reservationId,
-    }).catch((e) => console.error('[PATCH /api/food-shares/[id]/reservations/[reservationId]] notification insert failed', e))
+    queueNotification({ userId: recipient, type: typeMap[parsed.data.action], entityType: 'food_reservation', entityId: reservationId })
 
     await writeAuditLog({
       userId: user.sub,

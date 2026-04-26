@@ -29,6 +29,7 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState('')
   const [locationId, setLocationId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const hydratedFromQuery = useRef(false)
 
   const profileQuery = useQuery({
@@ -57,6 +58,7 @@ export default function EditProfileScreen() {
     setBio(profileQuery.data.bio ?? '')
     setLocationId(profileQuery.data.locationId ?? null)
     setIsPublic(profileQuery.data.isPublic ?? true)
+    setNotificationsEnabled(profileQuery.data.notificationsEnabled ?? true)
     hydratedFromQuery.current = true
   }, [profileQuery.data])
 
@@ -67,6 +69,7 @@ export default function EditProfileScreen() {
         bio,
         locationId,
         isPublic,
+        notificationsEnabled,
       })
     } catch (error) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
@@ -193,6 +196,34 @@ export default function EditProfileScreen() {
           {isPublic
             ? 'Anyone can view your profile and offered skills.'
             : 'Only you can see your profile.'}
+        </Text>
+      </View>
+
+      {/* Notifications */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Notifications</Text>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.toggleChip, notificationsEnabled && styles.toggleChipActive]}
+            onPress={() => setNotificationsEnabled(true)}
+          >
+            <Text style={[styles.toggleChipText, notificationsEnabled && styles.toggleChipTextActive]}>
+              Enabled
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleChip, !notificationsEnabled && styles.toggleChipActive]}
+            onPress={() => setNotificationsEnabled(false)}
+          >
+            <Text style={[styles.toggleChipText, !notificationsEnabled && styles.toggleChipTextActive]}>
+              Disabled
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.hint}>
+          {notificationsEnabled
+            ? 'You will receive in-app notifications.'
+            : 'You will not receive any notifications.'}
         </Text>
       </View>
 

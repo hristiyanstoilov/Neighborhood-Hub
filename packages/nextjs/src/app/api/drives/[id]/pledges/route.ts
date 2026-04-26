@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
+import { queueNotification } from '@/lib/notifications'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -80,13 +81,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       pledgeDescription: parsed.data.pledgeDescription,
     }).returning()
 
-    // Notify organizer
-    db.insert(notifications).values({
-      userId:     drive.organizerId,
-      type:       'drive_new_pledge' as const,
-      entityType: 'community_drive',
-      entityId:   driveId,
-    }).catch((e) => console.error('[POST /api/drives/[id]/pledges] notification insert failed', e))
+    queueNotification({ userId: drive.organizerId, type: 'drive_new_pledge', entityType: 'community_drive', entityId: driveId })
 
     return NextResponse.json({ data: pledge }, { status: 201 })
   } catch (err) {

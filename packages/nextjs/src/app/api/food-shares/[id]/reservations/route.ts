@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations, notifications, users } from '@/db/schema'
+import { foodShares, foodReservations, users } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservations } from '@/lib/queries/food'
 import { isUniqueViolation } from '@/lib/db-errors'
+import { queueNotification } from '@/lib/notifications'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -92,12 +93,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     })
     if (!reservation) return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
 
-    db.insert(notifications).values({
-      userId: foodShare.ownerId,
-      type: 'food_reservation_new',
-      entityType: 'food_reservation',
-      entityId: reservation.id,
-    }).catch((e) => console.error('[POST /api/food-shares/[id]/reservations] notification insert failed', e))
+    queueNotification({ userId: foodShare.ownerId, type: 'food_reservation_new', entityType: 'food_reservation', entityId: reservation.id })
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

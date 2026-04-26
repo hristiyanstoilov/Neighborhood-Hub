@@ -8,6 +8,7 @@ interface User {
   email: string
   role: 'user' | 'admin'
   emailVerifiedAt: string | null
+  notificationsEnabled: boolean
   profile: {
     name: string | null
     bio: string | null

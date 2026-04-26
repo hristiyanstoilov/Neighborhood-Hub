@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, tools, notifications, users } from '@/db/schema'
+import { toolReservations, tools, users } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -8,6 +8,7 @@ import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { z } from 'zod'
 import { isUniqueViolation } from '@/lib/db-errors'
+import { queueNotification } from '@/lib/notifications'
 
 // ─── GET /api/tool-reservations — my reservations ───────────────────────────
 
@@ -77,13 +78,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       throw err
     }
 
-    // Notify owner
-    db.insert(notifications).values({
-      userId:     tool.ownerId,
-      type:       'reservation_new',
-      entityType: 'tool_reservation',
-      entityId:   reservation.id,
-    }).catch((e) => console.error('[POST /api/tool-reservations] notification insert failed', e))
+    queueNotification({ userId: tool.ownerId, type: 'reservation_new', entityType: 'tool_reservation', entityId: reservation.id })
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

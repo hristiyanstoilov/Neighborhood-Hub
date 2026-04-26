@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, notifications } from '@/db/schema'
+import { events, eventAttendees } from '@/db/schema'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { queryUserRsvp } from '@/lib/queries/events'
+import { queueNotification } from '@/lib/notifications'
 
 // URL: /api/events/[id]/rsvp  → id is second-to-last segment
 function extractEventId(url: string): string {
@@ -59,12 +60,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }).returning()
 
     // Notify organizer
-    db.insert(notifications).values({
-      userId:     event.organizerId,
-      type:       'event_new_rsvp' as const,
-      entityType: 'event',
-      entityId:   eventId,
-    }).catch(() => {})
+    queueNotification({ userId: event.organizerId, type: 'event_new_rsvp', entityType: 'event', entityId: eventId })
 
     return NextResponse.json({ data: attendee }, { status: 201 })
   } catch (err) {

@@ -29,7 +29,7 @@ export function EditProfileClient() {
           </button>
         </div>
       ) : (
-        <EditProfileForm profile={user?.profile ?? null} locations={locationsQuery.data ?? []} />
+        <EditProfileForm profile={user?.profile ?? null} locations={locationsQuery.data ?? []} notificationsEnabled={user?.notificationsEnabled ?? true} />
       )}
     </div>
   )

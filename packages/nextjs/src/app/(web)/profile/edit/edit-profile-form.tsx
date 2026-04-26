@@ -20,9 +20,10 @@ interface Location { id: string; city: string; neighborhood: string }
 interface Props {
   profile: Profile | null
   locations: Location[]
+  notificationsEnabled: boolean
 }
 
-export default function EditProfileForm({ profile, locations }: Props) {
+export default function EditProfileForm({ profile, locations, notificationsEnabled }: Props) {
   const router = useRouter()
   const { refreshUser } = useAuth()
   const { showToast } = useToast()
@@ -79,11 +80,12 @@ export default function EditProfileForm({ profile, locations }: Props) {
     try {
       const form = new FormData(e.currentTarget)
       const body = {
-        name:       (form.get('name') as string).trim() || undefined,
-        bio:        (form.get('bio') as string).trim() || undefined,
-        avatarUrl:  avatarUrl || undefined,
-        locationId: (form.get('locationId') as string) || undefined,
-        isPublic:   form.get('isPublic') === 'true',
+        name:                 (form.get('name') as string).trim() || undefined,
+        bio:                  (form.get('bio') as string).trim() || undefined,
+        avatarUrl:            avatarUrl || undefined,
+        locationId:           (form.get('locationId') as string) || undefined,
+        isPublic:             form.get('isPublic') === 'true',
+        notificationsEnabled: form.get('notificationsEnabled') === 'on',
       }
 
       const res = await apiFetch('/api/profile', {
@@ -215,6 +217,19 @@ export default function EditProfileForm({ profile, locations }: Props) {
             <option value="true">Public</option>
             <option value="false">Private</option>
           </select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            id="profile-notifications"
+            name="notificationsEnabled"
+            type="checkbox"
+            defaultChecked={notificationsEnabled}
+            className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+          />
+          <label htmlFor="profile-notifications" className="text-sm font-medium text-gray-700">
+            Receive in-app notifications
+          </label>
         </div>
 
         {submitError && (

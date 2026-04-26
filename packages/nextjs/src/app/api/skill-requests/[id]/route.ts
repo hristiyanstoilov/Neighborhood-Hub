@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, notifications, users } from '@/db/schema'
+import { skillRequests, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
+import { queueNotification } from '@/lib/notifications'
 
 const TERMINAL_STATUSES = ['rejected', 'completed', 'cancelled']
 
@@ -128,15 +129,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       .where(eq(skillRequests.id, id))
       .returning()
 
-    // Notify the other party — fire and forget
-    db.insert(notifications)
-      .values({
-        userId: notificationRecipient,
-        type: notificationType,
-        entityType: 'skill_request',
-        entityId: id,
-      })
-      .catch(() => {})
+    queueNotification({ userId: notificationRecipient, type: notificationType, entityType: 'skill_request', entityId: id })
 
     await writeAuditLog({
       userId: user.sub,

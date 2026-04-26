@@ -17,6 +17,7 @@ export interface OwnProfile {
   email: string
   emailVerifiedAt: string | null
   isPublic: boolean
+  notificationsEnabled: boolean
 }
 
 export interface UpdateProfileInput {
@@ -24,6 +25,7 @@ export interface UpdateProfileInput {
   bio: string
   locationId: string | null
   isPublic: boolean
+  notificationsEnabled: boolean
 }
 
 export interface PatchProfileInput {
@@ -32,6 +34,7 @@ export interface PatchProfileInput {
   avatarUrl?: string | null
   locationId?: string | null
   isPublic?: boolean
+  notificationsEnabled?: boolean
 }
 
 export const profileKeys = {
@@ -62,6 +65,7 @@ export async function fetchOwnProfile(): Promise<OwnProfile> {
     email: typeof data.email === 'string' ? data.email : '',
     emailVerifiedAt: typeof data.emailVerifiedAt === 'string' ? data.emailVerifiedAt : null,
     isPublic: typeof data.isPublic === 'boolean' ? data.isPublic : true,
+    notificationsEnabled: typeof data.notificationsEnabled === 'boolean' ? data.notificationsEnabled : true,
   }
 }
 
@@ -91,6 +95,7 @@ export async function updateOwnProfile(input: UpdateProfileInput): Promise<void>
     bio: input.bio,
     locationId: input.locationId,
     isPublic: input.isPublic,
+    notificationsEnabled: input.notificationsEnabled,
   })
 }
 
@@ -98,6 +103,7 @@ export async function patchOwnProfile(input: PatchProfileInput): Promise<void> {
   const body: Record<string, unknown> = {
     ...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
     ...(input.locationId !== undefined ? { locationId: input.locationId ?? '' } : {}),
+    ...(input.notificationsEnabled !== undefined ? { notificationsEnabled: input.notificationsEnabled } : {}),
   }
 
   if (typeof input.name === 'string' && input.name.trim()) body.name = input.name.trim()

@@ -37,6 +37,7 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
     data: {
       email: dbUser.email,
       emailVerifiedAt: dbUser.emailVerifiedAt,
+      notificationsEnabled: dbUser.notificationsEnabled,
       name: profile?.name ?? null,
       bio: profile?.bio ?? null,
       avatarUrl: profile?.avatarUrl ?? null,
@@ -49,11 +50,12 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
 })
 
 const updateProfileSchema = z.object({
-  name:       z.string().min(1).max(100).optional(),
-  bio:        z.string().max(500).optional(),
-  avatarUrl:  z.string().url().max(2048).optional().or(z.literal('')),
-  locationId: z.string().uuid().optional().or(z.literal('')),
-  isPublic:   z.boolean().optional(),
+  name:                 z.string().min(1).max(100).optional(),
+  bio:                  z.string().max(500).optional(),
+  avatarUrl:            z.string().url().max(2048).optional().or(z.literal('')),
+  locationId:           z.string().uuid().optional().or(z.literal('')),
+  isPublic:             z.boolean().optional(),
+  notificationsEnabled: z.boolean().optional(),
 })
 
 // ─── PUT /api/profile — upsert the current user's profile ────────────────────
@@ -72,7 +74,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { name, bio, avatarUrl, locationId, isPublic } = parsed.data
+    const { name, bio, avatarUrl, locationId, isPublic, notificationsEnabled } = parsed.data
 
     // Validate locationId FK if provided and non-empty
     if (locationId) {
@@ -80,7 +82,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
       if (!loc) return NextResponse.json({ error: 'LOCATION_NOT_FOUND' }, { status: 400 })
     }
 
-    const values = {
+    const profileValues = {
       userId:     user.sub,
       name:       name ?? null,
       bio:        bio ?? null,
@@ -92,19 +94,23 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
 
     const [profile] = await db
       .insert(profiles)
-      .values({ ...values, createdAt: new Date() })
+      .values({ ...profileValues, createdAt: new Date() })
       .onConflictDoUpdate({
         target: profiles.userId,
         set: {
-          name:       values.name,
-          bio:        values.bio,
-          avatarUrl:  values.avatarUrl,
-          locationId: values.locationId,
-          isPublic:   values.isPublic,
-          updatedAt:  values.updatedAt,
+          name:       profileValues.name,
+          bio:        profileValues.bio,
+          avatarUrl:  profileValues.avatarUrl,
+          locationId: profileValues.locationId,
+          isPublic:   profileValues.isPublic,
+          updatedAt:  profileValues.updatedAt,
         },
       })
       .returning()
+
+    if (notificationsEnabled !== undefined) {
+      await db.update(users).set({ notificationsEnabled }).where(eq(users.id, user.sub))
+    }
 
     await writeAuditLog({
       userId:    user.sub,
