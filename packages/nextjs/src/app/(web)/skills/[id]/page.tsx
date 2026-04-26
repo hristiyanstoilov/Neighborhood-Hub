@@ -7,6 +7,7 @@ import { querySkillById } from '@/lib/queries/skills'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RequestButton from './request-button'
 import SkillOwnerActions from './skill-owner-actions'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,6 +134,12 @@ export default async function SkillDetailPage({
           <SkillOwnerActions skillId={skill!.id} />
         )}
         <RequestButton skill={skill!} />
+
+        {currentUserId && currentUserId !== skill!.ownerId && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+            <FlagButton entityType="skill" entityId={skill!.id} />
+          </div>
+        )}
       </div>
     </div>
   )

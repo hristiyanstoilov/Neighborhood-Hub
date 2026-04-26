@@ -7,6 +7,7 @@ import { queryToolById } from '@/lib/queries/tools'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import ReserveButton from './reserve-button'
 import ToolOwnerActions from './tool-owner-actions'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,6 +148,12 @@ export default async function ToolDetailPage({
           isLoggedIn={currentUserId !== null}
           isAvailable={tool!.status === 'available'}
         />
+
+        {currentUserId && !isOwner && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+            <FlagButton entityType="tool" entityId={tool!.id} />
+          </div>
+        )}
       </div>
     </div>
   )

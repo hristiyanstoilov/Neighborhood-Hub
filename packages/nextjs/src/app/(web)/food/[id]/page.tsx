@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { queryFoodShareById, queryFoodReservations, queryUserFoodReservation } from '@/lib/queries/food'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import ReservationSection from './reservation-section'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,6 +164,12 @@ export default async function FoodDetailPage({ params }: { params: Promise<{ id:
             initialReservation={userReservation}
             reservations={reservations}
           />
+
+          {currentUserId && !isOwner && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+              <FlagButton entityType="food_share" entityId={foodShare!.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>

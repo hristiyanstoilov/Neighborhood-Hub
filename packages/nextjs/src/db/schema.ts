@@ -731,3 +731,36 @@ export const messages = pgTable(
     check('messages_body_not_empty_check', sql`char_length(trim(${t.body})) > 0`),
   ]
 )
+
+// ─────────────────────────────────────────────
+// 23. CONTENT REPORTS
+// ─────────────────────────────────────────────
+
+export const contentReports = pgTable(
+  'content_reports',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    entityType: varchar('entity_type', { length: 30 }).notNull(),
+    entityId: uuid('entity_id').notNull(),
+    reason: varchar('reason', { length: 30 }).notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedById: uuid('resolved_by_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('content_reports_active_idx').on(t.reporterId, t.entityType, t.entityId).where(sql`${t.resolvedAt} IS NULL`),
+    index('content_reports_entity_idx').on(t.entityType, t.entityId),
+    index('content_reports_pending_idx').on(t.resolvedAt),
+    check(
+      'content_reports_entity_type_check',
+      sql`${t.entityType} IN ('skill', 'tool', 'food_share', 'event', 'community_drive')`
+    ),
+    check(
+      'content_reports_reason_check',
+      sql`${t.reason} IN ('spam', 'inappropriate', 'misleading', 'other')`
+    ),
+  ]
+)

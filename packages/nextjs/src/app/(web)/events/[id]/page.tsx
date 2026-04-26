@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { queryEventById, queryUserRsvp } from '@/lib/queries/events'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RsvpButton from './rsvp-button'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -160,6 +161,12 @@ export default async function EventDetailPage({
             status={event!.status}
             initialRsvpStatus={rsvpStatus}
           />
+
+          {currentUserId && !isOrganizer && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+              <FlagButton entityType="event" entityId={event!.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>
