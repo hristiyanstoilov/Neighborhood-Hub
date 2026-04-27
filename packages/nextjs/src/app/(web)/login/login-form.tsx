@@ -4,8 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth'
+import { useTranslations } from 'next-intl'
 
 export default function LoginForm() {
+  const t = useTranslations('auth')
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
@@ -33,11 +35,11 @@ export default function LoginForm() {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          INVALID_CREDENTIALS: 'Invalid email or password.',
-          ACCOUNT_LOCKED: 'Account temporarily locked. Please try again later.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
+          INVALID_CREDENTIALS: t('errors.invalid_credentials'),
+          ACCOUNT_LOCKED: t('errors.account_locked'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
@@ -47,7 +49,7 @@ export default function LoginForm() {
       const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/skills'
       router.push(safePath)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('errors.network_error'))
     } finally {
       setLoading(false)
     }
@@ -55,11 +57,11 @@ export default function LoginForm() {
 
   return (
     <div className="max-w-md mx-auto py-16">
-      <h1 className="text-2xl font-bold mb-6">Log in</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('login_title')}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="login-email" className="block text-sm font-medium mb-1">Email</label>
+          <label htmlFor="login-email" className="block text-sm font-medium mb-1">{t('email')}</label>
           <input
             id="login-email"
             name="email"
@@ -75,9 +77,9 @@ export default function LoginForm() {
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label htmlFor="login-password" className="block text-sm font-medium">Password</label>
+            <label htmlFor="login-password" className="block text-sm font-medium">{t('password')}</label>
             <Link href="/forgot-password" className="text-xs text-gray-400 hover:text-green-700 transition-colors">
-              Forgot password?
+              {t('forgot_password')}
             </Link>
           </div>
           <input
@@ -103,14 +105,14 @@ export default function LoginForm() {
           disabled={loading}
           className="w-full bg-green-700 text-white rounded-md py-2 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? t('signing_in') : t('login_btn')}
         </button>
       </form>
 
       <p className="text-center text-sm text-gray-600 mt-6">
-        No account yet?{' '}
+        {t('no_account')}{' '}
         <Link href="/register" className="text-green-700 hover:underline">
-          Register
+          {t('sign_up')}
         </Link>
       </p>
     </div>

@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +27,7 @@ export default function ForgotPasswordPage() {
 
       setSubmitted(true)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('errors.network_error'))
     } finally {
       setLoading(false)
     }
@@ -34,12 +36,10 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
-        <h1 className="text-2xl font-bold mb-3">Check your email</h1>
-        <p className="text-gray-600 mb-6">
-          If an account with that email exists, we&apos;ve sent a reset link. Check your inbox.
-        </p>
+        <h1 className="text-2xl font-bold mb-3">{t('check_email_title')}</h1>
+        <p className="text-gray-600 mb-6">{t('reset_sent')}</p>
         <Link href="/login" className="text-green-700 hover:underline text-sm">
-          Log in
+          {t('sign_in')}
         </Link>
       </div>
     )
@@ -47,14 +47,12 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="max-w-md mx-auto py-16">
-      <h1 className="text-2xl font-bold mb-2">Forgot your password?</h1>
-      <p className="text-gray-500 text-sm mb-6">
-        Enter your email and we&apos;ll send you a reset link.
-      </p>
+      <h1 className="text-2xl font-bold mb-2">{t('reset_title')}</h1>
+      <p className="text-gray-500 text-sm mb-6">{t('reset_subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="forgot-email" className="block text-sm font-medium mb-1">Email</label>
+          <label htmlFor="forgot-email" className="block text-sm font-medium mb-1">{t('email')}</label>
           <input
             id="forgot-email"
             name="email"
@@ -77,14 +75,14 @@ export default function ForgotPasswordPage() {
           disabled={loading}
           className="w-full bg-green-700 text-white rounded-md py-2 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Sending…' : 'Send reset link'}
+          {loading ? t('sending') : t('reset_btn')}
         </button>
       </form>
 
       <p className="text-center text-sm text-gray-600 mt-6">
-        Remembered it?{' '}
+        {t('remembered_password')}{' '}
         <Link href="/login" className="text-green-700 hover:underline">
-          Log in
+          {t('sign_in')}
         </Link>
       </p>
     </div>
