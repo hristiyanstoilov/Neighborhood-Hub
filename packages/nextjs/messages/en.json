@@ -146,14 +146,26 @@
     "points": "pts",
     "rank": "Rank #{rank}",
     "leaderboard_link": "Leaderboard →",
+    "my_skills_link": "My Skills",
+    "email_warning": "Your email is not verified. You cannot create skill listings until you verify it.",
     "danger_zone": "Danger Zone",
+    "danger_zone_desc": "These actions are irreversible. Please proceed with caution.",
     "export_data": "Export my data",
-    "delete_account": "Delete account",
+    "export_failed": "Export failed. Please try again.",
+    "delete_account": "Delete my account",
     "delete_confirm_title": "Delete your account?",
-    "delete_confirm_desc": "This will permanently delete all your data. This action cannot be undone.",
-    "delete_password_label": "Confirm with your password",
-    "delete_btn": "Delete account",
-    "cancel": "Cancel"
+    "delete_confirm_desc": "This will permanently remove your personal data, profile, and all your listings. This action cannot be undone.",
+    "delete_password_label": "Confirm your password",
+    "delete_password_placeholder": "Your current password",
+    "delete_btn": "Delete my account",
+    "deleting": "Deleting…",
+    "cancel": "Cancel",
+    "errors": {
+      "invalid_password": "Incorrect password. Please try again.",
+      "too_many_requests": "Too many attempts. Please wait.",
+      "network_error": "Network error. Please check your connection.",
+      "unexpected": "Something went wrong. Please try again."
+    }
   },
   "edit_profile": {
     "title": "Edit Profile",
