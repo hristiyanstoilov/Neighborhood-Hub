@@ -2,12 +2,14 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import type { MapMarker } from '@/app/api/map/route'
 
 const MapView = dynamic(() => import('./_components/map-view'), { ssr: false })
 
 export default function MapPage() {
+  const t = useTranslations('map')
   const [markers, setMarkers] = useState<MapMarker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -25,9 +27,9 @@ export default function MapPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Neighborhood Map</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('page_title')}</h1>
         {!loading && !error && (
-          <p className="text-sm text-gray-500">{markers.length} items near you</p>
+          <p className="text-sm text-gray-500">{t('items_near', { count: markers.length })}</p>
         )}
       </div>
 

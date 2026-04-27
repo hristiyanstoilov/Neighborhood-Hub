@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   accessToken: string
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export default function MarkAllReadButton({ accessToken, unreadCount }: Props) {
+  const t = useTranslations('notifications')
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [optimisticUnread, setOptimisticUnread] = useState(unreadCount)
@@ -48,7 +50,7 @@ export default function MarkAllReadButton({ accessToken, unreadCount }: Props) {
       disabled={busy}
       className="text-sm font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
     >
-      {busy ? 'Marking…' : 'Mark all as read'}
+      {busy ? t('marking') : t('mark_all_read')}
     </button>
   )
 }
