@@ -50,7 +50,12 @@ neighborhood-hub/
 │   │   │   │   │   ├── food-reservations/ # list user reservations across all food shares
 │   │   │   │   │   ├── ratings/         # POST create rating, GET list by user, GET check
 │   │   │   │   │   ├── search/          # GET unified cross-module full-text search
-│   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
+│   │   │   │   │   ├── reports/         # POST flag content (skills/tools/food/events/drives)
+│   │   │   │   │   ├── map/             # GET all geo-pinned listings (skills/tools/food/events)
+│   │   │   │   │   ├── leaderboard/     # GET top 50 users by Neighbor Score points
+│   │   │   │   │   ├── me/              # GET current user profile + me/stats (points/level/rank)
+│   │   │   │   │   ├── account/         # GET data export (Art. 20) + DELETE account (Art. 17)
+│   │   │   │   │   ├── admin/           # admin users, audit log, dashboard, reports queue
 │   │   │   │   │   ├── ai/              # AI chat + conversation history
 │   │   │   │   │   ├── feed/            # GET neighborhood activity feed (paginated)
 │   │   │   │   │   ├── conversations/   # GET list + POST create DM conversation
@@ -60,7 +65,7 @@ neighborhood-hub/
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (24 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (27 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
 │   │   │   │   ├── seed.ts      # Seed: locations, categories, demo users, skills, tools, food, events, drives, ratings
 │   │   │   │   └── migrations/  # SQL migration files
@@ -90,7 +95,7 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (24 tables)
+## 4. Database Schema (27 tables)
 
 ### Core tables (all built)
 
@@ -120,6 +125,9 @@ neighborhood-hub/
 | `feed_events` | Activity feed entries (actor_id FK, actor_name, event_type, target_id, target_title, target_url) — types: skill_listed, tool_listed, food_shared, drive_opened, event_created |
 | `conversations` | DM conversation pairs (participant_a FK, participant_b FK, updated_at) — unique pair constraint, no self-messaging |
 | `messages` | DM messages (conversation_id FK, sender_id FK, body text, read_at nullable) |
+| `content_reports` | Content flagging (reporter_id FK, entity_type, entity_id, reason, status, resolved_at, resolved_by FK) |
+| `point_events` | Gamification point ledger (user_id FK, event_type, reference_id, points) — append-only audit trail |
+| `user_stats` | Aggregated Neighbor Score per user (user_id FK, total_points, level, last_updated) — updated by awardPoints() |
 
 > **Full-text search:** `skills`, `tools`, `events`, `community_drives`, `food_shares` each have a generated `search_vector tsvector` column (STORED) with a GIN index. Used by `GET /api/search`. Dictionary: `'english'` for all except `food_shares` (`'simple'` — Bulgarian titles).
 
@@ -253,6 +261,10 @@ Rules:
 | My Events (RSVPs) | `/my-events` | ✅ done |
 | My Pledges (Drives) | `/my-drives` | ✅ done |
 | Search (cross-module) | `/search` | ✅ done |
+| Interactive Map | `/map` | ✅ done |
+| Leaderboard / Neighbor Score | `/leaderboard` | ✅ done |
+| Neighborhood Radar | `/radar` | ✅ done |
+| Admin — Reports Queue | `/admin/reports` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -294,6 +306,10 @@ Rules:
 | Neighborhood Feed | ✅ done |
 | Messages (conversations list) | ✅ done |
 | Message Thread (DM) | ✅ done |
+| Neighborhood Feed tab | ✅ done |
+| Leaderboard / Rankings tab | ✅ done |
+| Interactive Map tab | ✅ done |
+| Notifications tab | ✅ done |
 
 ---
 

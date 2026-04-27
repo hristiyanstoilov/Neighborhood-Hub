@@ -1,7 +1,7 @@
 # Neighborhood Hub - QA Regression Pack
 
-Version: 1.2  
-Last updated: April 24, 2026  
+Version: 1.3  
+Last updated: April 27, 2026  
 Status: Active
 
 ---
@@ -28,6 +28,8 @@ Included:
 8. Food Sharing: create/list, reservation lifecycle, ownership guards, duplicate prevention.
 9. Direct Messages: conversation create/find-or-create, message send/read, user search, auth guards.
 10. Activity Feed: public listing, pagination, event write, URL validation.
+11. Content Moderation: flag create, duplicate prevention, admin queue, admin resolve.
+12. Gamification: point events on key actions, leaderboard ordering, user stats aggregation.
 
 Excluded:
 
@@ -133,6 +135,20 @@ Execute all critical flows by test ID (section 4).
 3. FEED-03 `POST /api/feed` without auth → 401; with auth and `targetUrl` not starting with `/` → 400 VALIDATION_ERROR.
 4. FEED-04 `POST /api/feed` with valid payload → 201, event appears at top of next `GET /api/feed`.
 
+### Content Moderation
+
+1. MOD-01 `POST /api/reports` with valid payload (auth required) → 201, report object returned.
+2. MOD-02 `POST /api/reports` for the same entity by the same reporter while an open report exists → 409 DUPLICATE_REPORT.
+3. MOD-03 `GET /api/admin/reports` as admin → 200, list includes reporter name/email and flagged entity info.
+4. MOD-04 `PATCH /api/admin/reports/[id]` as admin → 200, resolvedAt set, resolvedBy set to admin id.
+
+### Gamification
+
+1. POINTS-01 Create a skill → `point_events` row inserted with `event_type = 'skill_shared'`, `points = 20`; `user_stats.total_points` incremented by 20.
+2. POINTS-02 Tool reservation returned → owner's `point_events` row inserted with `event_type = 'tool_lent'`; `user_stats.total_points` incremented.
+3. POINTS-03 `GET /api/leaderboard` → 200, array ordered by total_points desc, each entry includes name and avatarUrl.
+4. POINTS-04 `GET /api/me/stats` as authenticated user → 200, returns `{ totalPoints, level, rank }`.
+
 ### Auth — Password Reset & Email Verification
 
 6. AUTH-06 `POST /api/auth/forgot-password` with any email format → always 200 (no enumeration).
@@ -162,7 +178,7 @@ Execute all critical flows by test ID (section 4).
 ## 6. Execution Protocol
 
 1. Start with build check.
-2. Execute by module order: Auth → Skills → Requests → Chat → Profile → Admin → Mobile → Food → DMs → Feed.
+2. Execute by module order: Auth → Skills → Requests → Chat → Profile → Admin → Mobile → Food → DMs → Feed → Moderation → Gamification.
 3. Record each test ID as PASS / FAIL / BLOCKED.
 4. For every FAIL: include exact reproduction steps and expected vs actual behavior.
 5. End with Go/No-Go release decision.
