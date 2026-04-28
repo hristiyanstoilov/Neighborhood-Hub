@@ -275,6 +275,27 @@
     "delete_skill_title": "Delete skill?",
     "delete_skill_desc": "This will permanently remove the skill listing from the marketplace.",
     "deleting": "Deleting…",
+    "login_to_request": "Log in to request this skill",
+    "your_skill_listing": "This is your skill listing.",
+    "skill_unavailable": "This skill is currently unavailable.",
+    "request_skill_btn": "Request this skill",
+    "request_sent_title": "Request sent!",
+    "request_sent_desc": "The skill owner will be notified. You can track your request status below.",
+    "view_requests": "View my requests",
+    "close_dialog_label": "Close request dialog",
+    "request_sr_desc": "Fill in the date, time, and meeting details to send a request.",
+    "request_start_label": "Start",
+    "request_end_label": "End",
+    "request_meeting_type_label": "Meeting type",
+    "meeting_in_person": "In person",
+    "meeting_online": "Online",
+    "meeting_hybrid": "Hybrid",
+    "request_url_label": "Meeting URL",
+    "request_notes_label": "Notes",
+    "request_notes_optional": "(optional)",
+    "request_notes_placeholder": "Any details or questions for the skill owner…",
+    "sending": "Sending…",
+    "send_request": "Send request",
     "errors": {
       "unverified_email": "Please verify your email before offering a skill.",
       "too_many_requests": "Too many attempts. Please wait and try again.",
@@ -350,6 +371,7 @@
   },
   "footer": {
     "tagline": "Connecting neighbors, one skill at a time.",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "daily_contribution_marker": "Daily contribution 2026-04-28"
   }
 }
