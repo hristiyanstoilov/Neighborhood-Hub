@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { querySkills } from '@/lib/queries/skills'
 import { db } from '@/db'
@@ -22,6 +23,9 @@ export default async function MySkillsPage({
 }: {
   searchParams: Promise<{ page?: string }>
 }) {
+  const t = await getTranslations('profile')
+  const tCommon = await getTranslations('common')
+
   const cookieStore = await cookies()
   const refreshToken = cookieStore.get('refresh_token')?.value
   const user = refreshToken ? await queryUserByRefreshToken(refreshToken) : null
@@ -46,17 +50,17 @@ export default async function MySkillsPage({
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Link href="/profile" className="text-sm text-gray-400 hover:text-green-700">Profile</Link>
+            <Link href="/profile" className="text-sm text-gray-400 hover:text-green-700">{t('title')}</Link>
             <span className="text-gray-300">/</span>
-            <span className="text-sm text-gray-700 font-medium">My Skills</span>
+            <span className="text-sm text-gray-700 font-medium">{t('my_skills_title')}</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">My Skills</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('my_skills_title')}</h1>
         </div>
         <Link
           href="/skills/new"
           className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
         >
-          + Offer a skill
+          {t('my_skills_offer_btn')}
         </Link>
       </div>
 
@@ -65,18 +69,18 @@ export default async function MySkillsPage({
           <div className="mb-4 inline-flex rounded-full bg-green-50 p-4 text-green-700">
             <AppIcon name="requests" size={28} />
           </div>
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">No skills yet</h2>
-          <p className="text-sm text-gray-400 mb-6">Share what you know with your neighborhood.</p>
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">{t('my_skills_empty_title')}</h2>
+          <p className="text-sm text-gray-400 mb-6">{t('my_skills_empty_desc')}</p>
           <Link
             href="/skills/new"
             className="bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-green-800 transition-colors"
           >
-            Offer your first skill
+            {t('my_skills_offer_first')}
           </Link>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-400 mb-4">{total} skill{total !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-400 mb-4">{t('my_skills_count', { total })}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {mySkills.map((skill) => (
               <div key={skill.id} className="relative bg-white rounded-lg border border-gray-200 overflow-hidden group">
@@ -110,13 +114,13 @@ export default async function MySkillsPage({
                       href={`/skills/${skill.id}`}
                       className="flex-1 text-center text-xs text-gray-600 border border-gray-200 rounded-md py-1.5 hover:border-green-400 hover:text-green-700 transition-colors"
                     >
-                      View
+                      {tCommon('view')}
                     </Link>
                     <Link
                       href={`/skills/${skill.id}/edit`}
                       className="flex-1 text-center text-xs text-white bg-green-700 rounded-md py-1.5 hover:bg-green-800 transition-colors"
                     >
-                      Edit
+                      {tCommon('edit')}
                     </Link>
                   </div>
                 </div>
@@ -124,7 +128,6 @@ export default async function MySkillsPage({
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-8">
               {page > 1 && (
@@ -132,18 +135,18 @@ export default async function MySkillsPage({
                   href={`/profile/skills?page=${page - 1}`}
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:border-green-400 text-gray-600"
                 >
-                  ← Prev
+                  {t('my_skills_prev')}
                 </Link>
               )}
               <span className="px-3 py-1.5 text-sm text-gray-400">
-                Page {page} of {totalPages}
+                {t('my_skills_page_of', { page, total: totalPages })}
               </span>
               {page < totalPages && (
                 <Link
                   href={`/profile/skills?page=${page + 1}`}
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:border-green-400 text-gray-600"
                 >
-                  Next →
+                  {t('my_skills_next')}
                 </Link>
               )}
             </div>
