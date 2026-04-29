@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useToast } from '@/components/ui/toast'
 import { RatingForm } from '@/components/ui/rating-form'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -26,23 +27,9 @@ const STATUS_STYLES: Record<string, string> = {
 
 const TERMINAL = ['rejected', 'returned', 'cancelled']
 
-const ACTION_LABEL: Record<string, string> = {
-  approve: 'approved',
-  reject:  'rejected',
-  return:  'returned',
-  cancel:  'cancelled',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  pending:   'Pending',
-  approved:  'Approved',
-  rejected:  'Rejected',
-  returned:  'Returned',
-  cancelled: 'Cancelled',
-}
-
-
 export default function ReservationCard({ reservation, viewerId }: Props) {
+  const t = useTranslations('my_reservations')
+  const tCommon = useTranslations('common')
   const [error, setError]               = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -53,7 +40,22 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
   const isOwner    = reservation.ownerId    === viewerId
   const isTerminal = TERMINAL.includes(reservation.status)
   const ratedUserId = isBorrower ? reservation.ownerId : reservation.borrowerId
-  const ratedUserName = isBorrower ? 'tool owner' : 'borrower'
+  const ratedUserName = isBorrower ? t('tool_owner_name') : t('borrower_name')
+
+  const STATUS_LABEL: Record<string, string> = {
+    pending:   tCommon('status.pending'),
+    approved:  tCommon('status.approved'),
+    rejected:  tCommon('status.rejected'),
+    returned:  tCommon('status.returned'),
+    cancelled: tCommon('status.cancelled'),
+  }
+
+  const ACTION_LABEL: Record<string, string> = {
+    approve: tCommon('status.approved'),
+    reject:  tCommon('status.rejected'),
+    return:  tCommon('status.returned'),
+    cancel:  tCommon('status.cancelled'),
+  }
 
   const ratingCheckQuery = useQuery({
     queryKey: queryKeys.ratings.check(viewerId, 'tool_reservation', reservation.id),
@@ -79,25 +81,24 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
       await action.mutateAsync({ reservationId: reservation.id, action: act, cancellationReason: reason })
       setCancelPrompt(false)
       setCancelReason('')
-      showToast({ variant: 'success', title: 'Reservation updated', message: `Status: ${ACTION_LABEL[act] ?? act}.` })
+      showToast({ variant: 'success', title: t('toast_updated'), message: t('toast_message', { status: ACTION_LABEL[act] ?? act }) })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(err instanceof Error ? err.message : tCommon('error'))
     }
   }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
-      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <Link
             href={`/tools/${reservation.toolId}`}
             className="font-semibold text-gray-900 hover:text-green-700 hover:underline"
           >
-            {reservation.toolTitle ?? 'Unknown tool'}
+            {reservation.toolTitle ?? t('unknown_tool')}
           </Link>
           <p className="text-xs text-gray-400 mt-0.5">
-            {isBorrower ? 'You are borrowing' : 'Requested by borrower'}
+            {isBorrower ? t('context_borrowing') : t('context_by_borrower')}
           </p>
         </div>
         <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[reservation.status] ?? STATUS_STYLES.cancelled}`}>
@@ -105,14 +106,13 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
         </span>
       </div>
 
-      {/* Details */}
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
         <div>
-          <dt className="text-xs text-gray-400">From</dt>
+          <dt className="text-xs text-gray-400">{t('field_from')}</dt>
           <dd className="font-medium">{sharedFormatDate(reservation.startDate)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-gray-400">Until</dt>
+          <dt className="text-xs text-gray-400">{t('field_until')}</dt>
           <dd className="font-medium">{sharedFormatDate(reservation.endDate)}</dd>
         </div>
       </dl>
@@ -123,7 +123,7 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
 
       {reservation.cancellationReason && (
         <p className="text-sm text-gray-400 mb-3">
-          <span className="font-medium text-gray-500">Reason:</span> {reservation.cancellationReason}
+          <span className="font-medium text-gray-500">{t('reason_prefix')}</span> {reservation.cancellationReason}
         </p>
       )}
 
@@ -133,10 +133,8 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
         </p>
       )}
 
-      {/* Actions */}
       {!isTerminal && !cancelPrompt && (
         <div className="flex flex-wrap gap-2">
-          {/* Owner: approve/reject pending */}
           {isOwner && reservation.status === 'pending' && (
             <>
               <button
@@ -144,47 +142,44 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
                 disabled={action.isPending}
                 className="px-3 py-1.5 bg-green-700 text-white rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
               >
-                Approve
+                {t('confirm_approve_label')}
               </button>
               <button
                 onClick={() => setConfirmAction('reject')}
                 disabled={action.isPending}
                 className="px-3 py-1.5 border border-red-300 text-red-600 rounded-md text-sm font-medium hover:bg-red-50 disabled:opacity-50 transition-colors"
               >
-                Reject
+                {t('confirm_reject_label')}
               </button>
             </>
           )}
 
-          {/* Borrower: return approved */}
           {isBorrower && reservation.status === 'approved' && (
             <button
               onClick={() => setConfirmAction('return')}
               disabled={action.isPending}
               className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              Mark returned
+              {t('confirm_return_label')}
             </button>
           )}
 
-          {/* Cancel: borrower can cancel pending/approved; owner can cancel approved */}
           {((isBorrower && ['pending', 'approved'].includes(reservation.status)) ||
             (isOwner && reservation.status === 'approved')) && (
             <button
               onClick={() => setCancelPrompt(true)}
               className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {tCommon('cancel')}
             </button>
           )}
         </div>
       )}
 
-      {/* Cancel reason form */}
       {cancelPrompt && (
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Reason for cancellation (optional)
+            {t('cancel_reason_label')}
           </label>
           <textarea
             value={cancelReason}
@@ -199,13 +194,13 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
               disabled={action.isPending}
               className="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
-              {action.isPending ? '…' : 'Confirm cancel'}
+              {action.isPending ? '…' : t('cancel_confirm')}
             </button>
             <button
               onClick={() => { setCancelPrompt(false); setCancelReason('') }}
               className="px-3 py-1.5 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
             >
-              Back
+              {tCommon('back')}
             </button>
           </div>
         </div>
@@ -214,22 +209,22 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
       <ConfirmDialog
         open={confirmAction !== null}
         title={
-          confirmAction === 'approve' ? 'Approve this reservation?' :
-          confirmAction === 'reject'  ? 'Decline this reservation?' :
-          'Mark as returned?'
+          confirmAction === 'approve' ? t('confirm_approve_title') :
+          confirmAction === 'reject'  ? t('confirm_reject_title') :
+          t('confirm_return_title')
         }
         description={
-          confirmAction === 'reject' ? 'The slot will reopen for other borrowers.' :
-          confirmAction === 'return' ? 'This confirms the tool has been returned.' :
+          confirmAction === 'reject' ? t('confirm_reject_desc') :
+          confirmAction === 'return' ? t('confirm_return_desc') :
           undefined
         }
         confirmLabel={
-          confirmAction === 'approve' ? 'Approve' :
-          confirmAction === 'reject'  ? 'Decline' :
-          'Mark returned'
+          confirmAction === 'approve' ? t('confirm_approve_label') :
+          confirmAction === 'reject'  ? t('confirm_reject_label') :
+          t('confirm_return_label')
         }
         confirmVariant={confirmAction === 'reject' ? 'danger' : 'primary'}
-        onConfirm={() => { handleAction(confirmAction!); setConfirmAction(null) }}
+        onConfirm={() => { void handleAction(confirmAction!); setConfirmAction(null) }}
         onCancel={() => setConfirmAction(null)}
         busy={action.isPending}
       />
@@ -237,7 +232,7 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
       {reservation.status === 'returned' && !ratingCheckQuery.isLoading && (
         ratingCheckQuery.data?.hasRated ? (
           <p className="text-xs mt-3 text-amber-700 font-medium">
-            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+            {t('you_rated', { name: ratedUserName, score: ratingCheckQuery.data.existingRating?.score ?? '—' })}
           </p>
         ) : (
           <RatingForm

@@ -1,25 +1,30 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { SkillRequestRow } from '@/lib/queries/skill-requests'
 import { formatDateTime, formatMeetingType } from '@/lib/format'
 
 export function RequestCardDetails({ request }: { request: SkillRequestRow }) {
+  const t = useTranslations('my_requests')
+
   return (
     <>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4">
         <div>
-          <dt className="text-gray-400 text-xs">Start</dt>
+          <dt className="text-gray-400 text-xs">{t('field_start')}</dt>
           <dd className="text-gray-700">{formatDateTime(request.scheduledStart)}</dd>
         </div>
         <div>
-          <dt className="text-gray-400 text-xs">End</dt>
+          <dt className="text-gray-400 text-xs">{t('field_end')}</dt>
           <dd className="text-gray-700">{formatDateTime(request.scheduledEnd)}</dd>
         </div>
         <div>
-          <dt className="text-gray-400 text-xs">Meeting</dt>
+          <dt className="text-gray-400 text-xs">{t('field_meeting')}</dt>
           <dd className="text-gray-700">{formatMeetingType(request.meetingType)}</dd>
         </div>
         {request.meetingUrl && (
           <div>
-            <dt className="text-gray-400 text-xs">Link</dt>
+            <dt className="text-gray-400 text-xs">{t('field_link')}</dt>
             <dd>
               <a
                 href={request.meetingUrl}
@@ -27,7 +32,7 @@ export function RequestCardDetails({ request }: { request: SkillRequestRow }) {
                 rel="noopener noreferrer"
                 className="text-green-700 hover:underline text-sm truncate block max-w-[180px]"
               >
-                Open link
+                {t('open_link')}
               </a>
             </dd>
           </div>
@@ -42,7 +47,7 @@ export function RequestCardDetails({ request }: { request: SkillRequestRow }) {
 
       {request.cancellationReason && (
         <p className="text-sm text-red-500 mb-3">
-          Cancellation reason: {request.cancellationReason}
+          {t('cancellation_prefix', { reason: request.cancellationReason })}
         </p>
       )}
     </>

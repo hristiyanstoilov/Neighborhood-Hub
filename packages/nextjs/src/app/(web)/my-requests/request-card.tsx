@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import type { SkillRequestRow } from '@/lib/queries/skill-requests'
 import { useToast } from '@/components/ui/toast'
 import { RatingForm } from '@/components/ui/rating-form'
@@ -30,6 +31,8 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 export default function RequestCard({ request, viewerId, role }: Props) {
+  const t = useTranslations('my_requests')
+  const tCommon = useTranslations('common')
   const [error, setError] = useState<string | null>(null)
   const [cancelPrompt, setCancelPrompt] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -39,8 +42,15 @@ export default function RequestCard({ request, viewerId, role }: Props) {
   const isRequester = request.userFromId === viewerId
   const otherName = isOwner ? request.requesterName : request.ownerName
   const ratedUserId = isOwner ? request.userFromId : request.userToId
-  const ratedUserName = otherName ?? 'neighbor'
+  const ratedUserName = otherName ?? t('rated_neighbor')
   const TERMINAL = ['rejected', 'completed', 'cancelled']
+
+  const statusLabels: Record<string, string> = {
+    accepted:  t('status_accepted'),
+    rejected:  tCommon('status.rejected'),
+    completed: tCommon('status.completed'),
+    cancelled: tCommon('status.cancelled'),
+  }
 
   const ratingCheckQuery = useQuery({
     queryKey: queryKeys.ratings.check(viewerId, 'skill_request', request.id),
@@ -68,8 +78,8 @@ export default function RequestCard({ request, viewerId, role }: Props) {
       setCancelReason('')
       showToast({
         variant: 'success',
-        title: 'Request updated',
-        message: `The request is now ${nextStatus}.`,
+        title: t('toast_updated'),
+        message: t('toast_message', { status: statusLabels[nextStatus] ?? nextStatus }),
       })
     },
     onErrorMessage: (message) => {
@@ -127,7 +137,7 @@ export default function RequestCard({ request, viewerId, role }: Props) {
       {request.status === 'completed' && !ratingCheckQuery.isLoading && (
         ratingCheckQuery.data?.hasRated ? (
           <p className="text-xs mt-3 text-amber-700 font-medium">
-            You rated {ratedUserName} {ratingCheckQuery.data.existingRating?.score ?? '—'} ★
+            {t('you_rated', { name: ratedUserName, score: ratingCheckQuery.data.existingRating?.score ?? '—' })}
           </p>
         ) : (
           <RatingForm
