@@ -363,6 +363,16 @@ Rules:
 - TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; namespaces: `skills`, `skillRequests`, `tools`, `events`, `drives`, `food`, `ratings`, `search`, `notifications`, `profile`, `chat`, `feed`, `directMessages`; keys are always arrays starting with a domain string; user-scoped keys include `userId`; infinite query keys must NOT include pagination params (page/offset/limit); default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
 - Status formatting: use helpers from `src/lib/format.ts` (`eventStatusClass`, `rsvpStatusClass`, `driveStatusClass`, `pledgeStatusClass`, `formatEventStatus`, `humanizeValue`) — do not add inline status color maps to screens
 
+### Internationalisation (next-intl)
+- Locale files: `packages/nextjs/messages/en.json` and `messages/bg.json` — **all user-visible strings must live here**, no hardcoded English in JSX
+- Cookie-based locale switching (no URL restructuring); `src/i18n/request.ts` reads the `locale` cookie; `src/i18n/routing.ts` declares `locales: ['en', 'bg']`
+- Server components: `const t = await getTranslations('namespace')` (from `next-intl/server`)
+- Client components: `const t = useTranslations('namespace')` hook
+- Module-level constants that call `t()` must be defined **inside** the component/function body after `getTranslations()`/`useTranslations()` — never at module scope
+- Shared status strings live in `common.status.*` — reuse `tCommon('status.cancelled')` etc. rather than duplicating per namespace
+- Parameterised strings use ICU message format: `{count, plural, one {# item} other {# items}}`
+- LanguageSwitcher in nav (EN/БГ toggle) sets cookie and reloads — component at `src/components/language-switcher.tsx`
+
 ### Mobile (Expo 54)
 - Screens in `packages/mobile/app/(app)/` (authenticated) and `packages/mobile/app/(auth)/` (login/register)
 - Use Expo Router for navigation
