@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
@@ -10,19 +11,6 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Community Drives',
   description: 'Support local collection drives and help neighbors in need.',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Open',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  items: 'Items',
-  food: 'Food',
-  money: 'Money',
-  other: 'Other',
 }
 
 const TYPE_ICONS: Record<string, AppIconName> = {
@@ -53,6 +41,8 @@ export default async function DrivesPage({
 }: {
   searchParams: Promise<{ status?: string; driveType?: string; page?: string }>
 }) {
+  const t = await getTranslations('drives')
+  const tCommon = await getTranslations('common')
   const { status, driveType, page: rawPage } = await searchParams
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
 
@@ -77,13 +67,26 @@ export default async function DrivesPage({
   const totalPages = Math.max(1, Math.ceil(total / 20))
   const activeStatus = status ?? 'open'
 
+  const statusLabels: Record<string, string> = {
+    open:      t('status_open'),
+    completed: tCommon('status.completed'),
+    cancelled: tCommon('status.cancelled'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    items: t('type_items'),
+    food:  t('type_food'),
+    money: t('type_money'),
+    other: t('type_other'),
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Community Drives</h1>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {total} drive{total !== 1 ? 's' : ''} found
+            {t('drives_count', { total })}
           </p>
         </div>
         {isLoggedIn && (
@@ -91,13 +94,13 @@ export default async function DrivesPage({
             href="/drives/new"
             className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
           >
-            + Start a drive
+            {t('start_drive')}
           </Link>
         )}
       </div>
 
       <div className="flex gap-2 mb-3 flex-wrap">
-        {['open', 'completed', 'cancelled'].map((s) => (
+        {(['open', 'completed', 'cancelled'] as const).map((s) => (
           <Link
             key={s}
             href={`/drives?status=${s}${driveType ? `&driveType=${driveType}` : ''}`}
@@ -107,7 +110,7 @@ export default async function DrivesPage({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {STATUS_LABELS[s]}
+            {statusLabels[s]}
           </Link>
         ))}
       </div>
@@ -119,9 +122,9 @@ export default async function DrivesPage({
             !driveType ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
           }`}
         >
-          All types
+          {t('all_types')}
         </Link>
-        {['items', 'food', 'money', 'other'].map((type) => (
+        {(['items', 'food', 'money', 'other'] as const).map((type) => (
           <Link
             key={type}
             href={`/drives?status=${activeStatus}&driveType=${type}`}
@@ -131,7 +134,7 @@ export default async function DrivesPage({
           >
             <span className="inline-flex items-center gap-1.5">
               <AppIcon name={TYPE_ICONS[type]} size={12} />
-              <span>{TYPE_LABELS[type]}</span>
+              <span>{typeLabels[type]}</span>
             </span>
           </Link>
         ))}
@@ -139,14 +142,14 @@ export default async function DrivesPage({
 
       {drives.length === 0 ? (
         <div className="text-center py-24 text-gray-400">
-          <p className="text-lg mb-1">No drives here yet.</p>
+          <p className="text-lg mb-1">{t('empty_title')}</p>
           {isLoggedIn ? (
             <Link href="/drives/new" className="text-sm text-green-700 hover:underline">
-              Start the first one →
+              {t('start_first')}
             </Link>
           ) : (
             <Link href="/login?next=/drives/new" className="text-sm text-green-700 hover:underline">
-              Log in to start one →
+              {t('login_to_start')}
             </Link>
           )}
         </div>
@@ -163,7 +166,7 @@ export default async function DrivesPage({
                 <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[drive.driveType] ?? 'bg-gray-100 text-gray-600'}`}>
                   <span className="inline-flex items-center gap-1">
                     <AppIcon name={TYPE_ICONS[drive.driveType] ?? 'drives'} size={12} />
-                    <span>{TYPE_LABELS[drive.driveType] ?? drive.driveType}</span>
+                    <span>{typeLabels[drive.driveType] ?? drive.driveType}</span>
                   </span>
                 </span>
               </div>
@@ -177,9 +180,9 @@ export default async function DrivesPage({
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>by {drive.organizerName ?? 'Anonymous'}</span>
+                <span>{t('by_organizer', { name: drive.organizerName ?? t('anonymous') })}</span>
                 <div className="flex items-center gap-3">
-                  {drive.deadline && <span>Deadline: {formatDeadline(drive.deadline)}</span>}
+                  {drive.deadline && <span>{t('deadline_label', { date: formatDeadline(drive.deadline)! })}</span>}
                   <span className={`px-2 py-0.5 rounded-full ${
                     drive.status === 'open'
                       ? 'bg-green-100 text-green-700'
@@ -187,7 +190,7 @@ export default async function DrivesPage({
                         ? 'bg-red-100 text-red-600'
                         : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {STATUS_LABELS[drive.status] ?? drive.status}
+                    {statusLabels[drive.status] ?? drive.status}
                   </span>
                 </div>
               </div>
@@ -203,18 +206,18 @@ export default async function DrivesPage({
               href={`/drives?status=${activeStatus}${driveType ? `&driveType=${driveType}` : ''}&page=${page - 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
-              ← Previous
+              {t('prev')}
             </Link>
           )}
           <span className="px-4 py-2 text-sm text-gray-500">
-            Page {page} of {totalPages}
+            {t('page_of', { page, total: totalPages })}
           </span>
           {page < totalPages && (
             <Link
               href={`/drives?status=${activeStatus}${driveType ? `&driveType=${driveType}` : ''}&page=${page + 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
-              Next →
+              {t('next')}
             </Link>
           )}
         </div>

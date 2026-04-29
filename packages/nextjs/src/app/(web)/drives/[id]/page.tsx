@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { queryDriveById, queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import PledgeSection from './pledge-section'
@@ -20,19 +21,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   } catch { return {} }
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  items: 'Items',
-  food:  'Food',
-  money: 'Money',
-  other: 'Other',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  open:      'Open',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
-
 function formatDeadline(d: Date | null) {
   if (!d) return null
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -44,6 +32,8 @@ export default async function DriveDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const t = await getTranslations('drives')
+  const tCommon = await getTranslations('common')
 
   let drive = null
   let fetchError = false
@@ -79,20 +69,33 @@ export default async function DriveDetailPage({
     return (
       <div className="max-w-2xl">
         <Link href="/drives" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-          ← Back to Drives
+          {t('back')}
         </Link>
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load this drive.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
+          <p className="text-lg mb-2">{t('detail_error_title')}</p>
+          <p className="text-sm">{t('detail_error_message')}</p>
         </div>
       </div>
     )
   }
 
+  const statusLabels: Record<string, string> = {
+    open:      t('status_open'),
+    completed: tCommon('status.completed'),
+    cancelled: tCommon('status.cancelled'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    items: t('type_items'),
+    food:  t('type_food'),
+    money: t('type_money'),
+    other: t('type_other'),
+  }
+
   return (
     <div className="max-w-2xl">
       <Link href="/drives" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-        ← Back to Drives
+        {t('back')}
       </Link>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -116,7 +119,7 @@ export default async function DriveDetailPage({
                 ? 'bg-red-100 text-red-600'
                 : 'bg-gray-100 text-gray-500'
             }`}>
-              {STATUS_LABELS[drive!.status] ?? drive!.status}
+              {statusLabels[drive!.status] ?? drive!.status}
             </span>
           </div>
 
@@ -126,37 +129,37 @@ export default async function DriveDetailPage({
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Type</dt>
-              <dd className="font-medium">{TYPE_LABELS[drive!.driveType] ?? drive!.driveType}</dd>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_type')}</dt>
+              <dd className="font-medium">{typeLabels[drive!.driveType] ?? drive!.driveType}</dd>
             </div>
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_organised_by')}</dt>
               <dd className="font-medium">
                 <Link href={`/users/${drive!.organizerId}`} className="hover:text-green-700 hover:underline">
-                  {drive!.organizerName ?? 'Anonymous'}
+                  {drive!.organizerName ?? t('anonymous')}
                 </Link>
               </dd>
             </div>
             {drive!.goalDescription && (
               <div className="col-span-2">
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Goal</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_goal')}</dt>
                 <dd className="font-medium">{drive!.goalDescription}</dd>
               </div>
             )}
             {drive!.dropOffAddress && (
               <div className="col-span-2">
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Drop-off address</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_dropoff')}</dt>
                 <dd className="font-medium">{drive!.dropOffAddress}</dd>
               </div>
             )}
             {drive!.deadline && (
               <div>
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Deadline</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_deadline')}</dt>
                 <dd className="font-medium">{formatDeadline(drive!.deadline)}</dd>
               </div>
             )}
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Pledges</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_pledges')}</dt>
               <dd className="font-medium">{drive!.pledgeCount}</dd>
             </div>
           </dl>

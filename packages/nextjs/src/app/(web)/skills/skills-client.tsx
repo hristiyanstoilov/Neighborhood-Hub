@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { EmptyState, ErrorState } from '@/components/ui/async-states'
 import { SkillsFilters } from './_components/skills-filters'
 import { SkillsGrid } from './_components/skills-grid'
@@ -30,6 +31,7 @@ export function SkillsClient({
   locations,
   initialData,
 }: SkillsClientProps) {
+  const t = useTranslations('skills')
   const query = useSkillsList({ status, search, categoryId, locationId, page }, initialData)
   const skills = query.data?.skills ?? []
   const total = query.data?.total ?? 0
@@ -41,12 +43,12 @@ export function SkillsClient({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Skills</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <Link
           href="/skills/new"
           className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
         >
-          + Offer a skill
+          {t('offer_skill')}
         </Link>
       </div>
 
@@ -64,16 +66,16 @@ export function SkillsClient({
         <SkillsLoadingState />
       ) : query.isError ? (
         <ErrorState
-          title="Could not load skills."
-          message="Please try again."
-          actionLabel="Try again"
+          title={t('error_title')}
+          message={t('error_message')}
+          actionLabel={t('try_again')}
           actionHref={buildHref({})}
         />
       ) : skills.length === 0 ? (
         <EmptyState
-          title="No skills found."
-          message={status || search || categoryId || locationId ? undefined : 'Be the first to offer a skill in your neighborhood.'}
-          actionLabel={status || search || categoryId || locationId ? 'Clear filters' : undefined}
+          title={t('empty_title')}
+          message={status || search || categoryId || locationId ? undefined : t('empty_message')}
+          actionLabel={status || search || categoryId || locationId ? t('clear_filters') : undefined}
           actionHref={status || search || categoryId || locationId ? '/skills' : undefined}
         />
       ) : (

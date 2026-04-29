@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
@@ -16,6 +17,8 @@ interface Props {
 export default function RsvpButton({ eventId, organizerId, status, initialRsvpStatus }: Props) {
   const { user, loading } = useAuth()
   const { showToast } = useToast()
+  const t = useTranslations('events')
+  const tCommon = useTranslations('common')
   const [rsvpStatus, setRsvpStatus] = useState(initialRsvpStatus)
   const [busy, setBusy] = useState(false)
 
@@ -27,21 +30,21 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
         href={`/login?next=/events/${eventId}`}
         className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
       >
-        Log in to RSVP
+        {t('login_to_rsvp')}
       </Link>
     )
   }
 
   if (user.id === organizerId) {
-    return <p className="text-center text-sm text-gray-400 py-2">You are the organiser of this event.</p>
+    return <p className="text-center text-sm text-gray-400 py-2">{t('you_are_organizer')}</p>
   }
 
   if (status === 'cancelled') {
-    return <p className="text-center text-sm text-gray-400 py-2">This event has been cancelled.</p>
+    return <p className="text-center text-sm text-gray-400 py-2">{t('event_cancelled')}</p>
   }
 
   if (status === 'completed') {
-    return <p className="text-center text-sm text-gray-400 py-2">This event has already taken place.</p>
+    return <p className="text-center text-sm text-gray-400 py-2">{t('event_completed')}</p>
   }
 
   async function handleRsvp() {
@@ -51,17 +54,17 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
       const json = await res.json()
       if (!res.ok) {
         const msg: Record<string, string> = {
-          EVENT_FULL: 'This event is full.',
-          EVENT_NOT_OPEN: 'This event is no longer accepting RSVPs.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait.',
+          EVENT_FULL:        t('errors.event_full'),
+          EVENT_NOT_OPEN:    t('errors.event_not_open'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
         }
-        showToast({ variant: 'error', title: 'RSVP failed', message: msg[json.error] ?? 'Something went wrong.' })
+        showToast({ variant: 'error', title: t('rsvp_failed_title'), message: msg[json.error] ?? t('errors.unexpected') })
         return
       }
       setRsvpStatus('attending')
-      showToast({ variant: 'success', title: "You're going!", message: 'Your RSVP has been confirmed.' })
+      showToast({ variant: 'success', title: t('rsvp_success_title'), message: t('rsvp_success_message') })
     } catch {
-      showToast({ variant: 'error', title: 'Network error', message: 'Please check your connection.' })
+      showToast({ variant: 'error', title: tCommon('error'), message: t('errors.network') })
     } finally {
       setBusy(false)
     }
@@ -72,13 +75,13 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
     try {
       const res = await apiFetch(`/api/events/${eventId}/rsvp`, { method: 'DELETE' })
       if (!res.ok) {
-        showToast({ variant: 'error', title: 'Could not cancel', message: 'Please try again.' })
+        showToast({ variant: 'error', title: tCommon('error'), message: tCommon('error') })
         return
       }
       setRsvpStatus('cancelled')
-      showToast({ variant: 'success', title: 'RSVP cancelled', message: "You've cancelled your attendance." })
+      showToast({ variant: 'success', title: t('rsvp_cancelled_title'), message: t('rsvp_cancelled_message') })
     } catch {
-      showToast({ variant: 'error', title: 'Network error', message: 'Please check your connection.' })
+      showToast({ variant: 'error', title: tCommon('error'), message: t('errors.network') })
     } finally {
       setBusy(false)
     }
@@ -88,7 +91,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
     return (
       <div className="space-y-2">
         <p className="text-center text-sm font-medium text-green-700 py-1">
-          ✓ You are attending this event
+          {t('attending')}
         </p>
         <button
           type="button"
@@ -96,7 +99,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
           disabled={busy}
           className="w-full border border-gray-300 text-gray-600 rounded-md py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
-          {busy ? 'Cancelling…' : 'Cancel my RSVP'}
+          {busy ? t('cancelling') : t('cancel_rsvp')}
         </button>
       </div>
     )
@@ -109,7 +112,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
       disabled={busy}
       className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
     >
-      {busy ? 'Saving…' : rsvpStatus === 'cancelled' ? 'Re-RSVP to this event' : 'RSVP to this event'}
+      {busy ? t('saving') : rsvpStatus === 'cancelled' ? t('re_rsvp_btn') : t('rsvp_btn')}
     </button>
   )
 }

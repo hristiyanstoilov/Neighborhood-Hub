@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { BuildHref } from './types'
 
 type SkillsFiltersProps = {
@@ -20,12 +21,14 @@ export function SkillsFilters({
   locations,
   buildHref,
 }: SkillsFiltersProps) {
+  const t = useTranslations('skills')
+  const tCommon = useTranslations('common')
   return (
     <>
       <div className="flex flex-wrap gap-3 mb-6">
-        <form method="GET" action="/skills" className="flex-1 min-w-48" role="search" aria-label="Search skills">
+        <form method="GET" action="/skills" className="flex-1 min-w-48" role="search" aria-label={t('search_label')}>
           <label htmlFor="skill-search" className="sr-only">
-            Search skills
+            {t('search_label')}
           </label>
           <div className="relative">
             <input
@@ -33,7 +36,7 @@ export function SkillsFilters({
               name="search"
               type="text"
               defaultValue={search ?? ''}
-              placeholder="Search skills…"
+              placeholder={t('search_placeholder')}
               maxLength={100}
               className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
@@ -68,7 +71,7 @@ export function SkillsFilters({
                 : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
             }`}
           >
-            All categories
+            {t('all_categories')}
           </Link>
           {categories.map((c) => (
             <Link
@@ -98,7 +101,7 @@ export function SkillsFilters({
                 : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
             }`}
           >
-            All locations
+            {t('all_locations')}
           </Link>
           {locations.map((l) => (
             <Link
@@ -119,9 +122,9 @@ export function SkillsFilters({
 
       <div className="flex gap-2 mb-6" aria-label="Status filters">
         {[
-          { label: 'All', value: undefined },
-          { label: 'Available', value: 'available' },
-          { label: 'Busy', value: 'busy' },
+          { label: tCommon('all'), value: undefined },
+          { label: tCommon('status.available'), value: 'available' },
+          { label: tCommon('status.busy'), value: 'busy' },
         ].map(({ label, value }) => (
           <Link
             key={label}

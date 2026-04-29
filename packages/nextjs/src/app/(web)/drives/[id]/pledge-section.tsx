@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
@@ -26,6 +27,7 @@ interface Props {
 export default function PledgeSection({ driveId, organizerId, driveStatus, initialPledge, pledges: initialPledges }: Props) {
   const { user, loading } = useAuth()
   const { showToast } = useToast()
+  const t = useTranslations('drives')
   const [pledge, setPledge] = useState(initialPledge)
   const [pledges] = useState(initialPledges)
   const [description, setDescription] = useState('')
@@ -39,7 +41,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
 
   async function handlePledge(e: React.FormEvent) {
     e.preventDefault()
-    if (!description.trim()) { setFormError('Please describe what you are pledging.'); return }
+    if (!description.trim()) { setFormError(t('errors.description_required')); return }
     setFormError(null)
     setBusy(true)
     try {
@@ -50,18 +52,18 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
       const json = await res.json()
       if (!res.ok) {
         const msg: Record<string, string> = {
-          DRIVE_NOT_OPEN:          'This drive is no longer accepting pledges.',
-          CANNOT_PLEDGE_OWN_DRIVE: 'You cannot pledge to your own drive.',
-          TOO_MANY_REQUESTS:       'Too many attempts. Please wait.',
+          DRIVE_NOT_OPEN:          t('errors.drive_not_open'),
+          CANNOT_PLEDGE_OWN_DRIVE: t('errors.cannot_pledge_own'),
+          TOO_MANY_REQUESTS:       t('errors.too_many_requests'),
         }
-        setFormError(msg[json.error] ?? 'Something went wrong.')
+        setFormError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
       setPledge({ id: json.data.id, status: 'pledged', pledgeDescription: description.trim() })
       setDescription('')
-      showToast({ variant: 'success', title: 'Pledge received!', message: 'Thank you for your contribution.' })
+      showToast({ variant: 'success', title: t('pledge_success_title'), message: t('pledge_success_message') })
     } catch {
-      setFormError('Network error. Please check your connection.')
+      setFormError(t('errors.network'))
     } finally {
       setBusy(false)
     }
@@ -76,13 +78,13 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
         body: JSON.stringify({ status: 'cancelled' }),
       })
       if (!res.ok) {
-        showToast({ variant: 'error', title: 'Could not cancel', message: 'Please try again.' })
+        showToast({ variant: 'error', title: t('errors.unexpected'), message: t('errors.network') })
         return
       }
       setPledge({ ...pledge, status: 'cancelled' })
-      showToast({ variant: 'success', title: 'Pledge cancelled', message: 'Your pledge has been removed.' })
+      showToast({ variant: 'success', title: t('pledge_cancelled_title'), message: t('pledge_cancelled_message') })
     } catch {
-      showToast({ variant: 'error', title: 'Network error', message: 'Please check your connection.' })
+      showToast({ variant: 'error', title: t('errors.unexpected'), message: t('errors.network') })
     } finally {
       setBusy(false)
     }
@@ -94,7 +96,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
       {pledges.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-700 mb-3">
-            Pledges ({pledges.filter(p => p.status !== 'cancelled').length})
+            {t('pledges_count', { count: pledges.filter(p => p.status !== 'cancelled').length })}
           </h2>
           <ul className="space-y-2">
             {pledges.map((p) => (
@@ -108,11 +110,11 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
                     : 'bg-white border-gray-200'
                 }`}
               >
-                <span className="font-medium">{p.userName ?? 'Anonymous'}</span>
+                <span className="font-medium">{p.userName ?? t('anonymous')}</span>
                 {' — '}
                 {p.pledgeDescription}
                 {p.status === 'fulfilled' && (
-                  <span className="ml-2 text-xs text-green-600 font-medium">✓ fulfilled</span>
+                  <span className="ml-2 text-xs text-green-600 font-medium">{t('pledge_fulfilled')}</span>
                 )}
               </li>
             ))}
@@ -126,16 +128,16 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
           href={`/login?next=/drives/${driveId}`}
           className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
         >
-          Log in to pledge
+          {t('login_to_pledge')}
         </Link>
       )}
 
       {user && isOrganizer && (
-        <p className="text-center text-sm text-gray-400 py-2">You are the organiser of this drive.</p>
+        <p className="text-center text-sm text-gray-400 py-2">{t('you_are_organizer')}</p>
       )}
 
       {user && !isOrganizer && !isOpen && (
-        <p className="text-center text-sm text-gray-400 py-2">This drive is no longer accepting pledges.</p>
+        <p className="text-center text-sm text-gray-400 py-2">{t('drive_closed')}</p>
       )}
 
       {user && !isOrganizer && isOpen && (
@@ -143,7 +145,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
           {pledge?.status === 'pledged' ? (
             <div className="space-y-2">
               <div className="bg-green-50 border border-green-200 rounded-md px-4 py-3 text-sm">
-                <p className="font-medium text-green-800 mb-0.5">Your pledge</p>
+                <p className="font-medium text-green-800 mb-0.5">{t('your_pledge')}</p>
                 <p className="text-green-700">{pledge.pledgeDescription}</p>
               </div>
               <button
@@ -152,14 +154,14 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
                 disabled={busy}
                 className="w-full border border-gray-300 text-gray-600 rounded-md py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
-                {busy ? 'Cancelling…' : 'Cancel my pledge'}
+                {busy ? t('cancelling') : t('cancel_pledge')}
               </button>
             </div>
           ) : (
             <form onSubmit={handlePledge} className="space-y-3">
               <div>
                 <label htmlFor="pledge-desc" className="block text-sm font-medium text-gray-700 mb-1">
-                  {pledge?.status === 'cancelled' ? 'Update your pledge' : 'Make a pledge'}
+                  {pledge?.status === 'cancelled' ? t('update_pledge_label') : t('make_pledge_label')}
                 </label>
                 <textarea
                   id="pledge-desc"
@@ -168,7 +170,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={500}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-                  placeholder="Describe what you are contributing (e.g. 5 winter coats)…"
+                  placeholder={t('pledge_placeholder')}
                 />
               </div>
               {formError && (
@@ -179,7 +181,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
                 disabled={busy}
                 className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
               >
-                {busy ? 'Saving…' : 'Pledge support'}
+                {busy ? t('saving') : t('pledge_btn')}
               </button>
             </form>
           )}

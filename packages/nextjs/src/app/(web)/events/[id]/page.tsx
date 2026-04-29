@@ -2,9 +2,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { queryEventById, queryUserRsvp } from '@/lib/queries/events'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RsvpButton from './rsvp-button'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +35,7 @@ export default async function EventDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const t = await getTranslations('events')
 
   let event = null
   let fetchError = false
@@ -63,11 +66,11 @@ export default async function EventDetailPage({
     return (
       <div className="max-w-2xl">
         <Link href="/events" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-          ← Back to Events
+          {t('back')}
         </Link>
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load this event.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
+          <p className="text-lg mb-2">{t('detail_error_title')}</p>
+          <p className="text-sm">{t('detail_error_message')}</p>
         </div>
       </div>
     )
@@ -78,7 +81,7 @@ export default async function EventDetailPage({
   return (
     <div className="max-w-2xl">
       <Link href="/events" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-        ← Back to Events
+        {t('back')}
       </Link>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -102,7 +105,7 @@ export default async function EventDetailPage({
                 ? 'bg-red-100 text-red-600'
                 : 'bg-gray-100 text-gray-500'
             }`}>
-              {event!.status === 'published' ? 'Upcoming' : event!.status}
+              {event!.status === 'published' ? t('status_upcoming') : event!.status}
             </span>
           </div>
 
@@ -112,18 +115,18 @@ export default async function EventDetailPage({
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Starts</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_starts')}</dt>
               <dd className="font-medium">{formatDate(event!.startsAt)}</dd>
             </div>
             {event!.endsAt && (
               <div>
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Ends</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_ends')}</dt>
                 <dd className="font-medium">{formatDate(event!.endsAt)}</dd>
               </div>
             )}
             {(event!.locationNeighborhood || event!.address) && (
               <div>
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_location')}</dt>
                 <dd className="font-medium">
                   {event!.locationNeighborhood
                     ? `${event!.locationNeighborhood}, ${event!.locationCity}`
@@ -132,7 +135,7 @@ export default async function EventDetailPage({
               </div>
             )}
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_organised_by')}</dt>
               <dd className="font-medium">
                 <Link href={`/users/${event!.organizerId}`} className="hover:text-green-700 hover:underline">
                   {event!.organizerName ?? 'Anonymous'}
@@ -140,7 +143,7 @@ export default async function EventDetailPage({
               </dd>
             </div>
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Attendees</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_attendees')}</dt>
               <dd className="font-medium">
                 {event!.attendeeCount}
                 {event!.maxCapacity ? ` / ${event!.maxCapacity}` : ''}
@@ -150,7 +153,7 @@ export default async function EventDetailPage({
 
           {isOrganizer && event!.status === 'published' && (
             <p className="text-xs text-gray-400 text-center mb-4">
-              You are the organiser — manage this event from your profile.
+              {t('organizer_note')}
             </p>
           )}
 
@@ -160,6 +163,12 @@ export default async function EventDetailPage({
             status={event!.status}
             initialRsvpStatus={rsvpStatus}
           />
+
+          {currentUserId && !isOrganizer && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+              <FlagButton entityType="event" entityId={event!.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>

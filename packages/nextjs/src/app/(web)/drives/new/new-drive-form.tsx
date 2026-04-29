@@ -3,11 +3,14 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
 
 export default function NewDriveForm() {
   const router = useRouter()
+  const t = useTranslations('drives')
+  const tCommon = useTranslations('common')
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -50,7 +53,7 @@ export default function NewDriveForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (uploading) {
-      setSubmitError('Please wait for the image to finish uploading.')
+      setSubmitError(t('form_upload_wait'))
       return
     }
     setSubmitError(null)
@@ -75,19 +78,19 @@ export default function NewDriveForm() {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          UNVERIFIED_EMAIL:  'Please verify your email before starting a drive.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-          VALIDATION_ERROR:  'Please check your inputs.',
-          UNAUTHORIZED:      'You must be logged in to start a drive.',
+          UNVERIFIED_EMAIL:  t('errors.unverified_email'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
+          VALIDATION_ERROR:  t('errors.validation'),
+          UNAUTHORIZED:      t('errors.unauthorized'),
         }
-        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
-      showToast({ variant: 'success', title: 'Drive started!', message: 'Your community drive is now live.' })
+      showToast({ variant: 'success', title: t('toast_started_title'), message: t('toast_started_message') })
       router.push(`/drives/${json.data.id}`)
     } catch {
-      setSubmitError('Network error. Please check your connection and try again.')
+      setSubmitError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -99,7 +102,7 @@ export default function NewDriveForm() {
 
         <div>
           <label htmlFor="drive-title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
+            {t('form_title_label')} <span className="text-red-500">*</span>
           </label>
           <input
             id="drive-title"
@@ -110,14 +113,14 @@ export default function NewDriveForm() {
             maxLength={200}
             onChange={(e) => setTitleLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="e.g. Winter coat collection, Food bank drive…"
+            placeholder={t('form_title_placeholder')}
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{titleLength}/200</p>
         </div>
 
         <div>
           <label htmlFor="drive-type" className="block text-sm font-medium text-gray-700 mb-1">
-            Type <span className="text-red-500">*</span>
+            {t('form_type_label')} <span className="text-red-500">*</span>
           </label>
           <select
             id="drive-type"
@@ -126,32 +129,32 @@ export default function NewDriveForm() {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             defaultValue=""
           >
-            <option value="" disabled>— Select type —</option>
-            <option value="items">Items</option>
-            <option value="food">Food</option>
-            <option value="money">Money</option>
-            <option value="other">Other</option>
+            <option value="" disabled>{t('form_type_placeholder')}</option>
+            <option value="items">{t('type_items')}</option>
+            <option value="food">{t('type_food')}</option>
+            <option value="money">{t('type_money')}</option>
+            <option value="other">{t('type_other')}</option>
           </select>
         </div>
 
         <div>
-          <label htmlFor="drive-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="drive-description" className="block text-sm font-medium text-gray-700 mb-1">{t('form_desc_label')}</label>
           <textarea
             id="drive-description"
             name="description"
             rows={3}
             maxLength={5000}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-            placeholder="Tell the community about this drive and why it matters…"
+            placeholder={t('form_desc_placeholder')}
           />
         </div>
 
         <div>
-          <label htmlFor="drive-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <label htmlFor="drive-image" className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
           {imageUrl && (
             <Image
               src={imageUrl}
-              alt="Drive image preview"
+              alt={t('form_image_preview_alt')}
               width={1200}
               height={600}
               unoptimized
@@ -166,20 +169,20 @@ export default function NewDriveForm() {
             disabled={uploading}
             className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
           />
-          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
-          <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
+          {uploading && <p className="text-xs text-gray-400 mt-1">{t('form_uploading')}</p>}
+          <p className="text-xs text-gray-400 mt-1">{t('form_image_hint')}</p>
           {uploadError && <p role="alert" className="mt-1 text-xs text-red-600">{uploadError}</p>}
           {uploadError && pendingImageFile && (
             <button type="button" onClick={() => void uploadImage(pendingImageFile)} disabled={uploading}
               className="mt-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50">
-              Retry upload
+              {t('form_retry_upload')}
             </button>
           )}
         </div>
 
         <div>
           <label htmlFor="drive-goal" className="block text-sm font-medium text-gray-700 mb-1">
-            Goal <span className="text-gray-400 font-normal">(optional)</span>
+            {t('form_goal_label')} <span className="text-gray-400 font-normal">{t('form_goal_optional')}</span>
           </label>
           <input
             id="drive-goal"
@@ -187,13 +190,13 @@ export default function NewDriveForm() {
             type="text"
             maxLength={500}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="e.g. Collect 100 winter coats for families in need"
+            placeholder={t('form_goal_placeholder')}
           />
         </div>
 
         <div>
           <label htmlFor="drive-address" className="block text-sm font-medium text-gray-700 mb-1">
-            Drop-off address <span className="text-gray-400 font-normal">(optional)</span>
+            {t('form_dropoff_label')} <span className="text-gray-400 font-normal">{t('form_dropoff_optional')}</span>
           </label>
           <input
             id="drive-address"
@@ -201,13 +204,13 @@ export default function NewDriveForm() {
             type="text"
             maxLength={300}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="Where should people drop off contributions?"
+            placeholder={t('form_dropoff_placeholder')}
           />
         </div>
 
         <div className="w-48">
           <label htmlFor="drive-deadline" className="block text-sm font-medium text-gray-700 mb-1">
-            Deadline <span className="text-gray-400 font-normal">(optional)</span>
+            {t('form_deadline_label')} <span className="text-gray-400 font-normal">{t('form_deadline_optional')}</span>
           </label>
           <input
             id="drive-deadline"
@@ -229,14 +232,14 @@ export default function NewDriveForm() {
             disabled={loading || uploading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Starting…' : 'Start drive'}
+            {loading ? t('form_starting') : t('form_start')}
           </button>
           <button
             type="button"
             onClick={() => router.push('/drives')}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
         </div>
       </form>

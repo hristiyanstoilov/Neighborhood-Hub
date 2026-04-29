@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { queryEventsPage } from '@/lib/queries/events'
 import { cookies } from 'next/headers'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
@@ -8,12 +9,6 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Community Events',
   description: 'Discover and join local events organised by your neighbors.',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  published: 'Upcoming',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
 }
 
 function formatDate(d: Date) {
@@ -28,6 +23,8 @@ export default async function EventsPage({
 }: {
   searchParams: Promise<{ status?: string; page?: string }>
 }) {
+  const t = await getTranslations('events')
+  const tCommon = await getTranslations('common')
   const { status, page: rawPage } = await searchParams
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
 
@@ -51,13 +48,19 @@ export default async function EventsPage({
 
   const totalPages = Math.max(1, Math.ceil(total / 20))
 
+  const statusLabels: Record<string, string> = {
+    published: t('status_upcoming'),
+    completed: tCommon('status.completed'),
+    cancelled: tCommon('status.cancelled'),
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Community Events</h1>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {total} event{total !== 1 ? 's' : ''} found
+            {t('events_count', { total })}
           </p>
         </div>
         {isLoggedIn && (
@@ -65,14 +68,14 @@ export default async function EventsPage({
             href="/events/new"
             className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
           >
-            + Create event
+            {t('create_event')}
           </Link>
         )}
       </div>
 
       {/* Filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        {['published', 'completed', 'cancelled'].map((s) => (
+        {(['published', 'completed', 'cancelled'] as const).map((s) => (
           <Link
             key={s}
             href={`/events?status=${s}`}
@@ -82,21 +85,21 @@ export default async function EventsPage({
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {STATUS_LABELS[s]}
+            {statusLabels[s]}
           </Link>
         ))}
       </div>
 
       {events.length === 0 ? (
         <div className="text-center py-24 text-gray-400">
-          <p className="text-lg mb-1">No events yet.</p>
+          <p className="text-lg mb-1">{t('empty_title')}</p>
           {isLoggedIn ? (
             <Link href="/events/new" className="text-sm text-green-700 hover:underline">
-              Be the first to create one →
+              {t('create_first')}
             </Link>
           ) : (
             <Link href="/login?next=/events/new" className="text-sm text-green-700 hover:underline">
-              Log in to create one →
+              {t('login_to_create')}
             </Link>
           )}
         </div>
@@ -117,7 +120,7 @@ export default async function EventsPage({
                     ? 'bg-red-100 text-red-600'
                     : 'bg-gray-100 text-gray-500'
                 }`}>
-                  {STATUS_LABELS[event.status] ?? event.status}
+                  {statusLabels[event.status] ?? event.status}
                 </span>
               </div>
 
@@ -138,9 +141,9 @@ export default async function EventsPage({
               )}
 
               <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>by {event.organizerName ?? 'Anonymous'}</span>
+                <span>{t('by_organizer', { name: event.organizerName ?? 'Anonymous' })}</span>
                 {event.maxCapacity && (
-                  <span>Max {event.maxCapacity} attendees</span>
+                  <span>{t('max_attendees', { count: event.maxCapacity })}</span>
                 )}
               </div>
             </Link>
@@ -156,18 +159,18 @@ export default async function EventsPage({
               href={`/events?status=${status ?? 'published'}&page=${page - 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
-              ← Previous
+              {t('prev')}
             </Link>
           )}
           <span className="px-4 py-2 text-sm text-gray-500">
-            Page {page} of {totalPages}
+            {t('page_of', { page, total: totalPages })}
           </span>
           {page < totalPages && (
             <Link
               href={`/events?status=${status ?? 'published'}&page=${page + 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
-              Next →
+              {t('next')}
             </Link>
           )}
         </div>
