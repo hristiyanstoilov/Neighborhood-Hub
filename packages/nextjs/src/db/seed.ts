@@ -209,7 +209,7 @@ async function seed() {
       role: 'user',
       emailVerifiedAt: now,
     },
-  ]).returning()
+  ]).onConflictDoNothing().returning()
 
   // ─── 6. Profiles ─────────────────────────────────────────────────────────
   console.log('Seeding demo profiles...')

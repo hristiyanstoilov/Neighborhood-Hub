@@ -52,7 +52,7 @@ export default function ReservationSection({
   const isOwner = currentUserId === ownerId
   const isOpen = foodShareStatus === 'available'
   const activeReservations = useMemo(
-    () => reservations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected'),
+    () => reservations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected' && r.status !== 'picked_up'),
     [reservations]
   )
 

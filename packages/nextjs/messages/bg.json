@@ -807,7 +807,9 @@
       "event_cancelled": "Събитие е анулирано",
       "drive_new_pledge": "Ново обещание за вашата инициатива",
       "drive_pledge_fulfilled": "Обещание е изпълнено",
-      "drive_completed": "Инициатива е завършена"
+      "drive_completed": "Инициатива е завършена",
+      "drive_pledge_cancelled": "Обещание е отменено",
+      "event_rsvp_cancelled": "Участник отмени своята регистрация"
     }
   },
   "footer": {

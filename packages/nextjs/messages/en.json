@@ -807,7 +807,9 @@
       "event_cancelled": "An event was cancelled",
       "drive_new_pledge": "New pledge for your drive",
       "drive_pledge_fulfilled": "A pledge was fulfilled",
-      "drive_completed": "A drive was completed"
+      "drive_completed": "A drive was completed",
+      "drive_pledge_cancelled": "A pledge was cancelled",
+      "event_rsvp_cancelled": "An attendee cancelled their RSVP"
     }
   },
   "footer": {

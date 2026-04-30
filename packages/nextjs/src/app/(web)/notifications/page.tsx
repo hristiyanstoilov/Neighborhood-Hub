@@ -141,7 +141,9 @@ export default async function NotificationsPage() {
     event_cancelled: t('types.event_cancelled'),
     drive_new_pledge: t('types.drive_new_pledge'),
     drive_pledge_fulfilled: t('types.drive_pledge_fulfilled'),
+    drive_pledge_cancelled: t('types.drive_pledge_cancelled'),
     drive_completed: t('types.drive_completed'),
+    event_rsvp_cancelled: t('types.event_rsvp_cancelled'),
   }
 
   const cookieStore = await cookies()
