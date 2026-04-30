@@ -87,6 +87,8 @@ jobs:
           fi
 
   authenticated-smoke:
+    # Run only when smoke auth secrets are provided in repository secrets
+    if: ${{ secrets.SMOKE_AUTH_EMAIL != '' && secrets.SMOKE_AUTH_PASSWORD != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: quality-and-smoke
@@ -165,6 +167,8 @@ jobs:
           fi
 
   authenticated-browser-smoke:
+    # Run only when smoke auth secrets are provided in repository secrets
+    if: ${{ secrets.SMOKE_AUTH_EMAIL != '' && secrets.SMOKE_AUTH_PASSWORD != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: authenticated-smoke
