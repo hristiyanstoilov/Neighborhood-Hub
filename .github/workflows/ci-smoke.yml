@@ -152,6 +152,15 @@ jobs:
           cat /tmp/next-auth-start.log
           exit 1
 
+      - name: Check smoke auth secrets
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ -z "${SMOKE_AUTH_EMAIL}" ] || [ -z "${SMOKE_AUTH_PASSWORD}" ]; then
+            echo "ERROR: SMOKE_AUTH_EMAIL or SMOKE_AUTH_PASSWORD repository secret is not set."
+            echo "Set them to enable authenticated smoke tests, or this job will be skipped for forks/PRs."
+            exit 1
+          fi
+
       - name: Authenticated smoke checks
         run: npm run smoke:auth
 
@@ -234,6 +243,15 @@ jobs:
           echo "Server did not become ready in time"
           cat /tmp/next-auth-browser-start.log
           exit 1
+
+      - name: Check smoke auth secrets
+        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ -z "${SMOKE_AUTH_EMAIL}" ] || [ -z "${SMOKE_AUTH_PASSWORD}" ]; then
+            echo "ERROR: SMOKE_AUTH_EMAIL or SMOKE_AUTH_PASSWORD repository secret is not set."
+            echo "Set them to enable authenticated smoke tests, or this job will be skipped for forks/PRs."
+            exit 1
+          fi
 
       - name: Authenticated browser smoke checks
         run: npm run smoke:auth:browser
