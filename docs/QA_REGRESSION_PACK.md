@@ -143,20 +143,20 @@ Execute all critical flows by test ID (section 4).
 11. AUTH-11 `POST /api/auth/verify-email` with expired/invalid token → 400 TOKEN_EXPIRED / INVALID_TOKEN.
 
 ### Content Flagging (MOD-01 … MOD-04)
-| ID     | Scenario                                          | Expected                        |
-|--------|---------------------------------------------------|---------------------------------|
-| MOD-01 | POST /api/reports as auth user (valid entityType) | 201, report row created         |
-| MOD-02 | Duplicate active flag by same user                | 409 DUPLICATE_FLAG              |
-| MOD-03 | GET /api/admin/reports (admin auth)               | 200, list with reporter info    |
-| MOD-04 | PATCH /api/admin/reports/:id (resolve)            | 200, resolvedAt set             |
+| ID     | Scenario                                          | Expected                     |
+|--------|---------------------------------------------------|------------------------------|
+| MOD-01 | POST /api/reports (auth required, valid entityType) | 201, report row created     |
+| MOD-02 | Duplicate active flag by same user                | 409 DUPLICATE_FLAG           |
+| MOD-03 | GET /api/admin/reports (admin token)              | 200, list with reporter info |
+| MOD-04 | PATCH /api/admin/reports/:id resolve              | 200, resolvedAt set          |
 
 ### Gamification / Neighbor Score (POINTS-01 … POINTS-04)
-| ID        | Scenario                                | Expected                          |
-|-----------|-----------------------------------------|-----------------------------------|
-| POINTS-01 | Create a skill listing                  | user_stats.total_points += 20     |
-| POINTS-02 | Tool reservation returned to owner      | owner total_points += 15          |
-| POINTS-03 | 5-star rating received                  | point_events row inserted, +25 pts|
-| POINTS-04 | GET /api/leaderboard                    | 200, ordered by points desc       |
+| ID        | Scenario                           | Expected                           |
+|-----------|------------------------------------|------------------------------------|
+| POINTS-01 | Create skill listing               | user_stats.total_points += 20      |
+| POINTS-02 | Tool reservation returned to owner | owner total_points += 15           |
+| POINTS-03 | 5-star rating received             | point_events row inserted, +25 pts |
+| POINTS-04 | GET /api/leaderboard               | 200, ordered by points desc        |
 
 ---
 

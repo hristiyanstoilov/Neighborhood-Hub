@@ -252,11 +252,10 @@ These are lower priority and should only be started after items 1–4 above are 
 
 ---
 
-## Execution Order — Updated 2026-05-01
-All items from the original sprint (i18n, production polish web/mobile, AGENTS.md, QA regression pack additions) are complete. Remaining work:
+## Execution Order — Updated 2026-05-02
+All backlog items from the engagement sprint are complete and merged.
 
-1. Demo Mode (feat — 1 day)
-2. Production Polish Wave 2 — skeleton loaders (2-3 hours)
-3. Badges/Achievements — badges table + profile display (1-2 days)
-4. Analytics — PostHog/Plausible (0.5 days)
-5. Production Polish Wave 3 — accessibility + form validation (3-4 hours)
+Remaining work (in priority order):
+1. Production Polish Wave 3 — accessibility + form validation (3-4 h)
+2. Production Polish Wave 4 — resilience hardening (2-3 h)  
+3. Mobile i18n — expo-localization + i18next in packages/mobile (1-2 days)
