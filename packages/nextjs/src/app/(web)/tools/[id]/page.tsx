@@ -2,11 +2,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { queryToolById } from '@/lib/queries/tools'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import ReserveButton from './reserve-button'
 import ToolOwnerActions from './tool-owner-actions'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,19 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   } catch { return {} }
 }
 
-const conditionLabel: Record<string, string> = {
-  new: 'New',
-  good: 'Good',
-  fair: 'Fair',
-  worn: 'Worn',
-}
-
 export default async function ToolDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const t = await getTranslations('tools')
 
   if (!uuidSchema.safeParse(id).success) notFound()
 
@@ -62,14 +58,21 @@ export default async function ToolDetailPage({
     return (
       <div className="max-w-2xl">
         <Link href="/tools" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-          ← Back to Tools
+          {t('back')}
         </Link>
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load this tool.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
+          <p className="text-lg mb-2">{t('detail_error_title')}</p>
+          <p className="text-sm">{t('detail_error_message')}</p>
         </div>
       </div>
     )
+  }
+
+  const conditionLabel: Record<string, string> = {
+    new: t('condition_new'),
+    good: t('condition_good'),
+    fair: t('condition_fair'),
+    worn: t('condition_worn'),
   }
 
   const isOwner = currentUserId === tool!.ownerId
@@ -77,7 +80,7 @@ export default async function ToolDetailPage({
   return (
     <div className="max-w-2xl">
       <Link href="/tools" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-        ← Back to Tools
+        {t('back')}
       </Link>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -92,7 +95,7 @@ export default async function ToolDetailPage({
                 : 'bg-gray-100 text-gray-500'
             }`}
           >
-            {tool!.status === 'on_loan' ? 'On loan' : tool!.status === 'in_use' ? 'In use' : tool!.status}
+            {tool!.status === 'on_loan' ? t('status_on_loan') : tool!.status === 'in_use' ? t('status_in_use') : tool!.status}
           </span>
         </div>
 
@@ -113,15 +116,15 @@ export default async function ToolDetailPage({
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Condition</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_condition')}</dt>
             <dd className="font-medium">{tool!.condition ? (conditionLabel[tool!.condition] ?? tool!.condition) : '—'}</dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Category</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_category')}</dt>
             <dd className="font-medium">{tool!.categoryLabel ?? '—'}</dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_location')}</dt>
             <dd className="font-medium">
               {tool!.locationNeighborhood
                 ? `${tool!.locationNeighborhood}, ${tool!.locationCity}`
@@ -129,10 +132,10 @@ export default async function ToolDetailPage({
             </dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Listed by</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_listed_by')}</dt>
             <dd className="font-medium">
               <Link href={`/users/${tool!.ownerId}`} className="hover:text-green-700 hover:underline">
-                {tool!.ownerName ?? 'Anonymous'}
+                {tool!.ownerName ?? t('anonymous')}
               </Link>
             </dd>
           </div>
@@ -147,6 +150,12 @@ export default async function ToolDetailPage({
           isLoggedIn={currentUserId !== null}
           isAvailable={tool!.status === 'available'}
         />
+
+        {currentUserId && !isOwner && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+            <FlagButton entityType="tool" entityId={tool!.id} />
+          </div>
+        )}
       </div>
     </div>
   )

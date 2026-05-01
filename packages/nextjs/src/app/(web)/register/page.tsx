@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export default function RegisterPage() {
+  const t = useTranslations('auth')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -11,11 +13,11 @@ export default function RegisterPage() {
 
   function validateField(name: string, value: string) {
     if (name === 'name' && !value.trim()) {
-      setFieldErrors((prev) => ({ ...prev, name: 'Name is required.' }))
+      setFieldErrors((prev) => ({ ...prev, name: t('errors.name_required') }))
     } else if (name === 'email' && !value.includes('@')) {
-      setFieldErrors((prev) => ({ ...prev, email: 'Enter a valid email address.' }))
+      setFieldErrors((prev) => ({ ...prev, email: t('errors.invalid_email') }))
     } else if (name === 'password' && value.length > 0 && value.length < 8) {
-      setFieldErrors((prev) => ({ ...prev, password: 'Password must be at least 8 characters.' }))
+      setFieldErrors((prev) => ({ ...prev, password: t('errors.password_too_short') }))
     } else {
       setFieldErrors((prev) => { const next = { ...prev }; delete next[name as keyof typeof next]; return next })
     }
@@ -44,11 +46,11 @@ export default function RegisterPage() {
 
     if (!res.ok) {
       const msg: Record<string, string> = {
-        EMAIL_TAKEN: 'An account with this email already exists.',
-        TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-        VALIDATION_ERROR: 'Please check your inputs.',
+        EMAIL_TAKEN: t('errors.email_taken'),
+        TOO_MANY_REQUESTS: t('errors.too_many_requests'),
+        VALIDATION_ERROR: t('errors.unexpected'),
       }
-      setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+      setError(msg[json.error] ?? t('errors.unexpected'))
       return
     }
 
@@ -58,12 +60,10 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
-        <h1 className="text-2xl font-bold mb-3">Check your email</h1>
-        <p className="text-gray-600 mb-6">
-          We sent a verification link to your email address. Click it to activate your account.
-        </p>
+        <h1 className="text-2xl font-bold mb-3">{t('check_email_title')}</h1>
+        <p className="text-gray-600 mb-6">{t('register_success_desc')}</p>
         <Link href="/login" className="text-green-700 hover:underline text-sm">
-          Go to login →
+          {t('go_to_login')}
         </Link>
       </div>
     )
@@ -71,11 +71,11 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto py-16">
-      <h1 className="text-2xl font-bold mb-6">Create an account</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('register_title')}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="register-name" className="block text-sm font-medium mb-1">Name</label>
+          <label htmlFor="register-name" className="block text-sm font-medium mb-1">{t('name')}</label>
           <input
             id="register-name"
             name="name"
@@ -86,13 +86,13 @@ export default function RegisterPage() {
             aria-describedby={fieldErrors.name ? 'register-name-error' : undefined}
             onBlur={(e) => validateField('name', e.target.value)}
             className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${fieldErrors.name ? 'border-red-400' : 'border-gray-300'}`}
-            placeholder="Your name"
+            placeholder={t('name_placeholder')}
           />
           {fieldErrors.name && <p id="register-name-error" className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>}
         </div>
 
         <div>
-          <label htmlFor="register-email" className="block text-sm font-medium mb-1">Email</label>
+          <label htmlFor="register-email" className="block text-sm font-medium mb-1">{t('email')}</label>
           <input
             id="register-email"
             name="email"
@@ -109,7 +109,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="register-password" className="block text-sm font-medium mb-1">Password</label>
+          <label htmlFor="register-password" className="block text-sm font-medium mb-1">{t('password')}</label>
           <input
             id="register-password"
             name="password"
@@ -121,7 +121,7 @@ export default function RegisterPage() {
             aria-describedby={fieldErrors.password ? 'register-password-error' : undefined}
             onBlur={(e) => validateField('password', e.target.value)}
             className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${fieldErrors.password ? 'border-red-400' : 'border-gray-300'}`}
-            placeholder="At least 8 characters"
+            placeholder={t('new_password_placeholder')}
           />
           {fieldErrors.password && <p id="register-password-error" className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>}
         </div>
@@ -137,14 +137,14 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full bg-green-700 text-white rounded-md py-2 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Creating account…' : 'Create account'}
+          {loading ? t('creating_account') : t('register_btn')}
         </button>
       </form>
 
       <p className="text-center text-sm text-gray-600 mt-6">
-        Already have an account?{' '}
+        {t('have_account')}{' '}
         <Link href="/login" className="text-green-700 hover:underline">
-          Log in
+          {t('sign_in')}
         </Link>
       </p>
     </div>

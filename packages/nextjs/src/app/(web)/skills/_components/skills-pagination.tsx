@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { BuildHref } from './types'
 
 type SkillsPaginationProps = {
@@ -8,6 +9,8 @@ type SkillsPaginationProps = {
 }
 
 export function SkillsPagination({ page, canGoNext, buildHref }: SkillsPaginationProps) {
+  const t = useTranslations('skills')
+
   if (!canGoNext && page <= 1) return null
 
   return (
@@ -15,10 +18,10 @@ export function SkillsPagination({ page, canGoNext, buildHref }: SkillsPaginatio
       {page > 1 ? (
         <Link
           href={buildHref({ page: String(page - 1) })}
-          aria-label="Previous page"
+          aria-label={t('prev')}
           className="text-green-700 hover:underline"
         >
-          ← Previous
+          {t('prev')}
         </Link>
       ) : (
         <span />
@@ -26,10 +29,10 @@ export function SkillsPagination({ page, canGoNext, buildHref }: SkillsPaginatio
       {canGoNext ? (
         <Link
           href={buildHref({ page: String(page + 1) })}
-          aria-label="Next page"
+          aria-label={t('next')}
           className="text-green-700 hover:underline"
         >
-          Next →
+          {t('next')}
         </Link>
       ) : (
         <span />

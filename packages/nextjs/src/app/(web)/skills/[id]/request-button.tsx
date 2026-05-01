@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { type CreateRequestBody, useCreateRequest } from './_hooks/use-create-request'
+import posthog from 'posthog-js'
 
 interface Props {
   skill: { id: string; ownerId: string; status: string }
@@ -18,6 +20,8 @@ export default function RequestButton({ skill }: Props) {
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const startInputRef = useRef<HTMLInputElement>(null)
   const createRequest = useCreateRequest()
+  const t = useTranslations('skills')
+  const tCommon = useTranslations('common')
 
   useEffect(() => {
     if (!open) return
@@ -69,21 +73,21 @@ export default function RequestButton({ skill }: Props) {
         href={`/login?next=/skills/${skill.id}`}
         className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
       >
-        Log in to request this skill
+        {t('login_to_request')}
       </Link>
     )
   }
 
   if (user.id === skill.ownerId) {
     return (
-      <p className="text-center text-sm text-gray-400 py-2">This is your skill listing.</p>
+      <p className="text-center text-sm text-gray-400 py-2">{t('your_skill_listing')}</p>
     )
   }
 
   if (skill.status !== 'available') {
     return (
       <p className="text-center text-sm text-gray-400 py-2">
-        This skill is currently unavailable.
+        {t('skill_unavailable')}
       </p>
     )
   }
@@ -103,6 +107,12 @@ export default function RequestButton({ skill }: Props) {
     try {
       await createRequest.mutateAsync(body)
       setStep('success')
+      try {
+        const format = meetingType === 'in_person' ? 'in-person' : meetingType === 'online' ? 'online' : 'hybrid'
+        posthog.capture('skill_request_created', { format })
+      } catch {
+        // ignore analytics errors
+      }
     } catch {
       // error surfaced via createRequest.error
     }
@@ -115,7 +125,7 @@ export default function RequestButton({ skill }: Props) {
         onClick={() => { setOpen(true); setStep('form'); createRequest.reset() }}
         className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
       >
-        Request this skill
+        {t('request_skill_btn')}
       </button>
 
       {open && (
@@ -134,9 +144,9 @@ export default function RequestButton({ skill }: Props) {
           >
             {step === 'success' ? (
               <div className="text-center py-4">
-                <h2 className="text-lg font-semibold mb-2 text-green-700">Request sent!</h2>
+                <h2 className="text-lg font-semibold mb-2 text-green-700">{t('request_sent_title')}</h2>
                 <p className="text-sm text-gray-600 mb-5">
-                  The skill owner will be notified. You can track your request status below.
+                  {t('request_sent_desc')}
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Link
@@ -144,25 +154,25 @@ export default function RequestButton({ skill }: Props) {
                     onClick={() => setOpen(false)}
                     className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
                   >
-                    View my requests
+                    {t('view_requests')}
                   </Link>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
                     className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
                   >
-                    Close
+                    {tCommon('close')}
                   </button>
                 </div>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 id="request-dialog-title" className="text-lg font-semibold">Request this skill</h2>
+                  <h2 id="request-dialog-title" className="text-lg font-semibold">{t('request_skill_btn')}</h2>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    aria-label="Close request dialog"
+                    aria-label={t('close_dialog_label')}
                     className="text-gray-400 hover:text-gray-600 text-xl leading-none"
                   >
                     ×
@@ -170,14 +180,14 @@ export default function RequestButton({ skill }: Props) {
                 </div>
 
                 <p id="request-dialog-description" className="sr-only">
-                  Fill in the date, time, and meeting details to send a request.
+                  {t('request_sr_desc')}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="request-start" className="block text-sm font-medium text-gray-700 mb-1">
-                        Start <span className="text-red-500">*</span>
+                        {t('request_start_label')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         ref={startInputRef}
@@ -190,7 +200,7 @@ export default function RequestButton({ skill }: Props) {
                     </div>
                     <div>
                       <label htmlFor="request-end" className="block text-sm font-medium text-gray-700 mb-1">
-                        End <span className="text-red-500">*</span>
+                        {t('request_end_label')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="request-end"
@@ -204,7 +214,7 @@ export default function RequestButton({ skill }: Props) {
 
                   <div>
                     <label htmlFor="request-meeting-type" className="block text-sm font-medium text-gray-700 mb-1">
-                      Meeting type <span className="text-red-500">*</span>
+                      {t('request_meeting_type_label')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="request-meeting-type"
@@ -212,16 +222,16 @@ export default function RequestButton({ skill }: Props) {
                       onChange={(e) => setMeetingType(e.target.value as typeof meetingType)}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                     >
-                      <option value="in_person">In person</option>
-                      <option value="online">Online</option>
-                      <option value="hybrid">Hybrid</option>
+                      <option value="in_person">{t('meeting_in_person')}</option>
+                      <option value="online">{t('meeting_online')}</option>
+                      <option value="hybrid">{t('meeting_hybrid')}</option>
                     </select>
                   </div>
 
                   {meetingType !== 'in_person' && (
                     <div>
                       <label htmlFor="request-meeting-url" className="block text-sm font-medium text-gray-700 mb-1">
-                        Meeting URL <span className="text-red-500">*</span>
+                        {t('request_url_label')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="request-meeting-url"
@@ -236,14 +246,14 @@ export default function RequestButton({ skill }: Props) {
 
                   <div>
                     <label htmlFor="request-notes" className="block text-sm font-medium text-gray-700 mb-1">
-                      Notes <span className="text-gray-400 font-normal">(optional)</span>
+                      {t('request_notes_label')} <span className="text-gray-400 font-normal">{t('request_notes_optional')}</span>
                     </label>
                     <textarea
                       id="request-notes"
                       name="notes"
                       rows={3}
                       maxLength={1000}
-                      placeholder="Any details or questions for the skill owner…"
+                      placeholder={t('request_notes_placeholder')}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
                     />
                   </div>
@@ -260,14 +270,14 @@ export default function RequestButton({ skill }: Props) {
                       disabled={createRequest.isPending}
                       className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
                     >
-                      {createRequest.isPending ? 'Sending…' : 'Send request'}
+                      {createRequest.isPending ? t('sending') : t('send_request')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
                       className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      {tCommon('cancel')}
                     </button>
                   </div>
                 </form>

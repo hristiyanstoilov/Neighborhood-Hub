@@ -2,11 +2,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { querySkillById } from '@/lib/queries/skills'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RequestButton from './request-button'
 import SkillOwnerActions from './skill-owner-actions'
+import { FlagButton } from '@/components/ui/flag-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +31,7 @@ export default async function SkillDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const t = await getTranslations('skills')
 
   if (!uuidSchema.safeParse(id).success) notFound()
 
@@ -55,11 +58,11 @@ export default async function SkillDetailPage({
     return (
       <div className="max-w-2xl">
         <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-          ← Back to Skills
+          {t('back')}
         </Link>
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load this skill.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
+          <p className="text-lg mb-2">{t('detail_error_title')}</p>
+          <p className="text-sm">{t('detail_error_message')}</p>
         </div>
       </div>
     )
@@ -68,7 +71,7 @@ export default async function SkillDetailPage({
   return (
     <div className="max-w-2xl">
       <Link href="/skills" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">
-        ← Back to Skills
+        {t('back')}
       </Link>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -104,15 +107,15 @@ export default async function SkillDetailPage({
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Category</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_category')}</dt>
             <dd className="font-medium">{skill!.categoryLabel ?? '—'}</dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Availability</dt>
-            <dd className="font-medium">{skill!.availableHours != null ? `${skill!.availableHours} h / week` : '—'}</dd>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_availability')}</dt>
+            <dd className="font-medium">{skill!.availableHours != null ? t('hours_per_week', { hours: skill!.availableHours }) : '—'}</dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_location')}</dt>
             <dd className="font-medium">
               {skill!.locationNeighborhood
                 ? `${skill!.locationNeighborhood}, ${skill!.locationCity}`
@@ -120,10 +123,10 @@ export default async function SkillDetailPage({
             </dd>
           </div>
           <div>
-            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Offered by</dt>
+            <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_offered_by')}</dt>
             <dd className="font-medium">
               <Link href={`/users/${skill!.ownerId}`} className="hover:text-green-700 hover:underline">
-                {skill!.ownerName ?? 'Anonymous'}
+                {skill!.ownerName ?? t('anonymous')}
               </Link>
             </dd>
           </div>
@@ -133,6 +136,12 @@ export default async function SkillDetailPage({
           <SkillOwnerActions skillId={skill!.id} />
         )}
         <RequestButton skill={skill!} />
+
+        {currentUserId && currentUserId !== skill!.ownerId && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+            <FlagButton entityType="skill" entityId={skill!.id} />
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import { queryFoodShareById, queryFoodReservations, queryUserFoodReservation } from '@/lib/queries/food'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import ReservationSection from './reservation-section'
@@ -22,21 +23,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  available: 'Available',
-  reserved: 'Reserved',
-  picked_up: 'Picked up',
-}
-
-function getStatusLabel(foodShare: { status: string; remainingQuantity?: number | null }) {
-  if (foodShare.status === 'available' && typeof foodShare.remainingQuantity === 'number') {
-    return foodShare.remainingQuantity === 1
-      ? 'Available (1 left)'
-      : `Available (${foodShare.remainingQuantity} left)`
-  }
-  return STATUS_LABELS[foodShare.status] ?? foodShare.status
-}
-
 function formatDate(value: Date | null) {
   if (!value) return null
   return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -44,6 +30,7 @@ function formatDate(value: Date | null) {
 
 export default async function FoodDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const t = await getTranslations('food')
 
   let foodShare = null
   let fetchError = false
@@ -79,20 +66,31 @@ export default async function FoodDetailPage({ params }: { params: Promise<{ id:
   if (fetchError) {
     return (
       <div className="max-w-2xl">
-        <Link href="/food" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">← Back to Food Sharing</Link>
+        <Link href="/food" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">{t('back')}</Link>
         <div className="text-center py-24 text-gray-500">
-          <p className="text-lg mb-2">Could not load this food listing.</p>
-          <p className="text-sm">Please try refreshing the page.</p>
+          <p className="text-lg mb-2">{t('detail_error_title')}</p>
+          <p className="text-sm">{t('detail_error_message')}</p>
         </div>
       </div>
     )
   }
 
-  const isOwner = currentUserId === foodShare!.ownerId
+  const statusLabels: Record<string, string> = {
+    available: t('status_available'),
+    reserved:  t('status_reserved'),
+    picked_up: t('status_picked_up'),
+  }
+
+  function getStatusLabel(fs: { status: string; remainingQuantity?: number | null }) {
+    if (fs.status === 'available' && typeof fs.remainingQuantity === 'number') {
+      return t('status_available_left', { count: fs.remainingQuantity })
+    }
+    return statusLabels[fs.status] ?? fs.status
+  }
 
   return (
     <div className="max-w-2xl">
-      <Link href="/food" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">← Back to Food Sharing</Link>
+      <Link href="/food" className="text-sm text-gray-500 hover:text-green-700 mb-6 inline-block">{t('back')}</Link>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {foodShare!.imageUrl && (
@@ -116,40 +114,40 @@ export default async function FoodDetailPage({ params }: { params: Promise<{ id:
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm mb-6">
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Quantity</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_quantity')}</dt>
               <dd className="font-medium">{foodShare!.quantity}</dd>
             </div>
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Organised by</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_organised_by')}</dt>
               <dd className="font-medium">
                 <Link href={`/users/${foodShare!.ownerId}`} className="hover:text-green-700 hover:underline">
-                  {foodShare!.ownerName ?? 'Anonymous'}
+                  {foodShare!.ownerName ?? t('anonymous')}
                 </Link>
               </dd>
             </div>
             <div className="col-span-2">
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Location</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_location')}</dt>
               <dd className="font-medium">
                 {foodShare!.locationNeighborhood ? `${foodShare!.locationNeighborhood}, ${foodShare!.locationCity}` : '—'}
               </dd>
             </div>
             {foodShare!.availableUntil && (
               <div>
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Available until</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_available_until')}</dt>
                 <dd className="font-medium">{formatDate(foodShare!.availableUntil)}</dd>
               </div>
             )}
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Reservations</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_reservations')}</dt>
               <dd className="font-medium">{foodShare!.reservationCount}</dd>
             </div>
             <div>
-              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Left</dt>
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_left')}</dt>
               <dd className="font-medium">{foodShare!.remainingQuantity ?? foodShare!.quantity}</dd>
             </div>
             {foodShare!.pickupInstructions && (
               <div className="col-span-2">
-                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">Pickup instructions</dt>
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_pickup_instructions')}</dt>
                 <dd className="font-medium">{foodShare!.pickupInstructions}</dd>
               </div>
             )}

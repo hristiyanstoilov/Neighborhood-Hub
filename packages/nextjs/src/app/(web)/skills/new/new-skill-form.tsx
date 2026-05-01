@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
+import posthog from 'posthog-js'
 import { useToast } from '@/components/ui/toast'
 
 interface Category { id: string; slug: string; label: string }
@@ -17,6 +19,8 @@ interface Props {
 export default function NewSkillForm({ categories, locations }: Props) {
   const router = useRouter()
   const { showToast } = useToast()
+  const t = useTranslations('skills')
+  const tCommon = useTranslations('common')
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -35,7 +39,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
       const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) {
-        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        setUploadError(json.detail ?? t('errors.upload_failed'))
         return false
       }
 
@@ -43,7 +47,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
       setPendingImageFile(null)
       return true
     } catch {
-      setUploadError('Upload failed. Please try again.')
+      setUploadError(t('errors.upload_failed'))
       return false
     } finally {
       setUploading(false)
@@ -65,7 +69,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (uploading) {
-      setSubmitError('Please wait for the image to finish uploading.')
+      setSubmitError(t('form_upload_wait'))
       return
     }
     setSubmitError(null)
@@ -92,23 +96,29 @@ export default function NewSkillForm({ categories, locations }: Props) {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          UNVERIFIED_EMAIL: 'Please verify your email before offering a skill.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-          VALIDATION_ERROR: 'Please check your inputs.',
-          UNAUTHORIZED: 'You must be logged in to offer a skill.',
+          UNVERIFIED_EMAIL:  t('errors.unverified_email'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
+          VALIDATION_ERROR:  t('errors.validation'),
+          UNAUTHORIZED:      t('errors.unauthorized'),
         }
-        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
       showToast({
         variant: 'success',
-        title: 'Skill published',
-        message: 'Your new skill is now visible to the community.',
+        title: t('toast_published_title'),
+        message: t('toast_published_message'),
       })
+      try {
+        const category = categories.find((c) => c.id === body.categoryId)?.slug
+        posthog.capture('skill_created', { category })
+      } catch {
+        // swallow analytics errors
+      }
       router.push(`/skills/${json.data.id}`)
     } catch {
-      setSubmitError('Network error. Please check your connection and try again.')
+      setSubmitError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -120,7 +130,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
 
         <div>
           <label htmlFor="skill-title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
+            {t('form_title_label')} <span className="text-red-500">*</span>
           </label>
           <input
             id="skill-title"
@@ -131,13 +141,13 @@ export default function NewSkillForm({ categories, locations }: Props) {
             maxLength={200}
             onChange={(e) => setTitleLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="e.g. Guitar lessons, Python tutoring, Home repairs…"
+            placeholder={t('form_title_placeholder')}
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{titleLength}/200</p>
         </div>
 
         <div>
-          <label htmlFor="skill-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="skill-description" className="block text-sm font-medium text-gray-700 mb-1">{t('form_desc_label')}</label>
           <textarea
             id="skill-description"
             name="description"
@@ -145,17 +155,17 @@ export default function NewSkillForm({ categories, locations }: Props) {
             maxLength={2000}
             onChange={(e) => setDescLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-            placeholder="Describe what you offer, your experience, and any requirements…"
+            placeholder={t('form_desc_placeholder')}
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{descLength}/2000</p>
         </div>
 
         <div>
-          <label htmlFor="skill-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <label htmlFor="skill-image" className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
           {imageUrl && (
             <Image
               src={imageUrl}
-              alt="Skill image preview"
+              alt={t('form_image_preview_alt')}
               width={1200}
               height={720}
               unoptimized
@@ -170,8 +180,8 @@ export default function NewSkillForm({ categories, locations }: Props) {
             disabled={uploading}
             className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
           />
-          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
-          <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
+          {uploading && <p className="text-xs text-gray-400 mt-1">{t('form_uploading')}</p>}
+          <p className="text-xs text-gray-400 mt-1">{t('form_image_hint')}</p>
           {uploadError && (
             <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
           )}
@@ -182,20 +192,20 @@ export default function NewSkillForm({ categories, locations }: Props) {
               disabled={uploading}
               className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
             >
-              Retry upload
+              {t('form_retry_upload')}
             </button>
           )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="skill-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="skill-category" className="block text-sm font-medium text-gray-700 mb-1">{t('field_category')}</label>
             <select
               id="skill-category"
               name="categoryId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select category —</option>
+              <option value="">{t('form_category_placeholder')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
@@ -203,13 +213,13 @@ export default function NewSkillForm({ categories, locations }: Props) {
           </div>
 
           <div>
-            <label htmlFor="skill-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="skill-location" className="block text-sm font-medium text-gray-700 mb-1">{t('field_location')}</label>
             <select
               id="skill-location"
               name="locationId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select location —</option>
+              <option value="">{t('form_location_placeholder')}</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
               ))}
@@ -219,7 +229,7 @@ export default function NewSkillForm({ categories, locations }: Props) {
 
         <div className="w-40">
           <label htmlFor="skill-hours" className="block text-sm font-medium text-gray-700 mb-1">
-            Hours available / week
+            {t('form_hours_label')}
           </label>
           <input
             id="skill-hours"
@@ -244,14 +254,14 @@ export default function NewSkillForm({ categories, locations }: Props) {
             disabled={loading || uploading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Publishing…' : 'Publish skill'}
+            {loading ? t('form_publishing') : t('form_publish')}
           </button>
           <button
             type="button"
             onClick={() => router.push('/skills')}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { BuildHref } from './types'
 
 type ToolsFiltersProps = {
@@ -20,18 +21,19 @@ export function ToolsFilters({
   locations,
   buildHref,
 }: ToolsFiltersProps) {
+  const t = useTranslations('tools')
   return (
     <>
       <div className="flex flex-wrap gap-3 mb-6">
-        <form method="GET" action="/tools" className="flex-1 min-w-48" role="search" aria-label="Search tools">
-          <label htmlFor="tool-search" className="sr-only">Search tools</label>
+        <form method="GET" action="/tools" className="flex-1 min-w-48" role="search" aria-label={t('search_label')}>
+          <label htmlFor="tool-search" className="sr-only">{t('search_label')}</label>
           <div className="relative">
             <input
               id="tool-search"
               name="search"
               type="text"
               defaultValue={search ?? ''}
-              placeholder="Search tools…"
+              placeholder={t('search_placeholder')}
               maxLength={100}
               className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
@@ -66,7 +68,7 @@ export function ToolsFilters({
                 : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
             }`}
           >
-            All categories
+            {t('all_categories')}
           </Link>
           {categories.map((c) => (
             <Link
@@ -96,7 +98,7 @@ export function ToolsFilters({
                 : 'bg-white text-gray-600 border-gray-300 hover:border-green-400'
             }`}
           >
-            All locations
+            {t('all_locations')}
           </Link>
           {locations.map((l) => (
             <Link
@@ -117,9 +119,9 @@ export function ToolsFilters({
 
       <div className="flex gap-2 mb-6" aria-label="Status filters">
         {[
-          { label: 'All', value: undefined },
-          { label: 'Available', value: 'available' },
-          { label: 'On loan', value: 'on_loan' },
+          { label: t('status_all'), value: undefined },
+          { label: t('status_available'), value: 'available' },
+          { label: t('status_on_loan'), value: 'on_loan' },
         ].map(({ label, value }) => (
           <Link
             key={label}

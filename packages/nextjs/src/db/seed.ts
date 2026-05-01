@@ -13,6 +13,10 @@ const db = drizzle(sql, { schema })
 
 // ─── Demo credentials (all users share this password) ───────────────────────
 const DEMO_PASSWORD = 'Demo1234!'
+const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
+const DEMO_USER_PASSWORD = 'demo1234'
+const DEMO_USER_NAME = 'Demo User'
+const DEMO_USER_BIO = 'Explore the app freely.'
 
 async function seed() {
   // ─── 1. Locations ────────────────────────────────────────────────────────
@@ -90,6 +94,8 @@ async function seed() {
     .limit(1)
 
   if (existing.length > 0) {
+    await ensureDemoUserAndProfile()
+
     // Users already seeded — check if tools exist too
     const toolsExist = await db.select({ id: tools.id }).from(tools).limit(1)
     if (toolsExist.length > 0) {
@@ -108,21 +114,24 @@ async function seed() {
     const demoUsers = await db.select({ id: users.id, email: users.email }).from(users)
       .where(eq(users.email, 'ivan@demo.bg'))
       .limit(1)
-    // Re-fetch all 5 demo users
+    // Re-fetch all demo users
     const allDemoUsers = await db.select({ id: users.id, email: users.email }).from(users)
     const byEmail = (e: string) => allDemoUsers.find((u) => u.email === e)!
-    const _ivan   = byEmail('ivan@demo.bg')
-    const _maria  = byEmail('maria@demo.bg')
-    const _georgi = byEmail('georgi@demo.bg')
-    const _elena  = byEmail('elena@demo.bg')
-    const _nikola = byEmail('nikola@demo.bg')
+    const _ivan    = byEmail('ivan@demo.bg')
+    const _maria   = byEmail('maria@demo.bg')
+    const _georgi  = byEmail('georgi@demo.bg')
+    const _elena   = byEmail('elena@demo.bg')
+    const _nikola  = byEmail('nikola@demo.bg')
+    const _stoyan  = byEmail('stoyan@demo.bg')
+    const _petya   = byEmail('petya@demo.bg')
+    const _dimitar = byEmail('dimitar@demo.bg')
 
     const allLocations2 = await db.select({ id: locations.id, neighborhood: locations.neighborhood }).from(locations)
     const allCategories2 = await db.select({ id: categories.id, slug: categories.slug }).from(categories)
     const loc2 = (name: string) => allLocations2.find((l) => l.neighborhood === name)!.id
     const cat2 = (slug: string) => allCategories2.find((c) => c.slug === slug)!.id
 
-    await seedTools(db, { ivan: _ivan, maria: _maria, georgi: _georgi, elena: _elena, nikola: _nikola }, loc2, cat2)
+    await seedTools(db, { ivan: _ivan, maria: _maria, georgi: _georgi, elena: _elena, nikola: _nikola, stoyan: _stoyan, petya: _petya, dimitar: _dimitar }, loc2, cat2)
     await seedFood()
     await seedEvents()
     await seedDrives()
@@ -155,9 +164,10 @@ async function seed() {
   console.log('Seeding demo users...')
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12)
+  const demoPasswordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12)
   const now = new Date()
 
-  const [ivan, maria, georgi, elena, nikola] = await db.insert(users).values([
+  const [ivan, maria, georgi, elena, nikola, stoyan, petya, dimitar, demoUser] = await db.insert(users).values([
     {
       email: 'ivan@demo.bg',
       passwordHash,
@@ -188,7 +198,31 @@ async function seed() {
       role: 'user',
       emailVerifiedAt: now,
     },
-  ]).returning()
+    {
+      email: 'stoyan@demo.bg',
+      passwordHash,
+      role: 'user',
+      emailVerifiedAt: now,
+    },
+    {
+      email: 'petya@demo.bg',
+      passwordHash,
+      role: 'user',
+      emailVerifiedAt: now,
+    },
+    {
+      email: 'dimitar@demo.bg',
+      passwordHash,
+      role: 'user',
+      emailVerifiedAt: now,
+    },
+    {
+      email: DEMO_USER_EMAIL,
+      passwordHash: demoPasswordHash,
+      role: 'user',
+      emailVerifiedAt: now,
+    },
+  ]).onConflictDoNothing().returning()
 
   // ─── 6. Profiles ─────────────────────────────────────────────────────────
   console.log('Seeding demo profiles...')
@@ -229,7 +263,34 @@ async function seed() {
       locationId: loc('Studentski Grad'),
       isPublic: true,
     },
-  ])
+    {
+      userId: stoyan.id,
+      name: 'Stoyan Nikolov',
+      bio: 'Guitar teacher and musician with 12 years of experience. I teach acoustic and electric guitar for all levels — from picking up the instrument for the first time to preparing for a stage performance.',
+      locationId: loc('Lyulin'),
+      isPublic: true,
+    },
+    {
+      userId: petya.id,
+      name: 'Petya Ivanova',
+      bio: 'Freelance graphic designer specialising in brand identity and UI/UX. I help small businesses and individuals create professional visuals — logos, social media kits, and clickable prototypes.',
+      locationId: loc('Vitosha'),
+      isPublic: true,
+    },
+    {
+      userId: dimitar.id,
+      name: 'Dimitar Vasilev',
+      bio: 'Passionate urban gardener with a rooftop garden and two balcony plots. I grow tomatoes, herbs, and flowers, and love helping neighbours set up their first container gardens.',
+      locationId: loc('Boyana'),
+      isPublic: true,
+    },
+    {
+      userId: demoUser.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    },
+  ]).onConflictDoNothing()
 
   // ─── 7. Skills ───────────────────────────────────────────────────────────
   console.log('Seeding demo skills...')
@@ -245,6 +306,12 @@ async function seed() {
     _bakingSkill,
     _fitnessSkill,
     yogaSkill,
+    guitarSkill,
+    _musicTheorySkill,
+    logoSkill,
+    _uiSkill,
+    balconySkill,
+    _veggieSkill,
   ] = await db.insert(skills).values([
     {
       ownerId: ivan.id,
@@ -336,6 +403,60 @@ async function seed() {
       status: 'available',
       locationId: loc('Studentski Grad'),
     },
+    {
+      ownerId: stoyan.id,
+      title: 'Guitar lessons — beginner to intermediate',
+      description: 'Learn acoustic or electric guitar from scratch. We cover chords, strumming patterns, music theory basics, and your favourite songs. Lessons at my place in Lyulin or online.',
+      categoryId: cat('music'),
+      availableHours: 6,
+      status: 'available',
+      locationId: loc('Lyulin'),
+    },
+    {
+      ownerId: stoyan.id,
+      title: 'Music theory & ear training',
+      description: 'Understand scales, intervals, chord progressions, and rhythm. Perfect for self-taught musicians who want to fill gaps in their theory knowledge. Online sessions available.',
+      categoryId: cat('music'),
+      availableHours: 4,
+      status: 'available',
+      locationId: loc('Lyulin'),
+    },
+    {
+      ownerId: petya.id,
+      title: 'Logo & brand identity design',
+      description: 'Professional logo design for small businesses, freelancers, or community projects. I deliver vector files, a colour palette, and a mini brand guide. 2–3 revision rounds included.',
+      categoryId: cat('design'),
+      availableHours: 8,
+      status: 'available',
+      locationId: loc('Vitosha'),
+    },
+    {
+      ownerId: petya.id,
+      title: 'UI/UX prototyping in Figma',
+      description: 'From wireframes to clickable Figma prototypes. I can help design a landing page, mobile app screen, or dashboard. Also happy to do design reviews of existing interfaces.',
+      categoryId: cat('design'),
+      availableHours: 5,
+      status: 'available',
+      locationId: loc('Vitosha'),
+    },
+    {
+      ownerId: dimitar.id,
+      title: 'Balcony & terrace garden setup',
+      description: 'I help you plan and set up a balcony or terrace garden. We choose containers, soil, plants, and watering systems to suit your space and sunlight. Visits or video calls.',
+      categoryId: cat('gardening'),
+      availableHours: 6,
+      status: 'available',
+      locationId: loc('Boyana'),
+    },
+    {
+      ownerId: dimitar.id,
+      title: 'Growing vegetables & composting',
+      description: 'Practical guide to growing tomatoes, peppers, cucumbers, and herbs in containers or small plots. Covers composting, natural pest control, and soil enrichment.',
+      categoryId: cat('gardening'),
+      availableHours: 4,
+      status: 'available',
+      locationId: loc('Boyana'),
+    },
   ]).returning()
 
   // ─── 8. Skill Requests ───────────────────────────────────────────────────
@@ -422,10 +543,56 @@ async function seed() {
       status: 'pending',
       notes: 'Complete beginner. Morning sessions work best for me.',
     },
+    // Ivan requests guitar lessons from Stoyan (pending)
+    {
+      userFromId: ivan.id,
+      userToId: stoyan.id,
+      skillId: guitarSkill.id,
+      scheduledStart: d(6, 17),
+      scheduledEnd: d(6, 18),
+      meetingType: 'in_person',
+      status: 'pending',
+      notes: 'I always wanted to learn guitar. A colleague recommended you — hope we can arrange something!',
+    },
+    // Maria requests logo design from Petya (pending)
+    {
+      userFromId: maria.id,
+      userToId: petya.id,
+      skillId: logoSkill.id,
+      scheduledStart: d(4, 10),
+      scheduledEnd: d(4, 11),
+      meetingType: 'online',
+      meetingUrl: 'https://meet.google.com/demo-logo-session',
+      status: 'pending',
+      notes: 'I need a simple logo for my language tutoring service. Something clean and friendly.',
+    },
+    // Georgi requests balcony garden advice from Dimitar (accepted)
+    {
+      userFromId: georgi.id,
+      userToId: dimitar.id,
+      skillId: balconySkill.id,
+      scheduledStart: d(2, 15),
+      scheduledEnd: d(2, 16),
+      meetingType: 'in_person',
+      status: 'accepted',
+      notes: 'South-facing balcony, want to grow peppers and tomatoes this summer.',
+    },
+    // Petya requests React consulting from Ivan (accepted)
+    {
+      userFromId: petya.id,
+      userToId: ivan.id,
+      skillId: reactSkill.id,
+      scheduledStart: d(1, 14),
+      scheduledEnd: d(1, 15),
+      meetingType: 'online',
+      meetingUrl: 'https://meet.google.com/demo-react-petya',
+      status: 'accepted',
+      notes: 'Building a portfolio site in Next.js — need help with routing and image optimisation.',
+    },
   ])
 
   // ─── 9 + 10. Tools & Reservations ───────────────────────────────────────
-  await seedTools(db, { ivan, maria, georgi, elena, nikola }, loc, cat)
+  await seedTools(db, { ivan, maria, georgi, elena, nikola, stoyan, petya, dimitar }, loc, cat)
   await seedFood()
   await seedEvents()
   await seedDrives()
@@ -433,26 +600,70 @@ async function seed() {
   await seedConversations()
 
   console.log('\nDone! Demo accounts created:')
-  console.log('  ivan@demo.bg    — Ivan Petrov    (IT & Technology)')
-  console.log('  maria@demo.bg   — Maria Georgieva (Languages)')
-  console.log('  georgi@demo.bg  — Georgi Dimitrov (Home Repair)')
-  console.log('  elena@demo.bg   — Elena Stoyanova (Cooking)')
-  console.log('  nikola@demo.bg  — Nikola Hristov  (Fitness)')
+  console.log('  ivan@demo.bg    — Ivan Petrov     (IT & Technology)')
+  console.log('  maria@demo.bg   — Maria Georgieva  (Languages)')
+  console.log('  georgi@demo.bg  — Georgi Dimitrov  (Home Repair)')
+  console.log('  elena@demo.bg   — Elena Stoyanova  (Cooking)')
+  console.log('  nikola@demo.bg  — Nikola Hristov   (Fitness)')
+  console.log('  stoyan@demo.bg  — Stoyan Nikolov   (Music)')
+  console.log('  petya@demo.bg   — Petya Ivanova    (Design)')
+  console.log('  dimitar@demo.bg — Dimitar Vasilev  (Gardening)')
   console.log(`  Password for all: ${DEMO_PASSWORD}`)
   process.exit(0)
+}
+
+async function ensureDemoUserAndProfile() {
+  const existingDemo = await db.query.users.findFirst({
+    where: eq(users.email, DEMO_USER_EMAIL),
+  })
+
+  if (existingDemo) {
+    await db.insert(profiles).values({
+      userId: existingDemo.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    }).onConflictDoNothing()
+    return existingDemo
+  }
+
+  const demoPasswordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12)
+  const now = new Date()
+
+  const [createdDemo] = await db.insert(users).values({
+    email: DEMO_USER_EMAIL,
+    passwordHash: demoPasswordHash,
+    role: 'user',
+    emailVerifiedAt: now,
+  }).onConflictDoNothing().returning()
+
+  const resolvedDemo = createdDemo ?? await db.query.users.findFirst({
+    where: eq(users.email, DEMO_USER_EMAIL),
+  })
+
+  if (resolvedDemo) {
+    await db.insert(profiles).values({
+      userId: resolvedDemo.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    }).onConflictDoNothing()
+  }
+
+  return resolvedDemo
 }
 
 // ─── Tools + Reservations (extracted so it can run standalone) ──────────────
 
 async function seedTools(
   dbInstance: typeof db,
-  userIds: { ivan: { id: string }; maria: { id: string }; georgi: { id: string }; elena: { id: string }; nikola: { id: string } },
+  userIds: { ivan: { id: string }; maria: { id: string }; georgi: { id: string }; elena: { id: string }; nikola: { id: string }; stoyan: { id: string }; petya: { id: string }; dimitar: { id: string } },
   loc: (name: string) => string,
   cat: (slug: string) => string,
 ) {
   console.log('Seeding demo tools...')
 
-  const { ivan, maria, georgi, elena, nikola } = userIds
+  const { ivan, maria, georgi, elena, nikola, stoyan, petya, dimitar } = userIds
 
   const [boschDrill, delonghiMachine, ladder, _kitchenAid, _yogaMats] = await dbInstance.insert(tools).values([
     {
@@ -498,6 +709,42 @@ async function seedTools(
       categoryId:  cat('fitness'),
       locationId:  loc('Studentski Grad'),
       condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     stoyan.id,
+      title:       'Fender Frontman 10G Guitar Amplifier',
+      description: 'Compact 10-watt practice amplifier. Perfect for beginners or acoustic rehearsal sessions. Has a clean channel and overdrive. Includes a 3m instrument cable.',
+      categoryId:  cat('music'),
+      locationId:  loc('Lyulin'),
+      condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     petya.id,
+      title:       'Wacom Intuos Pro Drawing Tablet (M)',
+      description: 'Professional-grade graphics tablet, medium size. Comes with the Wacom Pro Pen 2. Compatible with Photoshop, Illustrator, Figma, Procreate (via sidecar). USB and Bluetooth.',
+      categoryId:  cat('design'),
+      locationId:  loc('Vitosha'),
+      condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     dimitar.id,
+      title:       'Bosch ART 23 SL Cordless Grass Trimmer',
+      description: 'Lightweight cordless grass trimmer for balconies and small gardens. 18V battery included. Ideal for edging paths or trimming lawn borders. Easy to store in a small flat.',
+      categoryId:  cat('gardening'),
+      locationId:  loc('Boyana'),
+      condition:   'good',
+      status:      'available',
+    },
+    {
+      ownerId:     dimitar.id,
+      title:       'Garden Tool Set (spade, fork, trowel, rake)',
+      description: 'Complete 4-piece garden tool set in a canvas carry bag. Perfect for raised beds, balcony planters, or allotment plots. Tools are clean and well-maintained.',
+      categoryId:  cat('gardening'),
+      locationId:  loc('Boyana'),
+      condition:   'fair',
       status:      'available',
     },
   ]).returning()
@@ -577,8 +824,11 @@ async function seedFood() {
   const maria = byEmail('maria@demo.bg')
   const georgi = byEmail('georgi@demo.bg')
   const nikola = byEmail('nikola@demo.bg')
+  const stoyan = byEmail('stoyan@demo.bg')
+  const petya = byEmail('petya@demo.bg')
+  const dimitar = byEmail('dimitar@demo.bg')
 
-  const [banitsa, bread, lyutenitsa, cake, soup] = await db.insert(foodShares).values([
+  const [banitsa, bread, lyutenitsa, cake, soup, tarator, jam, tomatoes, moussaka] = await db.insert(foodShares).values([
     {
       ownerId: elena.id,
       title: 'Домашна баница — 6 порции',
@@ -629,6 +879,46 @@ async function seedFood() {
       pickupInstructions: 'Вземане между 12:00 и 20:00.',
       status: 'reserved',
     },
+    {
+      ownerId: stoyan.id,
+      title: 'Таратор — 4 порции',
+      description: 'Домашен студен таратор с кисело мляко, краставица и орехи. Перфектен за горещите дни.',
+      quantity: 4,
+      locationId: locId('Lyulin'),
+      availableUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане сутринта между 9:00 и 12:00.',
+      status: 'available',
+    },
+    {
+      ownerId: petya.id,
+      title: 'Домашно сладко от ягоди — 2 буркана',
+      description: 'Сладко от пресни ягоди, наготвено без консерванти. Буркани от по 400 мл.',
+      quantity: 2,
+      locationId: locId('Vitosha'),
+      availableUntil: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'По договорка — пиши преди да дойдеш.',
+      status: 'available',
+    },
+    {
+      ownerId: dimitar.id,
+      title: 'Пресни домати от градината — 2 кг',
+      description: 'Узрели домати от балконската градина, отглеждани без пестициди. Разни сортове — черешови и телешко сърце.',
+      quantity: 2,
+      locationId: locId('Boyana'),
+      availableUntil: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане следобед между 17:00 и 20:00.',
+      status: 'available',
+    },
+    {
+      ownerId: elena.id,
+      title: 'Мусака — 6 порции',
+      description: 'Класическа домашна мусака с картофи, кайма и млечна заливка. Направена днес, готова за вземане.',
+      quantity: 6,
+      locationId: locId('Oborishte'),
+      availableUntil: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      pickupInstructions: 'Вземане след 18:00, носете кутия или тенджера.',
+      status: 'available',
+    },
   ]).returning({ id: foodShares.id })
 
   console.log('Seeding demo food reservations...')
@@ -659,6 +949,30 @@ async function seedFood() {
       cancellationReason: 'Cancelled by requester',
       cancelledById: georgi.id,
       notes: 'Отменено поради промяна в графика.',
+    },
+    {
+      foodShareId: tarator.id,
+      requesterId: elena.id,
+      ownerId: stoyan.id,
+      pickupAt: new Date(Date.now() + 20 * 60 * 60 * 1000),
+      status: 'pending',
+      notes: 'Ще мина сутринта преди пазар.',
+    },
+    {
+      foodShareId: tomatoes.id,
+      requesterId: nikola.id,
+      ownerId: dimitar.id,
+      pickupAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 17 * 60 * 60 * 1000),
+      status: 'pending',
+      notes: 'Търсех точно такива, без химия! Мога да взема след 18:00.',
+    },
+    {
+      foodShareId: moussaka.id,
+      requesterId: stoyan.id,
+      ownerId: elena.id,
+      pickupAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000),
+      status: 'reserved',
+      notes: 'Страхотно! Идвам в 18:30.',
     },
   ])
 }
@@ -783,6 +1097,9 @@ async function seedEvents() {
   const georgi = byEmail('georgi@demo.bg')
   const elena  = byEmail('elena@demo.bg')
   const nikola = byEmail('nikola@demo.bg')
+  const stoyan = byEmail('stoyan@demo.bg')
+  const petya  = byEmail('petya@demo.bg')
+  const dimitar = byEmail('dimitar@demo.bg')
 
   const inDays = (n: number, hour = 10) => {
     const d = new Date()
@@ -791,7 +1108,7 @@ async function seedEvents() {
     return d
   }
 
-  const [devMeetup, cookingWorkshop, yogaSession, languageExchange] = await db.insert(events).values([
+  const [devMeetup, cookingWorkshop, yogaSession, languageExchange, guitarJam, gardenDay] = await db.insert(events).values([
     // Ivan organises a dev meetup next week
     {
       organizerId:  ivan.id,
@@ -840,6 +1157,30 @@ async function seedEvents() {
       maxCapacity:  null,
       status:       'completed',
     },
+    // Stoyan organises a guitar jam session next week
+    {
+      organizerId:  stoyan.id,
+      title:        'Open Guitar Jam — All Levels Welcome',
+      description:  'Bring your guitar and join a relaxed jam session in Lyulin Park. We play folk, pop, and blues. Absolute beginners can watch and ask questions. Stoyan brings extra guitars.',
+      locationId:   locId('Lyulin'),
+      address:      'Lyulin Park — main stage area near the fountain',
+      startsAt:     inDays(10, 15),
+      endsAt:       inDays(10, 18),
+      maxCapacity:  20,
+      status:       'published',
+    },
+    // Dimitar organises a community garden planting day
+    {
+      organizerId:  dimitar.id,
+      title:        'Community Garden Planting Day — Boyana',
+      description:  'Join us to plant seedlings and set up raised beds at the Boyana community plot. Dimitar brings seeds, tools, and soil mix. Perfect for gardening beginners. Kids welcome!',
+      locationId:   locId('Boyana'),
+      address:      'Boyana Community Garden, ul. Boyanska Rzeka 3',
+      startsAt:     inDays(5, 9),
+      endsAt:       inDays(5, 13),
+      maxCapacity:  12,
+      status:       'published',
+    },
   ]).returning()
 
   console.log('Seeding demo event attendees...')
@@ -862,6 +1203,16 @@ async function seedEvents() {
     { eventId: languageExchange.id, userId: georgi.id, status: 'attending' },
     { eventId: languageExchange.id, userId: elena.id,  status: 'attending' },
     { eventId: languageExchange.id, userId: nikola.id, status: 'attending' },
+    // Guitar jam: ivan, petya, nikola attending
+    { eventId: guitarJam.id,        userId: ivan.id,   status: 'attending' },
+    { eventId: guitarJam.id,        userId: petya.id,  status: 'attending' },
+    { eventId: guitarJam.id,        userId: nikola.id, status: 'attending' },
+    { eventId: guitarJam.id,        userId: maria.id,  status: 'cancelled' },
+    // Garden planting day: georgi, elena, stoyan attending
+    { eventId: gardenDay.id,        userId: georgi.id, status: 'attending' },
+    { eventId: gardenDay.id,        userId: elena.id,  status: 'attending' },
+    { eventId: gardenDay.id,        userId: stoyan.id, status: 'attending' },
+    { eventId: gardenDay.id,        userId: petya.id,  status: 'attending' },
   ]).onConflictDoNothing()
 }
 
@@ -887,6 +1238,9 @@ async function seedDrives() {
   const georgi = byEmail('georgi@demo.bg')
   const elena  = byEmail('elena@demo.bg')
   const nikola = byEmail('nikola@demo.bg')
+  const stoyan = byEmail('stoyan@demo.bg')
+  const petya  = byEmail('petya@demo.bg')
+  const dimitar = byEmail('dimitar@demo.bg')
 
   const inDays = (n: number) => {
     const d = new Date()
@@ -895,7 +1249,7 @@ async function seedDrives() {
     return d
   }
 
-  const [winterClothes, schoolBooks, homemadeFood, gardenFund] = await db.insert(communityDrives).values([
+  const [winterClothes, schoolBooks, homemadeFood, gardenFund, seedSwap] = await db.insert(communityDrives).values([
     // Georgi collects winter clothes — open
     {
       organizerId:      georgi.id,
@@ -938,6 +1292,17 @@ async function seedDrives() {
       goalDescription:  'Raise 800 BGN for materials and tools',
       dropOffAddress:   null,
       deadline:         inDays(30),
+      status:           'open',
+    },
+    // Dimitar organises a seed and seedling swap — open
+    {
+      organizerId:      dimitar.id,
+      title:            'Spring Seed Swap — Boyana & Vitosha',
+      description:      'Bring seeds or seedlings you have to spare and take home something new. Tomatoes, peppers, herbs, flowers — all welcome. Free event, donations of seeds appreciated.',
+      driveType:        'items',
+      goalDescription:  'Collect 30+ seed varieties for the community swap table',
+      dropOffAddress:   'Boyana Community Garden, ul. Boyanska Rzeka 3',
+      deadline:         inDays(18),
       status:           'open',
     },
   ]).returning()
@@ -1009,6 +1374,31 @@ async function seedDrives() {
       pledgeDescription:  'I can donate 50 BGN and also help with the actual construction work.',
       status:             'pledged',
     },
+    // Seed swap: four pledges
+    {
+      driveId:            seedSwap.id,
+      userId:             elena.id,
+      pledgeDescription:  'Bringing a mix of basil, parsley, and dill seeds, plus 6 tomato seedlings.',
+      status:             'pledged',
+    },
+    {
+      driveId:            seedSwap.id,
+      userId:             georgi.id,
+      pledgeDescription:  'I have pepper seeds (4 varieties) and a few sunflower plants to contribute.',
+      status:             'pledged',
+    },
+    {
+      driveId:            seedSwap.id,
+      userId:             petya.id,
+      pledgeDescription:  'Bringing strawberry runners and a small pot of mint.',
+      status:             'pledged',
+    },
+    {
+      driveId:            seedSwap.id,
+      userId:             ivan.id,
+      pledgeDescription:  'Courgette and cucumber seeds from last year\'s harvest.',
+      status:             'pledged',
+    },
   ]).onConflictDoNothing()
 }
 
@@ -1034,6 +1424,9 @@ async function seedConversations() {
   const georgi = byEmail('georgi@demo.bg')
   const elena  = byEmail('elena@demo.bg')
   const nikola = byEmail('nikola@demo.bg')
+  const stoyan = byEmail('stoyan@demo.bg')
+  const petya  = byEmail('petya@demo.bg')
+  const dimitar = byEmail('dimitar@demo.bg')
 
   const pair = (a: string, b: string) =>
     a < b ? { participantA: a, participantB: b } : { participantA: b, participantB: a }
@@ -1142,6 +1535,67 @@ async function seedConversations() {
     },
   ])
 
+  // Conversation 4: Stoyan ↔ Petya (creative collaboration)
+  const [convStoyanPetya] = await db.insert(conversations).values(pair(stoyan.id, petya.id)).returning()
+
+  await db.insert(messages).values([
+    {
+      conversationId: convStoyanPetya.id,
+      senderId: stoyan.id,
+      body: 'Привет Petya! Организирам jam сесия за началото на май и ми трябва малко помощ с флайер. Мислиш ли, че можеш да направиш нещо просто?',
+      createdAt: msgsAgo(2 * 24 * 60),
+      readAt: msgsAgo(2 * 24 * 60 - 20),
+    },
+    {
+      conversationId: convStoyanPetya.id,
+      senderId: petya.id,
+      body: 'Разбира се! Много обичам музикални проекти. Изпрати ми детайли — дата, място, тема/жанр — и ще скицирам нещо тази вечер.',
+      createdAt: msgsAgo(2 * 24 * 60 - 40),
+      readAt: msgsAgo(2 * 24 * 60 - 30),
+    },
+    {
+      conversationId: convStoyanPetya.id,
+      senderId: stoyan.id,
+      body: '10 май, Lyulin Park, Blues & Folk jam, безплатно. Искам нещо ръчно рисувано ако е възможно — или поне такъв вид.',
+      createdAt: msgsAgo(2 * 24 * 60 - 50),
+      readAt: msgsAgo(2 * 24 * 60 - 45),
+    },
+    {
+      conversationId: convStoyanPetya.id,
+      senderId: petya.id,
+      body: 'Перфектно! Ще направя нещо с линейна илюстрация и топли цветове. Ще ти пратя 2 варианта утре.',
+      createdAt: msgsAgo(2 * 24 * 60 - 55),
+      readAt: null,
+    },
+  ])
+
+  // Conversation 5: Dimitar ↔ Elena (garden + cooking)
+  const [convDimitarElena] = await db.insert(conversations).values(pair(dimitar.id, elena.id)).returning()
+
+  await db.insert(messages).values([
+    {
+      conversationId: convDimitarElena.id,
+      senderId: dimitar.id,
+      body: 'Елена, видях мусаката ти — изглежда невероятно! Имам пресни домати и босилек от градината, ако те интересуват.',
+      createdAt: msgsAgo(5 * 60),
+      readAt: msgsAgo(4 * 60),
+    },
+    {
+      conversationId: convDimitarElena.id,
+      senderId: elena.id,
+      body: 'О, точно такива търся за следващата готварска сесия! Мога ли да взема утре сутринта? И ако имаш излишни семена — много ми трябват за урока.',
+      createdAt: msgsAgo(3 * 60),
+      readAt: msgsAgo(2 * 60),
+    },
+    {
+      conversationId: convDimitarElena.id,
+      senderId: dimitar.id,
+      body: 'Разбира се! Ще сложа торбичка с домати и ще ти дам и семена от черешови домати — много вкусни. Елате в 9:00.',
+      createdAt: msgsAgo(90),
+      readAt: null,
+    },
+  ])
+
   // ─── Feed events ──────────────────────────────────────────────────────────
   const existingFeed = await db.select({ id: feedEvents.id }).from(feedEvents).limit(1)
   if (existingFeed.length > 0) {
@@ -1209,6 +1663,43 @@ async function seedConversations() {
     targetId: eventRow.id,
     targetTitle: 'Sofia Dev Meetup — Web Performance',
     targetUrl: `/events/${eventRow.id}`,
+    createdAt: daysAgo(1),
+  })
+
+  const [stoyanSkillRow] = await db.select({ id: skills.id }).from(skills)
+    .where(eq(skills.ownerId, stoyan.id)).limit(1)
+  const [dimitar_eventRow] = await db.select({ id: events.id }).from(events)
+    .where(eq(events.organizerId, dimitar.id)).limit(1)
+  const [petya_toolRow] = await db.select({ id: tools.id }).from(tools)
+    .where(eq(tools.ownerId, petya.id)).limit(1)
+
+  if (stoyanSkillRow) feedRows.push({
+    actorId: stoyan.id,
+    actorName: 'Stoyan Nikolov',
+    eventType: 'skill_listed',
+    targetId: stoyanSkillRow.id,
+    targetTitle: 'Guitar lessons — beginner to intermediate',
+    targetUrl: `/skills/${stoyanSkillRow.id}`,
+    createdAt: daysAgo(4),
+  })
+
+  if (petya_toolRow) feedRows.push({
+    actorId: petya.id,
+    actorName: 'Petya Ivanova',
+    eventType: 'tool_listed',
+    targetId: petya_toolRow.id,
+    targetTitle: 'Wacom Intuos Pro Drawing Tablet (M)',
+    targetUrl: `/tools/${petya_toolRow.id}`,
+    createdAt: daysAgo(2),
+  })
+
+  if (dimitar_eventRow) feedRows.push({
+    actorId: dimitar.id,
+    actorName: 'Dimitar Vasilev',
+    eventType: 'event_created',
+    targetId: dimitar_eventRow.id,
+    targetTitle: 'Community Garden Planting Day — Boyana',
+    targetUrl: `/events/${dimitar_eventRow.id}`,
     createdAt: daysAgo(1),
   })
 

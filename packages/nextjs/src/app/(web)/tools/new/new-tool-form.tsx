@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
 
@@ -14,15 +15,10 @@ interface Props {
   locations: Location[]
 }
 
-const CONDITIONS = [
-  { value: 'new',  label: 'New' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'worn', label: 'Worn' },
-]
-
 export default function NewToolForm({ categories, locations }: Props) {
   const router = useRouter()
+  const t = useTranslations('tools')
+  const tCommon = useTranslations('common')
   const { showToast } = useToast()
   const [loading, setLoading]           = useState(false)
   const [submitError, setSubmitError]   = useState<string | null>(null)
@@ -66,7 +62,7 @@ export default function NewToolForm({ categories, locations }: Props) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (uploading) {
-      setSubmitError('Please wait for the image to finish uploading.')
+      setSubmitError(t('form_upload_wait'))
       return
     }
     setSubmitError(null)
@@ -93,23 +89,23 @@ export default function NewToolForm({ categories, locations }: Props) {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          UNVERIFIED_EMAIL:  'Please verify your email before listing a tool.',
-          TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
-          VALIDATION_ERROR:  'Please check your inputs.',
-          UNAUTHORIZED:      'You must be logged in to list a tool.',
+          UNVERIFIED_EMAIL:  t('errors.unverified_email'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
+          VALIDATION_ERROR:  t('errors.validation'),
+          UNAUTHORIZED:      t('errors.unauthorized'),
         }
-        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
       showToast({
         variant: 'success',
-        title: 'Tool listed',
-        message: 'Your tool is now visible to the community.',
+        title: t('toast_listed_title'),
+        message: t('toast_listed_message'),
       })
       router.push(`/tools/${json.data.id}`)
     } catch {
-      setSubmitError('Network error. Please check your connection and try again.')
+      setSubmitError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -121,7 +117,7 @@ export default function NewToolForm({ categories, locations }: Props) {
 
         <div>
           <label htmlFor="tool-title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
+            {t('form_title_label')} <span className="text-red-500">*</span>
           </label>
           <input
             id="tool-title"
@@ -132,13 +128,13 @@ export default function NewToolForm({ categories, locations }: Props) {
             maxLength={200}
             onChange={(e) => setTitleLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="e.g. Electric drill, Ladder, Circular saw…"
+            placeholder={t('form_title_placeholder')}
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{titleLength}/200</p>
         </div>
 
         <div>
-          <label htmlFor="tool-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="tool-description" className="block text-sm font-medium text-gray-700 mb-1">{t('form_desc_label')}</label>
           <textarea
             id="tool-description"
             name="description"
@@ -146,17 +142,17 @@ export default function NewToolForm({ categories, locations }: Props) {
             maxLength={2000}
             onChange={(e) => setDescLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
-            placeholder="Describe the tool, any usage notes, and borrowing terms…"
+            placeholder={t('form_desc_placeholder')}
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{descLength}/2000</p>
         </div>
 
         <div>
-          <label htmlFor="tool-image" className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+          <label htmlFor="tool-image" className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
           {imageUrl && (
             <Image
               src={imageUrl}
-              alt="Tool image preview"
+              alt={t('form_image_preview_alt')}
               width={1200}
               height={720}
               unoptimized
@@ -171,8 +167,8 @@ export default function NewToolForm({ categories, locations }: Props) {
             disabled={uploading}
             className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
           />
-          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
-          <p className="text-xs text-gray-400 mt-1">Optional. JPEG, PNG or WebP, max 5 MB.</p>
+          {uploading && <p className="text-xs text-gray-400 mt-1">{t('form_uploading')}</p>}
+          <p className="text-xs text-gray-400 mt-1">{t('form_image_hint')}</p>
           {uploadError && (
             <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
           )}
@@ -183,34 +179,39 @@ export default function NewToolForm({ categories, locations }: Props) {
               disabled={uploading}
               className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
             >
-              Retry upload
+              {t('form_retry_upload')}
             </button>
           )}
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="tool-condition" className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+            <label htmlFor="tool-condition" className="block text-sm font-medium text-gray-700 mb-1">{t('form_condition_label')}</label>
             <select
               id="tool-condition"
               name="condition"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select —</option>
-              {CONDITIONS.map((c) => (
+              <option value="">{t('form_select_placeholder')}</option>
+              {[
+                { value: 'new',  label: t('condition_new') },
+                { value: 'good', label: t('condition_good') },
+                { value: 'fair', label: t('condition_fair') },
+                { value: 'worn', label: t('condition_worn') },
+              ].map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="tool-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="tool-category" className="block text-sm font-medium text-gray-700 mb-1">{t('form_category_label')}</label>
             <select
               id="tool-category"
               name="categoryId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select —</option>
+              <option value="">{t('form_select_placeholder')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
@@ -218,13 +219,13 @@ export default function NewToolForm({ categories, locations }: Props) {
           </div>
 
           <div>
-            <label htmlFor="tool-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="tool-location" className="block text-sm font-medium text-gray-700 mb-1">{t('form_location_label')}</label>
             <select
               id="tool-location"
               name="locationId"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select —</option>
+              <option value="">{t('form_select_placeholder')}</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
               ))}
@@ -244,14 +245,14 @@ export default function NewToolForm({ categories, locations }: Props) {
             disabled={loading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Listing…' : 'List tool'}
+            {loading ? t('form_listing') : t('form_list')}
           </button>
           <button
             type="button"
             onClick={() => router.push('/tools')}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
         </div>
       </form>

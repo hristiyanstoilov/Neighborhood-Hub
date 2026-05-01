@@ -1,3 +1,7 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
+
 type RequestAction = 'accept' | 'reject' | 'complete' | 'cancel'
 
 type RequestActionsProps = {
@@ -19,6 +23,8 @@ export function RequestActions({
   onAction,
   onOpenCancelPrompt,
 }: RequestActionsProps) {
+  const t = useTranslations('my_requests')
+
   if (terminalStatuses.includes(status)) {
     return null
   }
@@ -35,7 +41,7 @@ export function RequestActions({
             disabled={loading}
             className="bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            Accept
+            {t('action_accept')}
           </button>
           <button
             type="button"
@@ -43,7 +49,7 @@ export function RequestActions({
             disabled={loading}
             className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
-            Reject
+            {t('action_reject')}
           </button>
         </>
       )}
@@ -55,7 +61,7 @@ export function RequestActions({
           disabled={loading}
           className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          Mark complete
+          {t('action_complete')}
         </button>
       )}
 
@@ -66,7 +72,7 @@ export function RequestActions({
           disabled={loading}
           className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
-          Cancel
+          {t('action_cancel')}
         </button>
       )}
     </div>

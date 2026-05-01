@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import ReservationCard from './reservation-card'
 import { useReservations, type ReservationRole } from './use-reservations'
 
 function RoleTabs({ role }: { role: ReservationRole }) {
+  const t = useTranslations('my_reservations')
+
   return (
     <div className="flex gap-1 mb-6 border-b border-gray-200">
       {(['borrower', 'owner'] as ReservationRole[]).map((r) => (
@@ -17,7 +20,7 @@ function RoleTabs({ role }: { role: ReservationRole }) {
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          {r === 'borrower' ? 'Borrowing' : 'My tools'}
+          {r === 'borrower' ? t('tab_borrowing') : t('tab_my_tools')}
         </Link>
       ))}
     </div>
@@ -31,12 +34,13 @@ export function MyReservationsClient({
   role: ReservationRole
   viewerId: string
 }) {
+  const t = useTranslations('my_reservations')
   const query = useReservations(viewerId, role)
   const reservations = query.data ?? []
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">My Reservations</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('title')}</h1>
 
       <RoleTabs role={role} />
 
@@ -48,24 +52,22 @@ export function MyReservationsClient({
         </div>
       ) : query.isError ? (
         <div className="text-center py-16 text-gray-500">
-          <p className="mb-2">Could not load reservations.</p>
+          <p className="mb-2">{t('error_load')}</p>
           <button
             onClick={() => query.refetch()}
             className="text-sm text-green-700 hover:underline"
           >
-            Try again
+            {t('try_again')}
           </button>
         </div>
       ) : reservations.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="mb-2">
-            {role === 'borrower'
-              ? "You haven't reserved any tools yet."
-              : "No one has reserved your tools yet."}
+            {role === 'borrower' ? t('empty_borrower') : t('empty_owner')}
           </p>
           {role === 'borrower' && (
             <Link href="/tools" className="text-sm text-green-700 hover:underline">
-              Browse available tools →
+              {t('browse_tools')}
             </Link>
           )}
         </div>

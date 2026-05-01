@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useDeleteSkill } from './_hooks/use-delete-skill'
 
@@ -12,6 +13,8 @@ interface Props {
 export default function SkillOwnerActions({ skillId }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const deleteMutation = useDeleteSkill(skillId)
+  const t = useTranslations('skills')
+  const tCommon = useTranslations('common')
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -19,7 +22,7 @@ export default function SkillOwnerActions({ skillId }: Props) {
         href={`/skills/${skillId}/edit`}
         className="px-4 py-1.5 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
       >
-        Edit
+        {tCommon('edit')}
       </Link>
 
       <button
@@ -27,7 +30,7 @@ export default function SkillOwnerActions({ skillId }: Props) {
         onClick={() => { setConfirmDelete(true); deleteMutation.reset() }}
         className="px-4 py-1.5 rounded-md text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
       >
-        Delete
+        {tCommon('delete')}
       </button>
 
       {deleteMutation.error && (
@@ -36,9 +39,9 @@ export default function SkillOwnerActions({ skillId }: Props) {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete skill?"
-        description="This will permanently remove the skill listing from the marketplace."
-        confirmLabel={deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+        title={t('delete_skill_title')}
+        description={t('delete_skill_desc')}
+        confirmLabel={deleteMutation.isPending ? t('deleting') : tCommon('delete')}
         confirmVariant="danger"
         onConfirm={() => deleteMutation.mutate()}
         onCancel={() => { setConfirmDelete(false); deleteMutation.reset() }}

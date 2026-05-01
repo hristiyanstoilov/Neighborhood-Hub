@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
 
@@ -27,6 +28,8 @@ interface Props {
 export default function EditSkillForm({ skill, categories, locations }: Props) {
   const router = useRouter()
   const { showToast } = useToast()
+  const t = useTranslations('skills')
+  const tCommon = useTranslations('common')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [titleLength, setTitleLength] = useState(skill.title?.length ?? 0)
@@ -58,26 +61,26 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          UNAUTHORIZED:       'You must be logged in.',
-          FORBIDDEN:          'You do not have permission to edit this skill.',
-          NOT_FOUND:          'Skill not found.',
-          VALIDATION_ERROR:   'Please check your inputs.',
-          CATEGORY_NOT_FOUND: 'Selected category is invalid.',
-          LOCATION_NOT_FOUND: 'Selected location is invalid.',
-          TOO_MANY_REQUESTS:  'Too many attempts. Please wait and try again.',
+          UNAUTHORIZED:       t('errors.unauthorized'),
+          FORBIDDEN:          t('errors.forbidden'),
+          NOT_FOUND:          t('errors.not_found'),
+          VALIDATION_ERROR:   t('errors.validation'),
+          CATEGORY_NOT_FOUND: t('errors.category_not_found'),
+          LOCATION_NOT_FOUND: t('errors.location_not_found'),
+          TOO_MANY_REQUESTS:  t('errors.too_many_requests'),
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
       showToast({
         variant: 'success',
-        title: 'Skill saved',
-        message: 'Your changes were updated successfully.',
+        title: t('toast_saved_title'),
+        message: t('toast_saved_message'),
       })
       router.push(`/skills/${skill.id}`)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -89,7 +92,7 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
 
         <div>
           <label htmlFor="edit-skill-title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
+            {t('form_title_label')} <span className="text-red-500">*</span>
           </label>
           <input
             id="edit-skill-title"
@@ -106,21 +109,21 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="edit-skill-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <label htmlFor="edit-skill-status" className="block text-sm font-medium text-gray-700 mb-1">{t('form_status_label')}</label>
           <select
             id="edit-skill-status"
             name="status"
             defaultValue={skill.status}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
           >
-            <option value="available">Available</option>
-            <option value="busy">Busy</option>
-            <option value="retired">Retired</option>
+            <option value="available">{tCommon('status.available')}</option>
+            <option value="busy">{tCommon('status.busy')}</option>
+            <option value="retired">{tCommon('status.retired')}</option>
           </select>
         </div>
 
         <div>
-          <label htmlFor="edit-skill-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="edit-skill-description" className="block text-sm font-medium text-gray-700 mb-1">{t('form_desc_label')}</label>
           <textarea
             id="edit-skill-description"
             name="description"
@@ -135,14 +138,14 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="edit-skill-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="edit-skill-category" className="block text-sm font-medium text-gray-700 mb-1">{t('field_category')}</label>
             <select
               id="edit-skill-category"
               name="categoryId"
               defaultValue={skill.categoryId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select category —</option>
+              <option value="">{t('form_category_placeholder')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
@@ -150,14 +153,14 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
           </div>
 
           <div>
-            <label htmlFor="edit-skill-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="edit-skill-location" className="block text-sm font-medium text-gray-700 mb-1">{t('field_location')}</label>
             <select
               id="edit-skill-location"
               name="locationId"
               defaultValue={skill.locationId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select location —</option>
+              <option value="">{t('form_location_placeholder')}</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
               ))}
@@ -167,7 +170,7 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
 
         <div className="w-40">
           <label htmlFor="edit-skill-hours" className="block text-sm font-medium text-gray-700 mb-1">
-            Hours available / week
+            {t('form_hours_label')}
           </label>
           <input
             id="edit-skill-hours"
@@ -192,14 +195,14 @@ export default function EditSkillForm({ skill, categories, locations }: Props) {
             disabled={loading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Saving…' : 'Save changes'}
+            {loading ? t('form_saving') : t('form_save')}
           </button>
           <button
             type="button"
             onClick={() => router.push(`/skills/${skill.id}`)}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
         </div>
       </form>

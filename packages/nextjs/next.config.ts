@@ -5,6 +5,14 @@ const isDevelopment = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  // next-intl@3.x requires 'next-intl/config' to resolve to the request config at build time.
+  // createNextIntlPlugin does this via webpack, which does not work under Turbopack (Next 16 default).
+  // Setting it manually in turbopack.resolveAlias covers the Turbopack build path.
+  turbopack: {
+    resolveAlias: {
+      'next-intl/config': './src/i18n/request.ts',
+    },
+  },
   headers: async () => [
     {
       source: '/(.*)',
@@ -21,7 +29,7 @@ const nextConfig: NextConfig = {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: https:",
             "font-src 'self'",
-            "connect-src 'self'",
+            "connect-src 'self' https://eu.i.posthog.com https://us.i.posthog.com",
             "frame-ancestors 'none'",
           ].join('; '),
         },

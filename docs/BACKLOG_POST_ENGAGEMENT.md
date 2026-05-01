@@ -252,12 +252,11 @@ These are lower priority and should only be started after items 1–4 above are 
 
 ---
 
-## Execution Order for Next Session
+## Execution Order — Updated 2026-05-01
+All items from the original sprint (i18n, production polish web/mobile, AGENTS.md, QA regression pack additions) are complete. Remaining work:
 
-1. **AGENTS.md update** (30 min, docs only, zero risk)
-2. **QA Regression Pack additions** (45 min, docs only, zero risk)
-3. **Production polish — web toasts + confirm dialogs** (1 hour, surgical changes)
-4. **Production polish — mobile empty states + toasts** (1 hour)
-5. **i18n — auth pages** (1 hour, high user-facing impact)
-6. **i18n — content pages** (2–3 hours, lower priority)
-7. **Tier 3 features** (only after 1–6 are done)
+1. Demo Mode (feat — 1 day)
+2. Production Polish Wave 2 — skeleton loaders (2-3 hours)
+3. Badges/Achievements — badges table + profile display (1-2 days)
+4. Analytics — PostHog/Plausible (0.5 days)
+5. Production Polish Wave 3 — accessibility + form validation (3-4 hours)

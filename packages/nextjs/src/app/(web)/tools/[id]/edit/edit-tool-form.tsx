@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
 
@@ -24,15 +25,10 @@ interface Props {
   locations: Location[]
 }
 
-const CONDITIONS = [
-  { value: 'new',  label: 'New' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' },
-  { value: 'worn', label: 'Worn' },
-]
-
 export default function EditToolForm({ tool, categories, locations }: Props) {
   const router = useRouter()
+  const t = useTranslations('tools')
+  const tCommon = useTranslations('common')
   const { showToast } = useToast()
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState<string | null>(null)
@@ -65,26 +61,26 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          UNAUTHORIZED:       'You must be logged in.',
-          FORBIDDEN:          'You do not have permission to edit this tool.',
-          NOT_FOUND:          'Tool not found.',
-          VALIDATION_ERROR:   'Please check your inputs.',
-          CATEGORY_NOT_FOUND: 'Selected category is invalid.',
-          LOCATION_NOT_FOUND: 'Selected location is invalid.',
-          TOO_MANY_REQUESTS:  'Too many attempts. Please wait and try again.',
+          UNAUTHORIZED:       t('errors.unauthorized'),
+          FORBIDDEN:          t('errors.forbidden'),
+          NOT_FOUND:          t('errors.not_found'),
+          VALIDATION_ERROR:   t('errors.validation'),
+          CATEGORY_NOT_FOUND: t('errors.category_not_found'),
+          LOCATION_NOT_FOUND: t('errors.location_not_found'),
+          TOO_MANY_REQUESTS:  t('errors.too_many_requests'),
         }
-        setError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
       showToast({
         variant: 'success',
-        title: 'Tool updated',
-        message: 'Your changes were saved successfully.',
+        title: t('toast_saved_title'),
+        message: t('toast_saved_message'),
       })
       router.push(`/tools/${tool.id}`)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -96,7 +92,7 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
 
         <div>
           <label htmlFor="edit-tool-title" className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
+            {t('form_title_label')} <span className="text-red-500">*</span>
           </label>
           <input
             id="edit-tool-title"
@@ -114,29 +110,34 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="edit-tool-status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label htmlFor="edit-tool-status" className="block text-sm font-medium text-gray-700 mb-1">{t('form_status_label')}</label>
             <select
               id="edit-tool-status"
               name="status"
               defaultValue={tool.status}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="available">Available</option>
-              <option value="in_use">In use</option>
-              <option value="on_loan">On loan</option>
+              <option value="available">{t('status_available')}</option>
+              <option value="in_use">{t('status_in_use')}</option>
+              <option value="on_loan">{t('status_on_loan')}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="edit-tool-condition" className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+            <label htmlFor="edit-tool-condition" className="block text-sm font-medium text-gray-700 mb-1">{t('form_condition_label')}</label>
             <select
               id="edit-tool-condition"
               name="condition"
               defaultValue={tool.condition ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select —</option>
-              {CONDITIONS.map((c) => (
+              <option value="">{t('form_select_placeholder')}</option>
+              {[
+                { value: 'new',  label: t('condition_new') },
+                { value: 'good', label: t('condition_good') },
+                { value: 'fair', label: t('condition_fair') },
+                { value: 'worn', label: t('condition_worn') },
+              ].map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
@@ -144,7 +145,7 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="edit-tool-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label htmlFor="edit-tool-description" className="block text-sm font-medium text-gray-700 mb-1">{t('form_desc_label')}</label>
           <textarea
             id="edit-tool-description"
             name="description"
@@ -159,14 +160,14 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="edit-tool-category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="edit-tool-category" className="block text-sm font-medium text-gray-700 mb-1">{t('form_category_label')}</label>
             <select
               id="edit-tool-category"
               name="categoryId"
               defaultValue={tool.categoryId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select category —</option>
+              <option value="">{t('form_select_placeholder')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.label}</option>
               ))}
@@ -174,14 +175,14 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
           </div>
 
           <div>
-            <label htmlFor="edit-tool-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label htmlFor="edit-tool-location" className="block text-sm font-medium text-gray-700 mb-1">{t('form_location_label')}</label>
             <select
               id="edit-tool-location"
               name="locationId"
               defaultValue={tool.locationId ?? ''}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">— Select location —</option>
+              <option value="">{t('form_select_placeholder')}</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
               ))}
@@ -201,14 +202,14 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
             disabled={loading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Saving…' : 'Save changes'}
+            {loading ? t('form_saving') : t('form_save')}
           </button>
           <button
             type="button"
             onClick={() => router.push(`/tools/${tool.id}`)}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
         </div>
       </form>

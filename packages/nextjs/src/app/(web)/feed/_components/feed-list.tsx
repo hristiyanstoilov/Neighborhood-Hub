@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 import { queryKeys } from '@/lib/query-keys'
@@ -22,14 +23,6 @@ type FeedResponse = {
   total: number
 }
 
-function formatVerb(eventType: FeedEventType) {
-  if (eventType === 'skill_listed') return 'listed a new skill'
-  if (eventType === 'tool_listed') return 'added a tool'
-  if (eventType === 'food_shared') return 'shared food'
-  if (eventType === 'drive_opened') return 'started a drive'
-  return 'created an event'
-}
-
 async function fetchFeedPage(offset: number): Promise<FeedResponse> {
   const res = await apiFetch(`/api/feed?limit=20&offset=${offset}`)
   const json = await res.json().catch(() => null)
@@ -42,6 +35,8 @@ async function fetchFeedPage(offset: number): Promise<FeedResponse> {
 }
 
 export function FeedList() {
+  const t = useTranslations('feed')
+
   const query = useInfiniteQuery({
     queryKey: queryKeys.feed.list,
     queryFn: ({ pageParam }) => fetchFeedPage(pageParam),
@@ -51,6 +46,14 @@ export function FeedList() {
       return loaded < lastPage.total ? loaded : undefined
     },
   })
+
+  const verbMap: Record<FeedEventType, string> = {
+    skill_listed: t('skill_listed'),
+    tool_listed: t('tool_listed'),
+    food_shared: t('food_shared'),
+    drive_opened: t('drive_created'),
+    event_created: t('event_created'),
+  }
 
   if (query.isLoading) {
     return (
@@ -65,7 +68,7 @@ export function FeedList() {
   if (query.isError) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Failed to load feed. Please refresh.
+        {t('error')}
       </div>
     )
   }
@@ -75,7 +78,7 @@ export function FeedList() {
   if (items.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-600">
-        No activity yet. Be the first to share something!
+        {t('empty')}
       </div>
     )
   }
@@ -85,7 +88,7 @@ export function FeedList() {
       {items.map((item) => (
         <article key={item.id} className="rounded-lg border border-gray-200 bg-white px-4 py-3">
           <p className="text-sm text-gray-900">
-            <span className="font-semibold">{item.actorName}</span> {formatVerb(item.eventType)}:{' '}
+            <span className="font-semibold">{item.actorName}</span> {verbMap[item.eventType] ?? item.eventType}:{' '}
             <Link href={item.targetUrl} className="font-medium text-green-700 hover:underline">
               {item.targetTitle}
             </Link>
@@ -101,7 +104,7 @@ export function FeedList() {
           disabled={query.isFetchingNextPage}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
         >
-          {query.isFetchingNextPage ? 'Loading...' : 'Load more'}
+          {query.isFetchingNextPage ? t('loading_more') : t('load_more')}
         </button>
       )}
     </div>

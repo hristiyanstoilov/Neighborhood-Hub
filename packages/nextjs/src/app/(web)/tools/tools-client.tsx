@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { EmptyState, ErrorState } from '@/components/ui/async-states'
 import { ToolsFilters } from './_components/tools-filters'
 import { ToolsGrid } from './_components/tools-grid'
@@ -29,6 +30,7 @@ export function ToolsClient({
   locations,
   initialData,
 }: ToolsClientProps) {
+  const t = useTranslations('tools')
   const query = useToolsList({ status, search, categoryId, locationId, page }, initialData)
   const tools = query.data?.tools ?? []
   const total = query.data?.total ?? 0
@@ -40,12 +42,12 @@ export function ToolsClient({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Tool Library</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <Link
           href="/tools/new"
           className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
         >
-          + List a tool
+          {t('list_tool')}
         </Link>
       </div>
 
@@ -67,20 +69,20 @@ export function ToolsClient({
         </div>
       ) : query.isError ? (
         <ErrorState
-          title="Could not load tools."
-          message="Please try again."
-          actionLabel="Try again"
+          title={t('error_title')}
+          message={t('error_message')}
+          actionLabel={t('try_again')}
           actionHref={buildHref({})}
         />
       ) : tools.length === 0 ? (
         <EmptyState
-          title="No tools found."
+          title={t('empty_title')}
           message={
             status || search || categoryId || locationId
               ? undefined
-              : 'Be the first to list a tool in your neighborhood.'
+              : t('empty_message')
           }
-          actionLabel={status || search || categoryId || locationId ? 'Clear filters' : undefined}
+          actionLabel={status || search || categoryId || locationId ? t('clear_filters') : undefined}
           actionHref={status || search || categoryId || locationId ? '/tools' : undefined}
         />
       ) : (

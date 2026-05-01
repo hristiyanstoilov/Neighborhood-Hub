@@ -291,7 +291,7 @@ Status: ✅ Done.
 
 ---
 
-## v0.2 – Module 2: Neighborhood Tool Library *(planned – after MVP)*
+## v0.2 – Module 2: Neighborhood Tool Library *(✅ Done)*
 
 - Share tools and household items (drill, ladder, lawnmower, etc.)
 - Status: available / in use / on loan
@@ -300,7 +300,7 @@ Status: ✅ Done.
 
 ---
 
-## v0.3 – Module 3: Neighborhood Events *(planned – after MVP)*
+## v0.3 – Module 3: Neighborhood Events *(✅ Done)*
 
 - Community events + charity initiatives (charity is a subtype of event)
 - RSVP / attendance registration
@@ -309,7 +309,7 @@ Status: ✅ Done.
 
 ---
 
-## v0.4 – Module 4: Neighborhood Food Sharing *(planned – after MVP)*
+## v0.4 – Module 4: Neighborhood Food Sharing *(✅ Done)*
 
 - Share surplus food (home-cooked, seasonal produce, etc.)
 - Status: available / reserved / picked_up
@@ -317,7 +317,7 @@ Status: ✅ Done.
 
 ---
 
-## v0.5 – Module 5: Neighborhood Chat / Feed *(planned – later)*
+## v0.5 – Module 5: Neighborhood Chat / Feed *(✅ Done)*
 
 - Social feed of neighborhood activities
 - Direct messages or group chats per neighborhood

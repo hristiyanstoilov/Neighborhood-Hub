@@ -5,6 +5,7 @@ import { eq, and, desc, ilike, count } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { checkAndAwardBadges } from '@/lib/badges'
 import { listSkillsSchema, createSkillSchema } from '@/lib/schemas/skill'
 import { skillSelect, buildSkillConditions } from '@/lib/queries/skills'
 
@@ -107,6 +108,8 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       entityId: skill.id,
       ipAddress: ip,
     })
+
+    void checkAndAwardBadges(user.sub).catch(() => undefined)
 
     const authHeader = req.headers.get('authorization')
     if (authHeader) {

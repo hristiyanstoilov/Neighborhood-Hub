@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
@@ -26,6 +27,8 @@ export default function EditProfileForm({ profile, locations }: Props) {
   const router = useRouter()
   const { refreshUser } = useAuth()
   const { showToast } = useToast()
+  const t = useTranslations('edit_profile')
+  const tProfile = useTranslations('profile')
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [nameLength, setNameLength] = useState(profile?.name?.length ?? 0)
@@ -44,7 +47,7 @@ export default function EditProfileForm({ profile, locations }: Props) {
       const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) {
-        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
+        setUploadError(json.detail ?? t('upload_failed'))
         return false
       }
 
@@ -52,7 +55,7 @@ export default function EditProfileForm({ profile, locations }: Props) {
       setPendingAvatarFile(null)
       return true
     } catch {
-      setUploadError('Upload failed. Please try again.')
+      setUploadError(t('upload_failed'))
       return false
     } finally {
       setUploading(false)
@@ -95,24 +98,23 @@ export default function EditProfileForm({ profile, locations }: Props) {
 
       if (!res.ok) {
         const msg: Record<string, string> = {
-          VALIDATION_ERROR:   'Please check your inputs.',
-          LOCATION_NOT_FOUND: 'Selected location is invalid.',
-          TOO_MANY_REQUESTS:  'Too many attempts. Please wait and try again.',
+          VALIDATION_ERROR:   t('errors.validation'),
+          LOCATION_NOT_FOUND: t('errors.location_not_found'),
+          TOO_MANY_REQUESTS:  t('errors.too_many_requests'),
         }
-        setSubmitError(msg[json.error] ?? 'Something went wrong. Please try again.')
+        setSubmitError(msg[json.error] ?? t('errors.unexpected'))
         return
       }
 
-      // Refresh auth context so nav shows the updated name
       await refreshUser()
       showToast({
         variant: 'success',
-        title: 'Profile saved',
-        message: 'Your profile details were updated successfully.',
+        title: t('toast_saved_title'),
+        message: t('toast_saved_message'),
       })
       router.push('/profile')
     } catch {
-      setSubmitError('Network error. Please check your connection and try again.')
+      setSubmitError(t('errors.network'))
     } finally {
       setLoading(false)
     }
@@ -123,14 +125,14 @@ export default function EditProfileForm({ profile, locations }: Props) {
       <form onSubmit={handleSubmit} className="space-y-5">
 
         <div>
-          <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">{t('name')}</label>
           <input
             id="profile-name"
             name="name"
             type="text"
             maxLength={100}
             defaultValue={profile?.name ?? ''}
-            placeholder="Your display name"
+            placeholder={t('name_placeholder')}
             onChange={(e) => setNameLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
@@ -138,14 +140,14 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="profile-bio" className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+          <label htmlFor="profile-bio" className="block text-sm font-medium text-gray-700 mb-1">{t('bio')}</label>
           <textarea
             id="profile-bio"
             name="bio"
             rows={3}
             maxLength={500}
             defaultValue={profile?.bio ?? ''}
-            placeholder="A short description about yourself…"
+            placeholder={t('bio_placeholder')}
             onChange={(e) => setBioLength(e.target.value.length)}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
           />
@@ -153,11 +155,11 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="profile-avatar" className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
+          <label htmlFor="profile-avatar" className="block text-sm font-medium text-gray-700 mb-1">{t('avatar')}</label>
           {avatarUrl && (
             <Image
               src={avatarUrl}
-              alt="Avatar preview"
+              alt={tProfile('avatar_alt')}
               width={64}
               height={64}
               unoptimized
@@ -172,8 +174,8 @@ export default function EditProfileForm({ profile, locations }: Props) {
             disabled={uploading}
             className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
           />
-          {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
-          <p className="text-xs text-gray-400 mt-1">JPEG, PNG or WebP, max 5 MB.</p>
+          {uploading && <p className="text-xs text-gray-400 mt-1">{t('uploading')}</p>}
+          <p className="text-xs text-gray-400 mt-1">{t('avatar_hint')}</p>
           {uploadError && (
             <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
           )}
@@ -184,20 +186,20 @@ export default function EditProfileForm({ profile, locations }: Props) {
               disabled={uploading}
               className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
             >
-              Retry upload
+              {t('retry_upload')}
             </button>
           )}
         </div>
 
         <div>
-          <label htmlFor="profile-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label htmlFor="profile-location" className="block text-sm font-medium text-gray-700 mb-1">{t('location')}</label>
           <select
             id="profile-location"
             name="locationId"
             defaultValue={profile?.locationId ?? ''}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
           >
-            <option value="">— Select location —</option>
+            <option value="">{t('location_placeholder')}</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>{l.neighborhood}, {l.city}</option>
             ))}
@@ -205,15 +207,15 @@ export default function EditProfileForm({ profile, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="profile-visibility" className="block text-sm font-medium text-gray-700 mb-1">Profile visibility</label>
+          <label htmlFor="profile-visibility" className="block text-sm font-medium text-gray-700 mb-1">{t('visibility')}</label>
           <select
             id="profile-visibility"
             name="isPublic"
             defaultValue={profile?.isPublic === false ? 'false' : 'true'}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
           >
-            <option value="true">Public</option>
-            <option value="false">Private</option>
+            <option value="true">{tProfile('public')}</option>
+            <option value="false">{tProfile('private')}</option>
           </select>
         </div>
 
@@ -229,14 +231,14 @@ export default function EditProfileForm({ profile, locations }: Props) {
             disabled={loading}
             className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Saving…' : 'Save changes'}
+            {loading ? t('saving') : t('save')}
           </button>
           <button
             type="button"
             onClick={() => router.push('/profile')}
             className="px-5 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {tProfile('cancel')}
           </button>
         </div>
       </form>

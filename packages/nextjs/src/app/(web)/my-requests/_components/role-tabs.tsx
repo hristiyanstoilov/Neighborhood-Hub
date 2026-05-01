@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 type Role = 'requester' | 'owner'
 
@@ -11,15 +14,17 @@ function tabClass(active: boolean) {
 }
 
 export function RoleTabs({ role }: { role: Role }) {
+  const t = useTranslations('my_requests')
+
   return (
-    <div role="tablist" aria-label="Request role" className="flex gap-2 mb-6">
+    <div role="tablist" aria-label={t('tab_aria_label')} className="flex gap-2 mb-6">
       <Link
         href="/my-requests?role=requester"
         role="tab"
         aria-selected={role === 'requester'}
         className={tabClass(role === 'requester')}
       >
-        Sent
+        {t('tab_sent')}
       </Link>
       <Link
         href="/my-requests?role=owner"
@@ -27,7 +32,7 @@ export function RoleTabs({ role }: { role: Role }) {
         aria-selected={role === 'owner'}
         className={tabClass(role === 'owner')}
       >
-        Received
+        {t('tab_received')}
       </Link>
     </div>
   )
