@@ -23,7 +23,8 @@
     "my_food_reservations": "My Food Reservations",
     "my_events": "My Events",
     "my_pledges": "My Pledges",
-    "ai_chat": "AI Chat"
+    "ai_chat": "AI Chat",
+    "demo_mode_banner": "You are browsing as a demo user. Actions are disabled."
   },
   "landing": {
     "hero_title": "Share skills with your neighborhood",
@@ -308,6 +309,7 @@
     "search": "Search",
     "filter": "Filter",
     "all": "All",
+    "report": "Report",
     "status": {
       "available": "Available",
       "busy": "Busy",

@@ -13,6 +13,10 @@ const db = drizzle(sql, { schema })
 
 // ─── Demo credentials (all users share this password) ───────────────────────
 const DEMO_PASSWORD = 'Demo1234!'
+const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
+const DEMO_USER_PASSWORD = 'demo1234'
+const DEMO_USER_NAME = 'Demo User'
+const DEMO_USER_BIO = 'Explore the app freely.'
 
 async function seed() {
   // ─── 1. Locations ────────────────────────────────────────────────────────
@@ -90,6 +94,8 @@ async function seed() {
     .limit(1)
 
   if (existing.length > 0) {
+    await ensureDemoUserAndProfile()
+
     // Users already seeded — check if tools exist too
     const toolsExist = await db.select({ id: tools.id }).from(tools).limit(1)
     if (toolsExist.length > 0) {
@@ -158,9 +164,10 @@ async function seed() {
   console.log('Seeding demo users...')
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12)
+  const demoPasswordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12)
   const now = new Date()
 
-  const [ivan, maria, georgi, elena, nikola, stoyan, petya, dimitar] = await db.insert(users).values([
+  const [ivan, maria, georgi, elena, nikola, stoyan, petya, dimitar, demoUser] = await db.insert(users).values([
     {
       email: 'ivan@demo.bg',
       passwordHash,
@@ -206,6 +213,12 @@ async function seed() {
     {
       email: 'dimitar@demo.bg',
       passwordHash,
+      role: 'user',
+      emailVerifiedAt: now,
+    },
+    {
+      email: DEMO_USER_EMAIL,
+      passwordHash: demoPasswordHash,
       role: 'user',
       emailVerifiedAt: now,
     },
@@ -271,7 +284,13 @@ async function seed() {
       locationId: loc('Boyana'),
       isPublic: true,
     },
-  ])
+    {
+      userId: demoUser.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    },
+  ]).onConflictDoNothing()
 
   // ─── 7. Skills ───────────────────────────────────────────────────────────
   console.log('Seeding demo skills...')
@@ -591,6 +610,47 @@ async function seed() {
   console.log('  dimitar@demo.bg — Dimitar Vasilev  (Gardening)')
   console.log(`  Password for all: ${DEMO_PASSWORD}`)
   process.exit(0)
+}
+
+async function ensureDemoUserAndProfile() {
+  const existingDemo = await db.query.users.findFirst({
+    where: eq(users.email, DEMO_USER_EMAIL),
+  })
+
+  if (existingDemo) {
+    await db.insert(profiles).values({
+      userId: existingDemo.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    }).onConflictDoNothing()
+    return existingDemo
+  }
+
+  const demoPasswordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 12)
+  const now = new Date()
+
+  const [createdDemo] = await db.insert(users).values({
+    email: DEMO_USER_EMAIL,
+    passwordHash: demoPasswordHash,
+    role: 'user',
+    emailVerifiedAt: now,
+  }).onConflictDoNothing().returning()
+
+  const resolvedDemo = createdDemo ?? await db.query.users.findFirst({
+    where: eq(users.email, DEMO_USER_EMAIL),
+  })
+
+  if (resolvedDemo) {
+    await db.insert(profiles).values({
+      userId: resolvedDemo.id,
+      name: DEMO_USER_NAME,
+      bio: DEMO_USER_BIO,
+      isPublic: true,
+    }).onConflictDoNothing()
+  }
+
+  return resolvedDemo
 }
 
 // ─── Tools + Reservations (extracted so it can run standalone) ──────────────

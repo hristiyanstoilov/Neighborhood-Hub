@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAccessToken, JwtPayload } from './auth'
 
+const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
+
 export type AuthedRequest = NextRequest & { user: JwtPayload }
 
 type RouteContext = { params?: Promise<Record<string, string>> }
@@ -19,6 +21,14 @@ export function requireAuth(
 
     try {
       const user = verifyAccessToken(token)
+      const isDemoUser = user.email.toLowerCase() === DEMO_USER_EMAIL
+      const isMutatingRequest = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())
+      const isAuthLogout = req.nextUrl.pathname === '/api/auth/logout'
+
+      if (isDemoUser && isMutatingRequest && !isAuthLogout) {
+        return NextResponse.json({ error: 'DEMO_USER_READ_ONLY' }, { status: 403 })
+      }
+
       const params = routeContext?.params ? await routeContext.params : {}
       return handler(req, { user, params })
     } catch {

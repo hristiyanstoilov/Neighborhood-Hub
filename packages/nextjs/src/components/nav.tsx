@@ -9,6 +9,8 @@ import NotificationsBell from '@/components/notifications-bell'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useTranslations } from 'next-intl'
 
+const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
+
 export default function Nav() {
   const t = useTranslations('nav')
   const { user, loading, logout } = useAuth()
@@ -18,6 +20,7 @@ export default function Nav() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const isDemoUser = user?.email?.toLowerCase() === DEMO_USER_EMAIL
 
   function isActive(path: string) {
     return pathname === path || pathname.startsWith(`${path}/`)
@@ -158,6 +161,12 @@ export default function Nav() {
           )}
         </nav>
       </div>
+
+      {isDemoUser && (
+        <div className="border-t border-yellow-200 bg-yellow-100 px-4 py-2 text-center text-sm text-yellow-900">
+          {t('demo_mode_banner')}
+        </div>
+      )}
 
       {mobileSearchOpen && (
         <div id="mobile-search-panel" className="lg:hidden border-t border-gray-200 bg-white px-4 py-3">
