@@ -8,6 +8,7 @@ import { apiFetch } from '@/lib/api'
 import { toIsoStringFromLocalInput } from '@/lib/format'
 import { useToast } from '@/components/ui/toast'
 import { ImageUpload } from '@/components/ui/image-upload'
+import posthog from 'posthog-js'
 
 type LocationOption = { id: string; city: string; neighborhood: string }
 
@@ -46,6 +47,11 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
       const json = await res.json().catch(() => null)
       if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
       showToast({ title: t('toast_created'), variant: 'success' })
+      try {
+        posthog.capture('food_share_created', {})
+      } catch {
+        // swallow analytics errors
+      }
       router.push(`/food/${json.data.id}`)
     } catch (err) {
       const code = err instanceof Error ? err.message : 'UNKNOWN_ERROR'

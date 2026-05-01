@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { checkAndAwardBadges } from '@/lib/badges'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
@@ -136,6 +137,13 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       entityType: 'skill_request',
       entityId: id,
     }).catch(() => {})
+
+    if (action === 'complete') {
+      void Promise.all([
+        checkAndAwardBadges(existing.userFromId),
+        checkAndAwardBadges(existing.userToId),
+      ]).catch(() => undefined)
+    }
 
     await writeAuditLog({
       userId: user.sub,

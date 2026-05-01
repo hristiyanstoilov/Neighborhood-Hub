@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
+import posthog from 'posthog-js'
 
 interface Pledge {
   id: string
@@ -62,6 +63,11 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
       setPledge({ id: json.data.id, status: 'pledged', pledgeDescription: description.trim() })
       setDescription('')
       showToast({ variant: 'success', title: t('pledge_success_title'), message: t('pledge_success_message') })
+      try {
+        posthog.capture('drive_pledged', {})
+      } catch {
+        // ignore analytics errors
+      }
     } catch {
       setFormError(t('errors.network'))
     } finally {

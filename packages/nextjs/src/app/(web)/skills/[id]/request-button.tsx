@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/contexts/auth'
 import { type CreateRequestBody, useCreateRequest } from './_hooks/use-create-request'
+import posthog from 'posthog-js'
 
 interface Props {
   skill: { id: string; ownerId: string; status: string }
@@ -106,6 +107,12 @@ export default function RequestButton({ skill }: Props) {
     try {
       await createRequest.mutateAsync(body)
       setStep('success')
+      try {
+        const format = meetingType === 'in_person' ? 'in-person' : meetingType === 'online' ? 'online' : 'hybrid'
+        posthog.capture('skill_request_created', { format })
+      } catch {
+        // ignore analytics errors
+      }
     } catch {
       // error surfaced via createRequest.error
     }

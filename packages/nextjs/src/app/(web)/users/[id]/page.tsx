@@ -1,14 +1,18 @@
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
-import { users, profiles, locations, skills, categories } from '@/db/schema'
+import { badges, categories, locations, profiles, skills, users } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
+import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { ErrorState } from '@/components/ui/async-states'
+import { AchievementBadges } from '@/components/achievement-badges'
+import type { Achievement } from '@/components/achievement-badges'
 import { PublicProfileBackLink } from './_components/public-profile-back-link'
 import { PublicProfileHeader } from './_components/public-profile-header'
 import { PublicProfileSkills } from './_components/public-profile-skills'
 import { PublicProfileRatings } from './_components/public-profile-ratings'
 import { PrivateProfileState } from './_components/private-profile-state'
+import type { BadgeType } from '@/lib/badges'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 type Props = { params: Promise<{ id: string }> }
 
 export default async function PublicProfilePage({ params }: Props) {
+  const t = await getTranslations('profile')
   const { id } = await params
 
   if (!uuidSchema.safeParse(id).success) notFound()
@@ -89,24 +94,44 @@ export default async function PublicProfilePage({ params }: Props) {
     )
   }
 
-  const userSkills = await db
-    .select({
-      id: skills.id,
-      title: skills.title,
-      imageUrl: skills.imageUrl,
-      categoryLabel: categories.label,
-    })
-    .from(skills)
-    .leftJoin(categories, eq(categories.id, skills.categoryId))
-    .where(and(eq(skills.ownerId, id), isNull(skills.deletedAt), eq(skills.status, 'available')))
-    .limit(20)
+  const [userSkills, badgeRows] = await Promise.all([
+    db
+      .select({
+        id: skills.id,
+        title: skills.title,
+        imageUrl: skills.imageUrl,
+        categoryLabel: categories.label,
+      })
+      .from(skills)
+      .leftJoin(categories, eq(categories.id, skills.categoryId))
+      .where(and(eq(skills.ownerId, id), isNull(skills.deletedAt), eq(skills.status, 'available')))
+      .limit(20),
+    db
+      .select({
+        type: badges.type,
+        awardedAt: badges.awardedAt,
+      })
+      .from(badges)
+      .where(eq(badges.userId, id))
+      .orderBy(badges.awardedAt),
+  ])
 
   const location = row.neighborhood
     ? `${row.neighborhood}, ${row.city ?? ''}`
     : row.city ?? null
 
+  const badgeLabels: Record<BadgeType, string> = {
+    first_skill: t('achievement_first_skill'),
+    first_tool: t('achievement_first_tool'),
+    first_food: t('achievement_first_food'),
+    ten_points: t('achievement_ten_points'),
+    fifty_points: t('achievement_fifty_points'),
+    five_star_giver: t('achievement_five_star_giver'),
+    community_hero: t('achievement_community_hero'),
+  }
+
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl space-y-4">
       <PublicProfileBackLink />
       <PublicProfileHeader
         name={row.name}
@@ -115,6 +140,13 @@ export default async function PublicProfilePage({ params }: Props) {
         bio={row.bio}
         avgRating={row.avgRating}
         ratingCount={row.ratingCount}
+      />
+      <AchievementBadges
+        badges={badgeRows as Achievement[]}
+        labels={badgeLabels}
+        title={t('achievements_title')}
+        emptyLabel={t('achievements_empty')}
+        caption={t('achievements_caption')}
       />
       <PublicProfileSkills skills={userSkills} />
       <div className="mt-6">

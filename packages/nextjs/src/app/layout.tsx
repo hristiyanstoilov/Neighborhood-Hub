@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/auth'
 import { Footer } from '@/components/footer'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
+import PostHogProviderWrapper from '@/components/analytics/posthog-provider'
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +22,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <PostHogProviderWrapper>
+            <AuthProvider>{children}</AuthProvider>
+          </PostHogProviderWrapper>
         </NextIntlClientProvider>
         <Footer />
       </body>

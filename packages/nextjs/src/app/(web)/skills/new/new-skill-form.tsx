@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
+import posthog from 'posthog-js'
 import { useToast } from '@/components/ui/toast'
 
 interface Category { id: string; slug: string; label: string }
@@ -109,6 +110,12 @@ export default function NewSkillForm({ categories, locations }: Props) {
         title: t('toast_published_title'),
         message: t('toast_published_message'),
       })
+      try {
+        const category = categories.find((c) => c.id === body.categoryId)?.slug
+        posthog.capture('skill_created', { category })
+      } catch {
+        // swallow analytics errors
+      }
       router.push(`/skills/${json.data.id}`)
     } catch {
       setSubmitError(t('errors.network'))

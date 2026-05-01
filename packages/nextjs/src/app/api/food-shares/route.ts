@@ -5,6 +5,7 @@ import { and, count, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { checkAndAwardBadges } from '@/lib/badges'
 import { createFoodShareSchema, listFoodSharesSchema } from '@/lib/schemas/food'
 import { buildFoodShareConditions, queryFoodShares } from '@/lib/queries/food'
 import { eq } from 'drizzle-orm'
@@ -67,6 +68,8 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }).returning()
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'food_shares', entityId: foodShare.id, ipAddress: ip })
+
+    void checkAndAwardBadges(user.sub).catch(() => undefined)
 
     const authHeader = req.headers.get('authorization')
     if (authHeader) {

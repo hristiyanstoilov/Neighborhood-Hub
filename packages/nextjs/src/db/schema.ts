@@ -751,3 +751,51 @@ export const pushTokens = pgTable(
     index('push_tokens_user_id_idx').on(t.userId),
   ]
 )
+
+// ─────────────────────────────────────────────
+// 26. USER STATS
+// ─────────────────────────────────────────────
+
+export const userStats = pgTable(
+  'user_stats',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: uuid('user_id')
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    totalPoints: integer('total_points').default(0).notNull(),
+    level: integer('level').default(1).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('user_stats_total_points_idx').on(t.totalPoints),
+    check('user_stats_total_points_check', sql`${t.totalPoints} >= 0`),
+    check('user_stats_level_check', sql`${t.level} >= 1`),
+  ]
+)
+
+// ─────────────────────────────────────────────
+// 27. BADGES
+// ─────────────────────────────────────────────
+
+export const badges = pgTable(
+  'badges',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 50 }).notNull(),
+    awardedAt: timestamp('awarded_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('badges_user_type_idx').on(t.userId, t.type),
+    index('badges_user_id_idx').on(t.userId),
+    check(
+      'badges_type_check',
+      sql`${t.type} IN ('first_skill', 'first_tool', 'first_food', 'ten_points', 'fifty_points', 'five_star_giver', 'community_hero')`
+    ),
+  ]
+)
