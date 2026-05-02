@@ -5,6 +5,7 @@ import { Footer } from '@/components/footer'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import PostHogProviderWrapper from '@/components/analytics/posthog-provider'
+import CookieConsentBanner from '@/components/analytics/cookie-consent-banner'
 
 export const metadata: Metadata = {
   title: {
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider locale={locale} messages={messages}>
           <PostHogProviderWrapper>
             <AuthProvider>{children}</AuthProvider>
+            <CookieConsentBanner />
           </PostHogProviderWrapper>
         </NextIntlClientProvider>
         <Footer />

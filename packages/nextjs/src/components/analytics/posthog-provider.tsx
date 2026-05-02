@@ -14,10 +14,15 @@ export default function PostHogProviderWrapper({ children }: Props) {
     return <>{children}</>
   }
 
-  // posthog.init is idempotent — safe to call on every render in browser
+  // posthog.init is idempotent — safe to call on every render in browser.
+  // opt_out_capturing_by_default: true ensures no data is sent until the
+  // user explicitly accepts via CookieConsentBanner (which calls opt_in_capturing).
   if (typeof window !== 'undefined') {
     try {
-      posthog.init(key, { api_host: host })
+      posthog.init(key, {
+        api_host: host,
+        opt_out_capturing_by_default: true,
+      })
     } catch (e) {
       console.warn('PostHog init failed', e)
     }
