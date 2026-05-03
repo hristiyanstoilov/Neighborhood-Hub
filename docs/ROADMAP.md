@@ -470,6 +470,97 @@ All protected mutations check ownership before executing. All user-specific data
 
 ---
 
+## Extended Role Audit (2026-05-03) — Business, Legal & Operations
+
+> Six additional professional perspectives not covered in the 9-role technical audit. These roles are critical for any real product launch, not just a capstone demo. Findings fed into the Improvement Backlog.
+
+---
+
+### 10. Corporate / GDPR Lawyer
+
+**Verdict: App cannot legally launch in Bulgaria/EU in its current state.**
+
+Every app that collects personal data from EU residents must comply with GDPR — this is not optional and failure carries fines of up to 4% of annual turnover or €20M.
+
+**Findings:**
+- **No Privacy Policy page** — GDPR Article 13 requires that at the point of data collection (registration), users are informed of: what data is collected, the legal basis for processing, retention periods, third-party recipients, and all 8 data subject rights. No such page exists.
+- **No Terms of Service** — Without T&C, there is no legal agreement between the platform and users. No enforceable rules of conduct, no IP license for user-uploaded content, no liability limitation, no dispute resolution clause.
+- **Cookie banner has no Privacy Policy link** — GDPR requires linking to the full privacy policy from any consent mechanism. Current banner has text and buttons, but no link.
+- **User-generated content — no IP license** — Users upload photos (skills, tools, food, events, avatars). Without a license grant clause in the T&C, the platform has no legal right to store, display, or reproduce that content.
+- **Food sharing — no liability disclaimer** — If a user gets food poisoning from a shared meal, the platform faces exposure without an explicit "we are not responsible for food quality" disclaimer and acknowledgment by the sharing user at listing creation time.
+- **Tool sharing — no damage liability clause** — If a borrowed tool damages property or causes injury, the platform's exposure is undefined. A disclaimer + tool owner acknowledgment is needed.
+- **No minimum age declaration** — GDPR requires parental consent for users under 16 (in Bulgaria). No age gate or declaration exists at registration.
+- **Data retention period not defined** — Soft deletes exist, but no automated hard-purge schedule is documented or implemented. GDPR requires specifying exact retention periods.
+
+---
+
+### 11. Data Protection Officer (DPO)
+
+**Verdict: GDPR Article rights are partially implemented but not complete.**
+
+**Findings:**
+- **Right of Access (Art. 15)** — No `/profile/data-export` endpoint. Users cannot receive a machine-readable copy of all data the platform holds about them. A data export feature is in the P2 backlog ("GDPR compliance") but not implemented.
+- **Right to Erasure (Art. 17)** — Soft delete (`deletedAt`) exists but hard purge after 30 days is not implemented. Deleted user's data (messages, ratings, audit log entries) is retained indefinitely. Need a scheduled purge job.
+- **Right to Portability (Art. 20)** — No JSON/CSV export of user data. Related to Art. 15 — same endpoint covers both.
+- **Consent records** — Now fixed (`userConsents` table + `POST /api/consent`) — ✅ resolved in current session.
+- **Breach notification procedure** — No documented plan for notifying the supervisory authority (KZLD in Bulgaria) within 72 hours of a data breach, as required by GDPR Art. 33.
+- **Privacy notice at registration** — The registration form collects name, email, password, and optionally location. There is no inline notice or link to Privacy Policy at the point of collection.
+
+---
+
+### 12. Community Manager / Trust & Safety
+
+**Verdict: App has zero safety infrastructure. Fine for a demo; dangerous at real scale.**
+
+**Findings:**
+- **No community guidelines** — Users have no published reference for what content and behavior is acceptable. Without this, moderation decisions are arbitrary and indefensible.
+- **No content moderation queue** — Reports table is in P2 backlog but not implemented. Admin panel has no moderation interface. A single bad actor can post inappropriate listings with no removal mechanism.
+- **No user blocking** — A user being harassed via direct messages has no way to block the sender. Critical safety gap for a platform involving physical meetups (tool handoffs, food pickups, skill sessions).
+- **No rate limiting on content creation** — Upstash rate limits exist on login/register/AI but not on listing creation. One user could spam hundreds of fake food shares or skill listings in a few minutes.
+- **No neighborhood verification** — Any user can claim to be in any neighborhood and see/contact all local listings. A bad actor in Sofia can see and interact with listings in Plovdiv with no friction.
+- **No profile verification** — No identity signal (verified email ✅, but no phone number, no address, no social proof). Low-trust environment for physical item exchange.
+- **Fake listing prevention** — No duplicate detection. Same food share can be listed 50 times by the same user.
+
+---
+
+### 13. App Store Compliance Officer (Mobile)
+
+**Verdict: Mobile app will be rejected by both Apple and Google in its current state.**
+
+**Findings:**
+- **No Privacy Policy URL** — Both Apple App Store and Google Play Store require a publicly accessible Privacy Policy URL before any app is approved. This is a hard blocker for submission. Since the Privacy Policy page doesn't exist (see Role 10), this is a two-level dependency.
+- **Google Play Data Safety form** — Google requires declaring every data type collected (email, name, location, photos, messages), the purpose, and whether it's shared with third parties. This form cannot be completed honestly without a documented Privacy Policy.
+- **Apple App Privacy nutrition label** — Apple requires the same data declaration in the App Store listing. Inaccurate declarations result in rejection or removal.
+- **Content rating** — App must be self-rated for age-appropriateness. The app has direct messaging between strangers and meetup coordination — needs at least a "12+" rating with appropriate metadata.
+- **App store metadata** — No screenshots, short/long descriptions, keywords, or promotional text prepared for either store. Required before submission.
+
+---
+
+### 14. Customer Support / Operations
+
+**Verdict: Users have no help path. Any real issue creates a dead end.**
+
+**Findings:**
+- **No help center or FAQ** — New users don't know how to make a skill request, what "pending/accepted" means, or how to recover a forgotten password (even though the flow exists). No documentation.
+- **No contact form or support email** — If a food share dispute occurs (e.g., item not as described), users have no way to reach the platform team. Footer has no contact link.
+- **No onboarding flow** — Users register and land on a dashboard with no guidance. No "first steps" prompt, no empty-state tutorial, no welcome email with suggested actions.
+- **No in-app error reporting** — Users who hit a broken state (404, 500) see a generic message with no path forward and no way to report the issue.
+
+---
+
+### 15. SEO / Growth Specialist
+
+**Verdict: App is invisible to search engines. All organic discovery is blocked.**
+
+**Findings:**
+- **No unique meta titles/descriptions on listing pages** — `/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]` all use the default `"Neighborhood Hub"` title. Google cannot distinguish between pages. No social sharing preview works correctly.
+- **No Open Graph tags** — Sharing a listing link on Facebook, Viber, or Telegram shows no preview image, no title, no description. Zero viral sharing value.
+- **No sitemap.xml** — Search engines cannot discover listing pages. Only the homepage is likely indexed.
+- **Admin and API routes not excluded** — No `robots.txt` protecting `/admin/**` and `/api/**` from indexing.
+- **No structured data (JSON-LD)** — Events, skills, and food listings could appear in Google's rich results (Event cards, how-to panels) with structured data. Currently no schema markup exists.
+
+---
+
 ## Improvement Backlog (Post-MVP)
 
 > Items identified during code review, QA audit, and architecture analysis. Not feature additions — quality, architecture, and UX gaps in the existing product.
@@ -487,6 +578,10 @@ All protected mutations check ownership before executing. All user-specific data
 | Leaderboard API endpoint | Backend Dev | Feature | Web page `/leaderboard` exists and renders, but calls `/api/leaderboard` which does not exist. Page is broken in production. Fix: implement GET `/api/leaderboard` returning top users by points from `userStats`. 15-min fix. |
 | Forgot-password timing enumeration | Security | Security | `POST /api/auth/forgot-password` responds faster when the email does not exist, enabling user enumeration. Fix: add 150–250ms synthetic delay for non-matching emails. Documented as H2 in security audit. |
 | Lint enforcement in CI | DevOps | CI/CD | ESLint is configured locally but not run in GitHub Actions. Lint regressions (unused vars, type errors, import issues) are not caught before merge. Add `npm run lint` step before the build job. |
+| **Privacy Policy page** | Legal | **Hard launch blocker.** GDPR Art. 13 requires a Privacy Policy accessible at registration. Must cover: data collected, legal basis, retention period, third-party recipients (PostHog, Cloudflare R2, Resend, Neon/Vercel), and all 8 data subject rights. No Privacy Policy = illegal to operate in Bulgaria/EU. |
+| **Terms of Service page** | Legal | **Hard launch blocker.** Without T&C there is no enforceable agreement between platform and users — no IP license for uploaded content, no liability limitation for food/tool sharing, no rules of conduct, no dispute resolution clause. |
+| **Privacy Policy link in cookie banner** | Legal / GDPR | Cookie consent banner has no link to the Privacy Policy. GDPR requires it. One-line fix once the Privacy Policy page exists: add a `<Link href="/privacy">` inside the banner text. |
+| **Privacy Policy URL for mobile App Store** | App Store | Both Apple App Store and Google Play Store require a live Privacy Policy URL before approving any app. Hard blocker for mobile app submission — depends on the Privacy Policy page above. |
 
 ---
 
@@ -496,8 +591,12 @@ All protected mutations check ownership before executing. All user-specific data
 |------|------|-------------|
 | Internal HTTP self-fetch refactor | Architecture | 5+ API routes call `fetch('/api/feed')` or similar internally instead of invoking the function directly. Replace with shared helper function → lower latency, simpler error handling, no circular dependency risk. |
 | Shared `packages/shared` types | Architecture | Types for `MapMarker`, `FoodShare`, `ToolReservation` etc. are duplicated between `packages/nextjs` and `packages/mobile`. One shared package eliminates runtime drift between platforms. |
-| Reports / content flagging | Feature | `reports` table — users flag inappropriate listings (skills, food shares, events, profiles). Admin moderation queue in `/admin`. Essential for community trust at scale. |
-| GDPR compliance | Legal | Data export endpoint, account deletion (soft + hard purge after 30 days), cookie consent banner, privacy policy page. Required before any public launch in Bulgaria/EU. |
+| Reports / content flagging | Trust & Safety | `reports` table — users flag inappropriate listings (skills, food shares, events, profiles). Admin moderation queue in `/admin`. Without this, one bad actor can pollute the platform with no removal mechanism. |
+| GDPR data export + hard purge | Legal / DPO | Data export endpoint (Art. 15/20 — machine-readable copy of user's own data), and scheduled hard purge of soft-deleted users after 30 days (Art. 17). Cookie consent is now fixed; this completes the GDPR picture. |
+| **User blocking** | Trust & Safety | Users involved in physical exchanges (tool handoffs, food pickups, skill sessions) must be able to block harassers. Without blocking, victims of abuse have no recourse and no safe exit. Requires `blocks` table (`blocker_id`, `blocked_id`) and enforcement in DM + listing APIs. |
+| **Content creation rate limits** | Trust & Safety | No rate limit on `POST /api/skills`, `POST /api/tools`, `POST /api/food-shares`. A single user can flood the platform with hundreds of fake listings. Add per-user daily limits (e.g. 10 listings/day) using Upstash rate limiter. |
+| **Contact / support form** | Operations | No contact path for users with disputes, bugs, or account issues. Add a `/contact` page with a form that emails the support address. Zero backend change — a mailto: link or Resend email is sufficient for MVP. |
+| **Onboarding flow for new users** | Operations / UX | Users register and arrive at a blank dashboard with no guidance. Add a first-login welcome state (empty dashboard prompt) or a 3-step "what to do first" nudge. Dramatically improves activation rate. |
 | Event creator = auto attendee | Feature | When a user creates an event, they should be automatically added as the first attendee. Currently the creator is not registered as a participant. One-line fix in the event create API handler. |
 | Search for Events and Food | UX | Skills list has search + filters; Events and Food lists do not. Users cannot find content at scale without search. Add `q` (text search), `status`, and `city` filters matching the skills pattern. |
 | Food safety acknowledgment | BA / UX Designer | Trust | Checkbox + brief food safety guidelines shown before a user publishes a food share. Reduces liability and builds trust — standard in OLIO-type apps. No DB change needed, frontend only. |
@@ -515,7 +614,15 @@ All protected mutations check ownership before executing. All user-specific data
 | Item | Area | Description |
 |------|------|-------------|
 | i18n full implementation | Feature | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. Seed with EN/BG. Stub currently satisfies TypeScript — install the real packages on a dedicated branch. |
-| Cookie consent banner not i18n'd | UX / i18n | Cookie consent text in `cookie-consent-banner.tsx` is hardcoded English. Every other user-facing string uses `t()` via next-intl. Inconsistent — Bulgarian users see English-only consent text. Add translation keys `cookieConsent.text`, `cookieConsent.accept`, `cookieConsent.decline` to `en.json`/`bg.json`. |
+| Cookie consent banner not i18n'd | UX / i18n | Cookie consent text in `cookie-consent-banner.tsx` is hardcoded English. Every other user-facing string uses `t()` via next-intl. Inconsistent — Bulgarian users see English-only consent text. Add translation keys `cookieConsent.text`, `cookieConsent.accept`, `cookieConsent.decline` to `en.json`/`bg.json`. Fixed in current session ✅ |
+| **SEO meta tags on listing pages** | SEO | Dynamic pages (`/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]`) use the default site title and no description. Add `generateMetadata()` in each page.tsx to produce unique `<title>` and `<meta name="description">` from the listing data. 30-min fix per module. |
+| **Open Graph tags for social sharing** | SEO / Growth | Sharing a listing on Viber/Messenger/Facebook shows no preview. Add `og:title`, `og:description`, `og:image` in `generateMetadata()`. Same code as the meta tags fix — just add the `openGraph` block. |
+| **sitemap.xml** | SEO | No sitemap means search engines must discover pages by crawling links. Add Next.js `app/sitemap.ts` that generates URLs for all public listing pages. Automatic with Next.js App Router — 1-hour implementation. |
+| **robots.txt** | SEO / Security | No `robots.txt` means admin panel, API routes, and auth pages are crawled and potentially indexed. Add `app/robots.ts` disallowing `/admin/**`, `/api/**`, `/profile/**`. |
+| **Food listing liability disclaimer** | Legal | At food share creation, show an explicit "I confirm this food is safe for consumption" checkbox. If litigation ever occurs, the platform can show the publisher acknowledged responsibility. Already in P2 backlog as "food safety acknowledgment" — now elevated with legal context. |
+| **Data breach incident response plan** | DPO | No documented procedure for notifying KZLD (Bulgaria's data protection authority) within 72 hours of a breach as required by GDPR Art. 33. Document the procedure in a private ops runbook. |
+| **Registration privacy notice** | Legal / DPO | GDPR Art. 13 requires informing users of data processing at the point of collection. The registration form collects name + email with no inline notice. Add a one-line "By registering you agree to our [Privacy Policy] and [Terms of Service]" with links. |
+| **Age minimum declaration** | Legal | GDPR requires parental consent for users under 16. Add a date-of-birth field or a simple "I confirm I am 16 or older" checkbox at registration. No DB change required if checkbox-only. |
 | Badge queries include deleted listings | Backend / Badges | `checkAndAwardBadges` counts skills/tools/food without filtering `isNull(deletedAt)`. A user who published and then deleted their only skill still earns `first_skill`. Low severity — badge is still "earned" in spirit — but inconsistent with soft-delete semantics everywhere else. |
 | Push notification tokens | DB + Feature | Add `push_tokens` table (`user_id`, `token`, `platform`, `created_at`). Required to send Expo push notifications for reservation updates, messages, and events. |
 | User preferences table | DB | Add `user_preferences` (`user_id`, `notification_settings jsonb`, `language`, `timezone`). Enables per-user notification control and language switch. |
@@ -541,8 +648,11 @@ All protected mutations check ownership before executing. All user-specific data
 | Accent color system | Design | Add `amber-500` / `orange-500` as CTA accent alongside primary `green-700`. Currently all interactive elements share the same green — visual hierarchy is flat and CTAs don't stand out from nav links. |
 | UI transitions & microinteractions | Design | Route transitions, button press feedback, hover effects, skeleton loaders for home dashboard, skill list, and food list. Currently transitions are abrupt. |
 | Generate strong password | Feature | Frontend-only password generator on `/register` and `/reset-password` — show suggestion + copy button. No backend change required. |
-| Accessibility pass | Accessibility | Add `aria-label`, `aria-expanded`, focus management to dropdowns, modals, and request forms. Keyboard and screen-reader navigation is currently inconsistent. |
+| Accessibility pass (WCAG 2.1 AA) | Accessibility | Add `aria-label`, `aria-expanded`, focus management to dropdowns, modals, and request forms. Keyboard and screen-reader navigation is currently inconsistent. Note: EN 301 549 (EU accessibility standard) applies to apps used in Bulgaria. |
 | Calendar export (Google/Apple/Outlook) | UX | "Add to calendar" button on event detail and confirmed tool/skill reservations. Generates `.ics` file or Google Calendar deep-link. No backend change — pure frontend utility. Standard expectation in 2025 community apps. |
+| **Help center / FAQ page** | Operations | A static `/help` page answering: how skill requests work, what status labels mean, how to cancel, how to reset password, how data is used. Reduces support load and answers the most common new-user confusion points. |
+| **App Store submission materials** | App Store | Before mobile app submission: prepare screenshots (6.5" iPhone, 12.9" iPad, Android), short/long descriptions in EN + BG, content rating questionnaire (both stores), keywords, and promotional text. Google Play Data Safety form must match Privacy Policy. |
+| **Community guidelines page** | Trust & Safety | A static `/guidelines` page defining acceptable use: no fake listings, no harassment, food must be safe for sharing, tool condition must be accurately described. Linked from footer and from listing creation forms. Required for defensible moderation. |
 
 ---
 
