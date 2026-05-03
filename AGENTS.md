@@ -90,7 +90,19 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (24 tables)
+## Neon MCP Database Access Rules
+
+- **Neon project name**: `dry-forest-93054389`
+- **Neon project ID**: `dry-forest-93054389`
+- **Database name**: `neondb`
+- **Region**: `aws-eu-west-2`
+
+When using Neon MCP, always connect to the project named `dry-forest-93054389`. This is the only Neon project in the account and is the authoritative database for this repository. Never create a new project or connect to a different one.
+
+
+---
+
+## 4. Database Schema (27 tables)
 
 ### Core tables (all built)
 
