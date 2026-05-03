@@ -470,6 +470,59 @@ All protected mutations check ownership before executing. All user-specific data
 
 ---
 
+## Extended Role Audit (2026-05-03) — Platform Reliability, Growth & Finance
+
+> Three additional roles identified as genuinely important gaps post first extended audit.
+
+---
+
+### 16. SRE / Platform Reliability Engineer
+
+**Verdict: App is running blind. Any outage is discovered by users, not the team.**
+
+**Findings:**
+- **No uptime monitoring** — No UptimeRobot, Betterstack, or equivalent configured. If the Netlify deployment or Neon DB goes down, the team finds out when users complain, not from an alert.
+- **No error tracking** — PostHog is analytics, not error tracking. Unhandled exceptions, failed API calls, and 500 errors are logged to Netlify's function console only — not aggregated, not alerted. Sentry or Betterstack Logs would cover this.
+- **No backup strategy documented for Neon** — Neon has point-in-time restore on paid plans but the project is on free tier. What is the recovery plan if the DB is corrupted or accidentally wiped?
+- **Netlify function timeout risk** — Free tier serverless functions have a 10-second execution limit. The AI chat endpoint streams tokens from Anthropic — on slow responses or large contexts this can time out silently.
+- **No cost monitoring** — All infrastructure is on free tiers (Neon, Netlify, Upstash, Cloudflare R2, Resend, PostHog, Anthropic). Each has hard limits. At real scale: Neon storage limit, Resend 3000 emails/month, Upstash request cap, Anthropic per-token cost. No alert exists for approaching any of these limits.
+- **Cold start latency** — Netlify serverless functions cold-start on every new request after inactivity. No warm-up strategy or caching layer in place.
+
+---
+
+### 17. Business Development / Partnership Manager
+
+**Verdict: The app's growth model is undefined. Neighborhood apps live or die by local partnerships — not SEO or paid ads.**
+
+**Findings:**
+- **No municipality partnership strategy** — Sofia, Plovdiv, and Varna municipalities run digital citizen engagement programs and community grants. A neighborhood sharing platform is a direct fit. No outreach plan exists.
+- **No NGO partner pipeline** — Bulgarian Red Cross, Каузи.БГ, and Хора за хора regularly run food and resource sharing drives. Integrating them as "verified organizers" gives the platform immediate content and trust.
+- **No local business integration** — Local repair shops, tool rental companies, and cooking schools are natural sponsors for tools/skills modules. A "verified business" badge costs nothing technically and creates a revenue opportunity.
+- **No launch event strategy** — Neighborhood apps in Europe (Peerby NL, OLIO UK) launched via physical events in target neighborhoods — one street, one block at a time. No equivalent strategy planned.
+- **No referral or invite system** — Community apps grow fastest through neighborhood-level word of mouth. No referral link, no "invite your neighbor" flow exists.
+- **No press / media strategy** — Bulgarian tech media (Kaldata, Dev.bg, CIO.bg) cover local startups. No press kit, no launch story, no contact list.
+
+---
+
+### 18. Financial Controller / Accountant
+
+**Verdict: Free tier infrastructure will break under real load. Monetization path is undefined and legally complex in Bulgaria.**
+
+**Findings:**
+- **Infrastructure cost at scale** — Current free tier limits and estimated costs at 1,000 active users per month:
+  - Neon: 0.5 GB storage free → likely fine; compute hours may exceed free tier
+  - Netlify: 125k function invocations/month free → a busy day can exhaust this
+  - Upstash Redis: 10,000 commands/day free → rate limiting alone will hit this
+  - Resend: 3,000 emails/month free → password resets + notifications will exceed this quickly
+  - Anthropic (Claude): ~$0.003/1K tokens → 1,000 AI chat sessions/month ≈ $15–50/month
+  - Cloudflare R2: 10 GB free → image uploads grow fast
+- **No cost projection model** — No spreadsheet or estimate for monthly infrastructure cost at 100 / 1,000 / 10,000 users.
+- **VAT (НДС) for digital services** — If any premium tier is added, Bulgarian digital service providers must charge 20% VAT on sales to Bulgarian consumers and register for EU VAT OSS for sales to other EU residents. Stripe handles collection but registration with НАП is required.
+- **Invoice generation** — Bulgarian accounting law requires an invoice (фактура) for every B2C digital sale within 5 days. Stripe Tax can automate this, but the legal entity must exist first.
+- **No legal entity** — The app currently has no registered company (ООД/ЕТ). Without one: no bank account for revenue, no contracts with partners, no VAT registration, no ability to hire.
+
+---
+
 ## Extended Role Audit (2026-05-03) — Business, Legal & Operations
 
 > Six additional professional perspectives not covered in the 9-role technical audit. These roles are critical for any real product launch, not just a capstone demo. Findings fed into the Improvement Backlog.
@@ -595,6 +648,9 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | GDPR data export + hard purge | Legal / DPO | Data export endpoint (Art. 15/20 — machine-readable copy of user's own data), and scheduled hard purge of soft-deleted users after 30 days (Art. 17). Cookie consent is now fixed; this completes the GDPR picture. |
 | **User blocking** | Trust & Safety | Users involved in physical exchanges (tool handoffs, food pickups, skill sessions) must be able to block harassers. Without blocking, victims of abuse have no recourse and no safe exit. Requires `blocks` table (`blocker_id`, `blocked_id`) and enforcement in DM + listing APIs. |
 | **Content creation rate limits** | Trust & Safety | No rate limit on `POST /api/skills`, `POST /api/tools`, `POST /api/food-shares`. A single user can flood the platform with hundreds of fake listings. Add per-user daily limits (e.g. 10 listings/day) using Upstash rate limiter. |
+| **Uptime monitoring** | SRE | No external monitor checks if the app is reachable. Add UptimeRobot or Betterstack (both have free tiers) pointing at `/api/health` (create a simple health endpoint). Alert via email/Slack on downtime. |
+| **Error tracking (Sentry)** | SRE | 500 errors and unhandled exceptions are logged to Netlify console only — not aggregated or alerted. Add Sentry (free tier: 5,000 errors/month) via `@sentry/nextjs`. One command to configure, catches all server + client errors with stack traces. |
+| **Infrastructure cost tracker** | Finance | Document current free tier limits and the cost per 1,000 active users for each service (Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2). Build a simple cost model spreadsheet. Required before pitching to any partner or investor. |
 | **Contact / support form** | Operations | No contact path for users with disputes, bugs, or account issues. Add a `/contact` page with a form that emails the support address. Zero backend change — a mailto: link or Resend email is sufficient for MVP. |
 | **Onboarding flow for new users** | Operations / UX | Users register and arrive at a blank dashboard with no guidance. Add a first-login welcome state (empty dashboard prompt) or a 3-step "what to do first" nudge. Dramatically improves activation rate. |
 | Event creator = auto attendee | Feature | When a user creates an event, they should be automatically added as the first attendee. Currently the creator is not registered as a participant. One-line fix in the event create API handler. |
@@ -616,6 +672,10 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | i18n full implementation | Feature | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. Seed with EN/BG. Stub currently satisfies TypeScript — install the real packages on a dedicated branch. |
 | Cookie consent banner not i18n'd | UX / i18n | Cookie consent text in `cookie-consent-banner.tsx` is hardcoded English. Every other user-facing string uses `t()` via next-intl. Inconsistent — Bulgarian users see English-only consent text. Add translation keys `cookieConsent.text`, `cookieConsent.accept`, `cookieConsent.decline` to `en.json`/`bg.json`. Fixed in current session ✅ |
 | **SEO meta tags on listing pages** | SEO | Dynamic pages (`/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]`) use the default site title and no description. Add `generateMetadata()` in each page.tsx to produce unique `<title>` and `<meta name="description">` from the listing data. 30-min fix per module. |
+| **Health check endpoint** | SRE | Add `GET /api/health` returning `{ status: "ok", db: "ok", ts: "<timestamp>" }`. Used by uptime monitors, load balancers, and deployment pipelines to verify the app is alive and the DB connection is healthy. |
+| **Netlify function timeout guard for AI chat** | SRE | Free tier serverless functions time out at 10 seconds. AI chat streams tokens from Anthropic — long responses or slow API calls will hit this silently. Add a `AbortController` with a 9-second timeout client-side and a `max_tokens` cap server-side. |
+| **Referral / invite system** | BD | "Invite your neighbor" flow — unique referral link per user, tracked in `referrals` table, awards points to referrer on successful registration. Community apps grow fastest through neighborhood word-of-mouth. This is the highest-ROI growth mechanic for this product type. |
+| **Municipality partnership page** | BD | A static `/partners` or `/for-municipalities` landing page explaining how local governments can use the platform for citizen engagement. Required before any municipality meeting — gives legitimacy and a concrete ask. |
 | **Open Graph tags for social sharing** | SEO / Growth | Sharing a listing on Viber/Messenger/Facebook shows no preview. Add `og:title`, `og:description`, `og:image` in `generateMetadata()`. Same code as the meta tags fix — just add the `openGraph` block. |
 | **sitemap.xml** | SEO | No sitemap means search engines must discover pages by crawling links. Add Next.js `app/sitemap.ts` that generates URLs for all public listing pages. Automatic with Next.js App Router — 1-hour implementation. |
 | **robots.txt** | SEO / Security | No `robots.txt` means admin panel, API routes, and auth pages are crawled and potentially indexed. Add `app/robots.ts` disallowing `/admin/**`, `/api/**`, `/profile/**`. |
