@@ -505,6 +505,8 @@ All protected mutations check ownership before executing. All user-specific data
 | Ratings display UI | Frontend Dev | Feature | `ratings` table and `/api/ratings` endpoint exist and are seeded. However there is no UI to view ratings on user profiles or listing pages. API is complete — only frontend work needed. |
 | Event RSVP capacity race condition | Security / Backend | Concurrency | Capacity check (`attending >= maxCapacity`) and INSERT are not atomic. Two concurrent RSVPs can both pass the check before either inserts, overbooking the event. Fix: enforce via SQL subquery in the INSERT or use a DB-level CHECK trigger. File: `api/events/[id]/rsvp/route.ts:36–66`. |
 | Food reservation quantity race condition | Security / Backend | Concurrency | Same pattern as RSVP — `activeCount >= quantity` check and INSERT are not atomic. Concurrent requests can exceed food share quantity. Fix: same atomic INSERT pattern. File: `api/food-shares/[id]/reservations/route.ts:78–93`. |
+| `first_tool` badge never awarded | Backend / Badges | Bug | `POST /api/tools` creates the tool and writes feed + audit, but never calls `checkAndAwardBadges`. The badge is defined and checked but was unreachable. Fixed in this session: added `void checkAndAwardBadges(user.sub).catch(() => undefined)` matching the pattern in `skills/route.ts` and `food-shares/route.ts`. |
+| `userConsents` GDPR write path missing | GDPR / Backend | Architecture | `userConsents` table defined in `schema.ts` with `userId, consentType, granted, grantedAt, version` columns. Cookie consent banner stores choice in `localStorage` only — no server-side consent record is ever written. EU compliance gap: no audit trail of when a user accepted or declined analytics tracking. Fix: add `POST /api/consent` endpoint that the banner calls on choice, writing a row to `user_consents`. |
 
 ---
 
@@ -513,6 +515,8 @@ All protected mutations check ownership before executing. All user-specific data
 | Item | Area | Description |
 |------|------|-------------|
 | i18n full implementation | Feature | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. Seed with EN/BG. Stub currently satisfies TypeScript — install the real packages on a dedicated branch. |
+| Cookie consent banner not i18n'd | UX / i18n | Cookie consent text in `cookie-consent-banner.tsx` is hardcoded English. Every other user-facing string uses `t()` via next-intl. Inconsistent — Bulgarian users see English-only consent text. Add translation keys `cookieConsent.text`, `cookieConsent.accept`, `cookieConsent.decline` to `en.json`/`bg.json`. |
+| Badge queries include deleted listings | Backend / Badges | `checkAndAwardBadges` counts skills/tools/food without filtering `isNull(deletedAt)`. A user who published and then deleted their only skill still earns `first_skill`. Low severity — badge is still "earned" in spirit — but inconsistent with soft-delete semantics everywhere else. |
 | Push notification tokens | DB + Feature | Add `push_tokens` table (`user_id`, `token`, `platform`, `created_at`). Required to send Expo push notifications for reservation updates, messages, and events. |
 | User preferences table | DB | Add `user_preferences` (`user_id`, `notification_settings jsonb`, `language`, `timezone`). Enables per-user notification control and language switch. |
 | Image upload UX | UX | Add preview-before-upload, re-upload, and remove-image to all image fields (skills, food shares, tools, events). Currently users upload blind with no visual confirmation. |

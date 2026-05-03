@@ -60,7 +60,7 @@ neighborhood-hub/
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (24 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (26 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
 │   │   │   │   ├── seed.ts      # Seed: locations, categories, demo users, skills, tools, food, events, drives, ratings
 │   │   │   │   └── migrations/  # SQL migration files

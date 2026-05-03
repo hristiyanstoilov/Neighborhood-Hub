@@ -5,6 +5,7 @@ import { eq, and, desc, count } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { checkAndAwardBadges } from '@/lib/badges'
 import { createToolSchema, listToolsSchema } from '@/lib/schemas/tool'
 import { buildToolConditions, toolSelect } from '@/lib/queries/tools'
 
@@ -111,6 +112,8 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
         }),
       }).catch(() => undefined)
     }
+
+    void checkAndAwardBadges(user.sub).catch(() => undefined)
 
     return NextResponse.json({ data: tool }, { status: 201 })
   } catch (err) {
