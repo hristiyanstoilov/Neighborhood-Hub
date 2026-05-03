@@ -43,10 +43,9 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const existing = await db.query.tools.findFirst({
-      where: and(eq(tools.id, id), isNull(tools.deletedAt)),
+      where: and(eq(tools.id, id), eq(tools.ownerId, user.sub), isNull(tools.deletedAt)),
     })
     if (!existing) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
-    if (existing.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
     const parsed = updateToolSchema.safeParse(body)
@@ -68,7 +67,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
     const [updated] = await db
       .update(tools)
       .set({ ...rest, categoryId: categoryId ?? existing.categoryId, locationId: locationId ?? existing.locationId, updatedAt: new Date() })
-      .where(eq(tools.id, id))
+      .where(and(eq(tools.id, id), eq(tools.ownerId, user.sub), isNull(tools.deletedAt)))
       .returning()
 
     await writeAuditLog({
@@ -102,12 +101,11 @@ export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const existing = await db.query.tools.findFirst({
-      where: and(eq(tools.id, id), isNull(tools.deletedAt)),
+      where: and(eq(tools.id, id), eq(tools.ownerId, user.sub), isNull(tools.deletedAt)),
     })
     if (!existing) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
-    if (existing.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
-    await db.update(tools).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(tools.id, id))
+    await db.update(tools).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(eq(tools.id, id), eq(tools.ownerId, user.sub), isNull(tools.deletedAt)))
 
     await writeAuditLog({
       userId:    user.sub,

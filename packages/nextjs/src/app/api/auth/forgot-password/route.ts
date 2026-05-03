@@ -12,7 +12,13 @@ const schema = z.object({
   email: z.string().email(),
 })
 
+// Minimum response time regardless of whether the user exists.
+// Prevents user enumeration via timing differences (H2 security finding).
+const MIN_RESPONSE_MS = 400
+
 export async function POST(req: NextRequest) {
+  const start = Date.now()
+
   try {
     const ip = getClientIp(req)
     const { success } = await loginRatelimit.limit(ip)
@@ -24,6 +30,7 @@ export async function POST(req: NextRequest) {
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       // Always 200 — don't leak whether an email format was invalid vs not found
+      await padResponseTime(start)
       return NextResponse.json({
         data: { message: 'If that email exists, a reset link has been sent.' },
       })
@@ -49,6 +56,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    await padResponseTime(start)
     return NextResponse.json({
       data: { message: 'If that email exists, a reset link has been sent.' },
     })
@@ -56,4 +64,11 @@ export async function POST(req: NextRequest) {
     console.error('[forgot-password]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
   }
+}
+
+function padResponseTime(start: number): Promise<void> {
+  const elapsed = Date.now() - start
+  const remaining = MIN_RESPONSE_MS - elapsed
+  if (remaining <= 0) return Promise.resolve()
+  return new Promise((resolve) => setTimeout(resolve, remaining))
 }

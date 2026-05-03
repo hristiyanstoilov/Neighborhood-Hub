@@ -349,6 +349,7 @@ Rules:
 - Schema lives in `packages/nextjs/src/db/schema.ts`
 - After schema changes: `npx drizzle-kit generate` → `npx drizzle-kit migrate` → commit SQL files
 - **Never** use `drizzle-kit push` in production – migrations only
+- **Never** edit an existing migration SQL file – always generate a new migration instead. Editing applied migrations breaks the migration hash chain and causes `drizzle-kit migrate` to fail or produce incorrect state.
 - Use `pgEnum` ONLY for stable binary fields: `users.role` ('user'|'admin'), `ai_messages.role` ('user'|'assistant')
 - Use `VARCHAR + CHECK constraint` for all status/type fields that may evolve (skill_requests.status, skills.status, locations.type, meeting_type) – `ALTER TYPE` doesn't work in transactions in Neon
 - Use `.references()` with `onDelete: 'cascade'` for foreign keys
@@ -430,6 +431,17 @@ Do not make any changes until you have 95% confidence in what you need to build.
 - Check for TypeScript errors
 - Check for SQL injection or security issues
 - Suggest missing indexes on DB tables
+
+### Milestone Review (run after significant sessions)
+Use the `/milestone-review` slash command in Claude Code. Triggers automatically after 5+ commits, before push, or after completing a feature module.
+
+Roles covered: Senior Architect → Senior Tech Lead → Senior QA → Docs Sync.
+
+Output: structured summary + automatic updates to `docs/ROADMAP.md` Improvement Backlog.
+
+**Two-level review system:**
+- **Feature Quality Gate** — after every individual change (quick, focused on changed files only)
+- **Milestone Review** — after significant sessions (deep, full codebase, multi-role)
 
 ### Documentation
 - Update README.md with new screens or API endpoints

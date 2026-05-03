@@ -184,7 +184,7 @@ These are not feature gaps. They are confidence gaps.
 
 ### Feature Quality Gate (Mandatory)
 
-Apply this process after every feature change before commit:
+Apply this process **after every individual feature change** before commit.
 
 1. Senior Dev Code Review
 - Review only changed files in the feature scope.
@@ -207,6 +207,29 @@ Reference playbook:
 Reusable prompt for agents (copy/paste):
 
 "Act as a Senior Developer and perform a strict code review for this production polish change. Then act as a Senior QA and execute build + runtime smoke validation for all impacted routes/endpoints. Return: (1) Findings ordered by severity with file references, (2) Test evidence with pass/fail, (3) Final go/no-go decision for commit."
+
+---
+
+### Milestone Review Protocol (run after significant work)
+
+**When to trigger** — any of the following:
+- End of a session with 5 or more commits
+- Before any `git push` to remote
+- After completing a feature module
+- Before deployment
+
+**How to run** — type `/milestone-review` in Claude Code. This triggers a 4-role deep audit:
+
+| Role | Focus |
+|------|-------|
+| Senior Architect | Architecture health, schema gaps, API consistency, scaling risks |
+| Senior Tech Lead | Code quality, DRY violations, dead code, edge case bugs, technical debt |
+| Senior QA | State machine correctness, race conditions, unguarded paths, regression risk |
+| Docs Sync | ROADMAP alignment, AGENTS.md rule updates, CLAUDE.md Applied Learning |
+
+**Output** — structured summary with top-3 actions before next push, and automatic updates to `docs/ROADMAP.md` Improvement Backlog for any new findings.
+
+**Commit after review** — use message format: `chore(review): milestone review findings [date]`
 
 ---
 
@@ -321,6 +344,212 @@ Status: ✅ Done.
 
 - Social feed of neighborhood activities
 - Direct messages or group chats per neighborhood
+
+---
+
+## Authorization Layer Audit (2026-05-03)
+
+> Senior RLS / Authorization Specialist review of all server-side access control policies.
+> Note: Project uses Neon PostgreSQL + Drizzle ORM — authorization is enforced at the application layer (API routes), not via database-level RLS.
+
+### What was audited
+- `src/lib/middleware.ts` — `requireAuth` / `requireAdmin` middleware
+- All 23 API route groups for ownership checks, role checks, and data scoping
+- `src/lib/queries/` — shared query functions for user scoping and soft-delete filtering
+
+### Overall verdict: GOOD — no exploitable data leakage found
+
+All protected mutations check ownership before executing. All user-specific data (notifications, profile, conversations, reservations) is properly scoped to `user.sub`. Admin endpoints are gated by `requireAdmin`. Upload has MIME-type + magic byte validation.
+
+### Issues found and corrected
+
+| # | Severity | Issue | Status |
+|---|----------|-------|--------|
+| 1 | **FIXED** | `PUT /api/tools/[id]` — ownership was checked at application level but not included in the UPDATE `WHERE` clause. Risk: defense-in-depth gap (not exploitable without an ownership-transfer endpoint, which doesn't exist). Fixed to match `skills` route pattern: ownership embedded in both the `findFirst` query and the `UPDATE WHERE`. | ✅ Fixed |
+| 2 | **FALSE POSITIVE** | Agent flagged food reservations GET as "leak". Actual code on line 56 correctly filters non-owners in memory (`rows.filter(r => r.requesterId === user.sub)`). Not a security issue — but is a performance issue (DB returns all rows, then filters client-side). | ⚠️ Performance only — see P3 backlog |
+| 3 | **LOW** | `queryFoodReservations()` query function does not include `isNull(foodShares.deletedAt)` in isolation. Safe in practice because all callers pre-validate existence. Should be self-consistent regardless. | 📋 P3 backlog |
+| 4 | **MEDIUM** | Event RSVP capacity check (line 37–44) and the INSERT (line 63) are not atomic. Two concurrent requests can both pass the `attending >= maxCapacity` check before either inserts, leading to overbooking. | 📋 P2 backlog |
+| 5 | **MEDIUM** | Food reservation quantity check and INSERT are not atomic. Same race as #4 — concurrent requests can exceed `foodShare.quantity`. | 📋 P2 backlog |
+
+### What passed cleanly ✅
+- Skill requests: only owner can approve/reject; only requester can complete; both can cancel — verified
+- Tool reservations: owner approves/rejects; borrower returns; terminal states enforced — verified
+- Food reservation PATCH: role-based state machine with correct participant checks — verified
+- Conversations: participant validation on both GET and POST messages — verified
+- Notifications GET: scoped to `user.sub` only — verified
+- Profile GET: returns only authenticated user's own profile — verified
+- Admin endpoints: `requireAdmin` gates all admin routes; self-demotion prevented; last-admin guard present — verified
+- Upload: MIME type whitelist + magic byte check + 5MB limit + UUID filename — verified
+- Ratings: self-rating blocked; duplicate rating blocked via DB unique constraint — verified
+
+---
+
+## 9-Role Audit (2026-05-03)
+
+> Full codebase audit conducted from 9 professional perspectives. Findings fed into the Improvement Backlog below.
+
+### 1. Product Owner / Business Analyst
+**Status:** MVP feature-complete across all 5 modules. Core business flows work end-to-end.
+
+**Gaps found:**
+- Event creator is not automatically registered as first attendee — breaks the "organizer participates" mental model
+- No search/filter on Events and Food lists — unusable at scale (skills has search, others don't)
+- Ratings API and DB exist but are invisible to users — built infrastructure with no UI payoff
+- Food share creation has no safety acknowledgment — legal and trust gap
+
+### 2. Solution Architect
+**Status:** Monorepo is well-structured. Drizzle + Neon + Next.js + Expo is a coherent, modern stack.
+
+**Gaps found:**
+- 5+ API routes call `fetch('/api/...')` to themselves internally — circular dependency risk and unnecessary HTTP overhead
+- Types for shared domain objects (`MapMarker`, `FoodShare`) are duplicated between web and mobile — drift risk
+- 3 DB columns used in frequent queries lack indexes (`available_until`, `starts_at`, `deadline`)
+- `event_attendees` and `drive_pledges` missing `updatedAt` — breaks future audit/analytics
+
+### 3. Backend Developer
+**Status:** All CRUD endpoints present. State machine pattern is clean and consistent after QA fixes.
+
+**Gaps found:**
+- `/api/leaderboard` endpoint is completely missing — web page calls it and fails in production
+- Notifications table has no cleanup mechanism — grows unbounded over time
+- `GET /api/conversations/[id]` detail endpoint is missing — conversations can only be listed, not fetched individually
+
+### 4. Frontend Developer (Web)
+**Status:** 48 pages implemented. TanStack Query used consistently. Error/loading states generally present.
+
+**Gaps found:**
+- Leaderboard page renders but API call fails — visible broken state for any user who navigates there
+- Ratings data exists in DB but is never shown on user profiles or listing detail pages
+- Error states on some server-rendered detail pages show a blank screen on 404/500 instead of a friendly message
+- Admin panel "promote/demote admin" buttons need verification — API exists but UI wiring unconfirmed
+
+### 5. Mobile Developer
+**Status:** Mobile screens match web parity for all 5 modules. TanStack Query used consistently.
+
+**Gaps found:**
+- No leaderboard screen on mobile (web has one)
+- Radar map uses static/demo data — not wired to live `/api/map`
+- Some list screens (food, drives) may be missing explicit error states — network failure = silent blank screen
+- Rating modal exists but wiring to all completion flows (post-tool-return, post-food-pickup) needs verification
+
+### 6. QA Engineer
+**Status:** Happy paths work across all modules. State machine transitions are correct after fix.
+
+**Gaps found:**
+- 0 automated unit tests — entire test coverage is smoke tests only
+- Leaderboard is a broken feature in production (page + missing API)
+- Search exists only for Skills — Events, Food, Tools have no search/filter
+- GDPR flows (data export, account deletion) are completely missing
+
+### 7. DevOps / CI Engineer
+**Status:** CI pipeline runs build, typecheck, and smoke tests on every push.
+
+**Gaps found:**
+- No lint step in CI — ESLint violations pass undetected
+- Mobile typecheck runs but no actual Expo build — bundling errors not caught
+- No unit test execution in CI — only smoke tests
+- CI secrets (`SMOKE_AUTH_EMAIL`, `SMOKE_AUTH_PASSWORD`) not documented in README
+
+### 8. Security Engineer
+**Status:** Auth, ownership checks, rate limiting, and input validation are solid across all endpoints. bcrypt with cost factor 12 in use.
+
+**Gaps found:**
+- `POST /api/auth/forgot-password` is vulnerable to user enumeration via timing difference (H2 — unfixed)
+- Refresh token reuse race condition exists but is mitigated (H1 — documented)
+- `isPublic` flag on profiles enforced in most places but lacks automated test coverage
+- No automated security regression tests — fixes could be silently reverted
+
+### 9. UX Designer
+**Status:** Tailwind CSS applied consistently. Mobile-first responsive grid in use. `next/image` used for optimized image rendering.
+
+**Gaps found:**
+- All interactive elements share `green-700` — no visual hierarchy between nav, secondary actions, and primary CTAs
+- No confirm dialogs on destructive actions (delete skill, cancel reservation) — a single tap can destroy data
+- Error messages are technical (e.g. "Error loading leaderboard") — not friendly or actionable
+- No "Add to calendar" affordance on event detail or confirmed reservations — standard UX expectation
+
+---
+
+## Improvement Backlog (Post-MVP)
+
+> Items identified during code review, QA audit, and architecture analysis. Not feature additions — quality, architecture, and UX gaps in the existing product.
+
+**Priority scale:** **P1** critical/now · **P2** high value · **P3** planned · **P4** UX/design polish · **P5** future/deferred
+
+---
+
+### P1 – Critical
+
+| Item | Role | Area | Description |
+|------|------|------|-------------|
+| Automated test suite | QA / Architect | Architecture | Zero unit tests — only CI smoke tests. Add Vitest unit tests for `lib/state-machine.ts`, Zod schemas, and query functions. The state machine bug found in QA would have been caught by a test. |
+| Production Polish Wave 1 | UX Designer | UX | Toasts on food creation and reservation actions (reserve / approve / reject / picked_up / cancel). Confirm dialogs for all destructive mutations. Both web and mobile. |
+| Leaderboard API endpoint | Backend Dev | Feature | Web page `/leaderboard` exists and renders, but calls `/api/leaderboard` which does not exist. Page is broken in production. Fix: implement GET `/api/leaderboard` returning top users by points from `userStats`. 15-min fix. |
+| Forgot-password timing enumeration | Security | Security | `POST /api/auth/forgot-password` responds faster when the email does not exist, enabling user enumeration. Fix: add 150–250ms synthetic delay for non-matching emails. Documented as H2 in security audit. |
+| Lint enforcement in CI | DevOps | CI/CD | ESLint is configured locally but not run in GitHub Actions. Lint regressions (unused vars, type errors, import issues) are not caught before merge. Add `npm run lint` step before the build job. |
+
+---
+
+### P2 – High Value
+
+| Item | Area | Description |
+|------|------|-------------|
+| Internal HTTP self-fetch refactor | Architecture | 5+ API routes call `fetch('/api/feed')` or similar internally instead of invoking the function directly. Replace with shared helper function → lower latency, simpler error handling, no circular dependency risk. |
+| Shared `packages/shared` types | Architecture | Types for `MapMarker`, `FoodShare`, `ToolReservation` etc. are duplicated between `packages/nextjs` and `packages/mobile`. One shared package eliminates runtime drift between platforms. |
+| Reports / content flagging | Feature | `reports` table — users flag inappropriate listings (skills, food shares, events, profiles). Admin moderation queue in `/admin`. Essential for community trust at scale. |
+| GDPR compliance | Legal | Data export endpoint, account deletion (soft + hard purge after 30 days), cookie consent banner, privacy policy page. Required before any public launch in Bulgaria/EU. |
+| Event creator = auto attendee | Feature | When a user creates an event, they should be automatically added as the first attendee. Currently the creator is not registered as a participant. One-line fix in the event create API handler. |
+| Search for Events and Food | UX | Skills list has search + filters; Events and Food lists do not. Users cannot find content at scale without search. Add `q` (text search), `status`, and `city` filters matching the skills pattern. |
+| Food safety acknowledgment | BA / UX Designer | Trust | Checkbox + brief food safety guidelines shown before a user publishes a food share. Reduces liability and builds trust — standard in OLIO-type apps. No DB change needed, frontend only. |
+| Time-credit balance ("time wallet") | BA | Engagement | Show on user profile: hours given / hours received, derived from completed skill requests. Builds on existing `userStats` table. Makes the time-banking value proposition visible and motivating. |
+| Ratings display UI | Frontend Dev | Feature | `ratings` table and `/api/ratings` endpoint exist and are seeded. However there is no UI to view ratings on user profiles or listing pages. API is complete — only frontend work needed. |
+| Event RSVP capacity race condition | Security / Backend | Concurrency | Capacity check (`attending >= maxCapacity`) and INSERT are not atomic. Two concurrent RSVPs can both pass the check before either inserts, overbooking the event. Fix: enforce via SQL subquery in the INSERT or use a DB-level CHECK trigger. File: `api/events/[id]/rsvp/route.ts:36–66`. |
+| Food reservation quantity race condition | Security / Backend | Concurrency | Same pattern as RSVP — `activeCount >= quantity` check and INSERT are not atomic. Concurrent requests can exceed food share quantity. Fix: same atomic INSERT pattern. File: `api/food-shares/[id]/reservations/route.ts:78–93`. |
+
+---
+
+### P3 – Planned
+
+| Item | Area | Description |
+|------|------|-------------|
+| i18n full implementation | Feature | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. Seed with EN/BG. Stub currently satisfies TypeScript — install the real packages on a dedicated branch. |
+| Push notification tokens | DB + Feature | Add `push_tokens` table (`user_id`, `token`, `platform`, `created_at`). Required to send Expo push notifications for reservation updates, messages, and events. |
+| User preferences table | DB | Add `user_preferences` (`user_id`, `notification_settings jsonb`, `language`, `timezone`). Enables per-user notification control and language switch. |
+| Image upload UX | UX | Add preview-before-upload, re-upload, and remove-image to all image fields (skills, food shares, tools, events). Currently users upload blind with no visual confirmation. |
+| Map mobile support | Feature | Mobile map tab uses static/demo markers. Wire to live `/api/map` data via `react-native-maps` (Leaflet equivalent for Expo). Note in ROADMAP risks: non-trivial integration. |
+| Make / Remove Admin in Admin Panel | Feature | Verify `/admin/users` has promote/demote to admin role. If missing, add action buttons alongside existing user management. |
+| Multiple images / attachments | Feature | Currently every listing has a single `imageUrl`. Add `attachments` table (`id`, `entity_type`, `entity_id`, `url`, `order`) to support multiple images for events and food shares. First image becomes cover card. Requires storage + UI changes. |
+| "Story" motivation field on requests | Trust | Add a short optional text field on tool reservations and skill requests: "why do you need this?". Shown to the owner before accepting. Proven in Peerby-type apps to significantly increase acceptance rate. Uses existing `notes` field as foundation. |
+| Personal activity stats on profile | Engagement | Show per-user: "N swaps completed, N hours helped, N food shares". Derived from existing data — no new DB tables. Visible on public profile. Drives retention and social proof. |
+| Hourly time slots for tool reservations | BA / UX | UX | Extend tool reservation from date-only to date + time slot (e.g. 10:00–12:00). Useful for physical item hand-off coordination. Requires schema addition (`start_time`, `end_time` columns) and UI update. |
+| Mobile leaderboard screen | Mobile Dev | Parity | Web has `/leaderboard` page (once API is fixed). Mobile has no equivalent screen. Add leaderboard tab or profile section showing top neighbors. 30-min addition after API is implemented. |
+| Mobile build verification in CI | DevOps | CI/CD | CI currently runs `typecheck:mobile` (TS only) but not a full Expo build. Runtime bundling errors (missing native modules, bad imports) are not caught. Add EAS build dry-run or `expo export` step. |
+| DB indexes on date-filtered columns | Architect / Backend | Performance | Three columns used in queries lack indexes: `food_shares.available_until`, `events.starts_at`, `community_drives.deadline`. Add via new Drizzle migration — no data change needed, pure performance fix. |
+| `updatedAt` on junction tables | Architect | DB | `event_attendees` and `drive_pledges` have no `updatedAt` column. Cannot track when a user changed their RSVP or pledge status. Add via migration to support future audit/analytics. |
+| Notification table cleanup | Backend Dev | DB | Notifications accumulate indefinitely with no cleanup mechanism. Add `deletedAt` column (soft delete) and a periodic cleanup job to archive notifications older than 90 days. |
+
+---
+
+### P4 – Design / UX Polish
+
+| Item | Area | Description |
+|------|------|-------------|
+| Accent color system | Design | Add `amber-500` / `orange-500` as CTA accent alongside primary `green-700`. Currently all interactive elements share the same green — visual hierarchy is flat and CTAs don't stand out from nav links. |
+| UI transitions & microinteractions | Design | Route transitions, button press feedback, hover effects, skeleton loaders for home dashboard, skill list, and food list. Currently transitions are abrupt. |
+| Generate strong password | Feature | Frontend-only password generator on `/register` and `/reset-password` — show suggestion + copy button. No backend change required. |
+| Accessibility pass | Accessibility | Add `aria-label`, `aria-expanded`, focus management to dropdowns, modals, and request forms. Keyboard and screen-reader navigation is currently inconsistent. |
+| Calendar export (Google/Apple/Outlook) | UX | "Add to calendar" button on event detail and confirmed tool/skill reservations. Generates `.ics` file or Google Calendar deep-link. No backend change — pure frontend utility. Standard expectation in 2025 community apps. |
+
+---
+
+### P5 – Future / Deferred
+
+| Item | Area | Description |
+|------|------|-------------|
+| Gamification / achievements | Feature | Points, badges, leaderboard tiers — `points` and `achievements` tables already partially exist. Full implementation deferred post-capstone. |
+| Landing page improvements | Marketing | Features section, "How it works" flow, footer with links. Deferred until after all modules were complete. |
+| Enterprise / business accounts | Business | Analytics dashboard, API access, sponsored listings, white-label per neighborhood. Long-term revenue track. |
+| TanStack Query — Wave F | Architecture | Full query migration for food, tools, and events modules on web (Waves A–E complete). Low urgency now that all modules are stable. |
 
 ---
 
