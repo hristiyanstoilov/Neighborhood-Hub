@@ -89,15 +89,18 @@ export async function queryFoodShareById(id: string) {
 }
 
 export async function queryFoodReservationUsage(foodShareId: string) {
-  const reservations = await db
-    .select({ status: foodReservations.status })
+  const [row] = await db
+    .select({
+      activeCount:   sql<number>`count(*) filter (where status in ('reserved', 'picked_up'))::int`,
+      pickedUpCount: sql<number>`count(*) filter (where status = 'picked_up')::int`,
+    })
     .from(foodReservations)
     .where(eq(foodReservations.foodShareId, foodShareId))
 
-  const activeCount = reservations.filter((reservation) => reservation.status === 'reserved' || reservation.status === 'picked_up').length
-  const pickedUpCount = reservations.filter((reservation) => reservation.status === 'picked_up').length
-
-  return { activeCount, pickedUpCount }
+  return {
+    activeCount:   row?.activeCount  ?? 0,
+    pickedUpCount: row?.pickedUpCount ?? 0,
+  }
 }
 
 export async function queryUserFoodReservation(foodShareId: string, userId: string) {

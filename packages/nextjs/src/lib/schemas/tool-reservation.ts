@@ -11,12 +11,22 @@ const dateOrDatetime = z.string().refine(
   { message: 'Expected a valid date (YYYY-MM-DD) or datetime string' },
 )
 
-export const createToolReservationSchema = z.object({
-  toolId:    z.string().uuid(),
-  startDate: dateOrDatetime,
-  endDate:   dateOrDatetime,
-  notes:     z.string().trim().max(1000).optional(),
-})
+export const createToolReservationSchema = z
+  .object({
+    toolId:    z.string().uuid(),
+    startDate: dateOrDatetime,
+    endDate:   dateOrDatetime,
+    notes:     z.string().trim().max(1000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (new Date(data.endDate) <= new Date(data.startDate)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['endDate'],
+        message: 'End date must be after start date.',
+      })
+    }
+  })
 
 export const patchToolReservationSchema = z.object({
   action:             z.enum(['approve', 'reject', 'return', 'cancel']),

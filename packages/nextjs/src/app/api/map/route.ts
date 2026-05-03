@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp } from '@/lib/middleware'
@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
         })
         .from(skills)
         .innerJoin(locations, eq(locations.id, skills.locationId))
-        .where(isNull(skills.deletedAt)),
+        .where(and(isNull(skills.deletedAt), inArray(skills.status, ['available', 'busy'])))
+        .limit(500),
       db
         .select({
           id: tools.id,
@@ -48,7 +49,8 @@ export async function GET(req: NextRequest) {
         })
         .from(tools)
         .innerJoin(locations, eq(locations.id, tools.locationId))
-        .where(isNull(tools.deletedAt)),
+        .where(isNull(tools.deletedAt))
+        .limit(500),
       db
         .select({
           id: foodShares.id,
@@ -59,7 +61,8 @@ export async function GET(req: NextRequest) {
         })
         .from(foodShares)
         .innerJoin(locations, eq(locations.id, foodShares.locationId))
-        .where(isNull(foodShares.deletedAt)),
+        .where(and(isNull(foodShares.deletedAt), eq(foodShares.status, 'available')))
+        .limit(500),
       db
         .select({
           id: events.id,
@@ -70,7 +73,8 @@ export async function GET(req: NextRequest) {
         })
         .from(events)
         .innerJoin(locations, eq(locations.id, events.locationId))
-        .where(and(isNull(events.deletedAt), eq(events.status, 'published'))),
+        .where(and(isNull(events.deletedAt), eq(events.status, 'published')))
+        .limit(500),
     ])
 
     const data: MapMarker[] = [

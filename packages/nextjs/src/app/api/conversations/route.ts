@@ -10,8 +10,11 @@ function normalizePair(a: string, b: string): { participantA: string; participan
   return a < b ? { participantA: a, participantB: b } : { participantA: b, participantB: a }
 }
 
-export const GET = requireAuth(async (_req: NextRequest, { user }) => {
+export const GET = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const rows = await db
       .select({
         id: conversations.id,
