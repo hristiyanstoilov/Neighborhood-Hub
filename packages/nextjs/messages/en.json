@@ -827,5 +827,10 @@
   "footer": {
     "tagline": "Connecting neighbors, one skill at a time.",
     "rights": "All rights reserved."
+  },
+  "cookieConsent": {
+    "text": "We use analytics cookies to understand how you use the app and improve it. No personal data is shared.",
+    "accept": "Accept",
+    "decline": "Decline"
   }
 }

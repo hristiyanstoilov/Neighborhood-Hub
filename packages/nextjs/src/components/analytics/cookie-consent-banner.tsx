@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import posthog from 'posthog-js'
+import { apiFetch } from '@/lib/api'
 
 const STORAGE_KEY = 'nh_cookie_consent'
+const CONSENT_VERSION = '1.0'
 
 type ConsentValue = 'accepted' | 'declined'
 
@@ -16,7 +19,7 @@ function getStoredConsent(): ConsentValue | null {
   }
 }
 
-function applyConsent(choice: ConsentValue) {
+function applyPosthog(choice: ConsentValue) {
   try {
     if (choice === 'accepted') {
       posthog.opt_in_capturing()
@@ -28,13 +31,21 @@ function applyConsent(choice: ConsentValue) {
   }
 }
 
+function persistConsent(granted: boolean) {
+  apiFetch('/api/consent', {
+    method: 'POST',
+    body: JSON.stringify({ consentType: 'analytics', granted, version: CONSENT_VERSION }),
+  }).catch(() => undefined)
+}
+
 export default function CookieConsentBanner() {
+  const t = useTranslations('cookieConsent')
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     const stored = getStoredConsent()
     if (stored) {
-      applyConsent(stored)
+      applyPosthog(stored)
     } else {
       setVisible(true)
     }
@@ -46,7 +57,8 @@ export default function CookieConsentBanner() {
     } catch {
       // storage unavailable — still apply the choice for this session
     }
-    applyConsent(choice)
+    applyPosthog(choice)
+    persistConsent(choice === 'accepted')
     setVisible(false)
   }
 
@@ -59,22 +71,19 @@ export default function CookieConsentBanner() {
       aria-live="polite"
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white px-4 py-4 shadow-lg sm:flex sm:items-center sm:justify-between sm:gap-6"
     >
-      <p className="text-sm text-gray-600 mb-3 sm:mb-0">
-        We use analytics cookies to understand how you use the app and improve it.
-        No personal data is shared.{' '}
-      </p>
+      <p className="text-sm text-gray-600 mb-3 sm:mb-0">{t('text')}</p>
       <div className="flex gap-3 shrink-0">
         <button
           onClick={() => handleChoice('declined')}
           className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          Decline
+          {t('decline')}
         </button>
         <button
           onClick={() => handleChoice('accepted')}
           className="rounded-md bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 transition-colors"
         >
-          Accept
+          {t('accept')}
         </button>
       </div>
     </div>
