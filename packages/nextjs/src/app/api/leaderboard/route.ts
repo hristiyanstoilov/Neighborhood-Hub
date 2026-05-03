@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { userStats, profiles } from '@/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { userStats, profiles, users } from '@/db/schema'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import { searchPublicRatelimit } from '@/lib/ratelimit'
 import { getClientIp } from '@/lib/middleware'
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
         avatarUrl:   profiles.avatarUrl,
       })
       .from(userStats)
+      .innerJoin(users, and(eq(users.id, userStats.userId), isNull(users.deletedAt)))
       .leftJoin(profiles, eq(profiles.userId, userStats.userId))
       .orderBy(desc(userStats.totalPoints))
       .limit(100)
