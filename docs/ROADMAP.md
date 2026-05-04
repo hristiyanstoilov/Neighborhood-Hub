@@ -772,9 +772,9 @@ Every app that collects personal data from EU residents must comply with GDPR �
 |------|------|-------------|
 | **Privacy Policy URL for App Store** | App Store Compliance | Apple App Store and Google Play both reject apps without a live Privacy Policy URL. Blocks mobile app submission entirely — depends on page above. |
 | **Uptime monitoring** | SRE | No external monitor. App downtime is discovered by users, not the team. Add UptimeRobot or Betterstack free tier → `/api/health`. 10-minute setup. |
-| **Sentry error tracking** | SRE | Server exceptions logged to Netlify console only. Add `@sentry/nextjs` (free tier). Zero configuration beyond one `sentry.server.config.ts` file. |
-| **Automated test suite** | QA / Architect | Zero unit tests — only smoke tests. Add Vitest for `lib/state-machine.ts`, Zod schemas, and auth helpers. The QA session found a bug that unit tests would have caught. |
-| Lint enforcement in CI | DevOps | ESLint runs locally but not in GitHub Actions. Add `npm run lint` step before the build job. |
+| ~~**Sentry error tracking**~~ | ✅ Done | `@sentry/nextjs` installed; `sentry.{client,server,edge}.config.ts` — disabled unless `SENTRY_DSN` set; CSP updated. |
+| ~~**Automated test suite**~~ | ✅ Done | Vitest: 16 tests across `state-machine.test.ts` + `auth.test.ts`; CI step added. |
+| ~~Lint enforcement in CI~~ | ✅ Done | `npm run lint:web` step added to CI before build; 3 pre-existing errors fixed. |
 | ~~Mobile navigation~~ | ✅ Done | Hamburger drawer with all module links, Escape-to-close, auto-close on route change. |
 | ~~Privacy Policy page~~ | ✅ Done | `/privacy` — GDPR Art. 13 compliant: legal bases, all processors, retention, Art. 15–22 rights. |
 | ~~Terms of Service page~~ | ✅ Done | `/terms` — eligibility, acceptable use, module rules, AI disclaimer, governing law. |
