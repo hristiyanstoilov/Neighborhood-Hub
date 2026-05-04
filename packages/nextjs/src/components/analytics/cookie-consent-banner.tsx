@@ -48,6 +48,7 @@ export default function CookieConsentBanner() {
     if (stored) {
       applyPosthog(stored)
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true)
     }
   }, [])

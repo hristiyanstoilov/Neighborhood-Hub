@@ -42,7 +42,9 @@ export default function Nav() {
 
   // Close mobile menu on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDropdownOpen(false)
   }, [pathname])
 
@@ -78,6 +80,7 @@ export default function Nav() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const q = new URLSearchParams(window.location.search).get('q') ?? ''
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchValue(q)
   }, [pathname])
 

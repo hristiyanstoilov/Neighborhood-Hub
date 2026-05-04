@@ -770,19 +770,19 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 | Item | Role | Description |
 |------|------|-------------|
-| **Mobile navigation** | UX Designer | No hamburger menu exists. All 11 nav links are in a horizontal flex row — overflows on any phone. Mobile users cannot reach Tools, Events, Drives, Food, Feed, Map, Leaderboard, or Messages. Highest-impact UX fix in the app. |
-| **Privacy Policy page** | Legal | GDPR Art. 13 hard requirement. Must cover: data collected, legal basis, retention, third-party recipients (PostHog, Anthropic, Cloudflare R2, Resend, Neon), and all 8 data subject rights. No Privacy Policy = operating illegally in Bulgaria/EU. |
-| **Terms of Service page** | Legal | Without T&C: no IP license for user-uploaded content, no liability limitation for food/tool sharing, no rules of conduct, no dispute resolution. Hard launch blocker. |
-| **Privacy Policy link in cookie banner** | Legal / GDPR | Cookie banner requires a link to Privacy Policy (GDPR Art. 13). One-line fix once the page exists. |
 | **Privacy Policy URL for App Store** | App Store Compliance | Apple App Store and Google Play both reject apps without a live Privacy Policy URL. Blocks mobile app submission entirely — depends on page above. |
-| **Anthropic DPA + AI disclosure** | EU AI Act / Legal | Every message sent to `/api/ai/chat` goes to Anthropic (US). GDPR Chapter V requires a Data Processing Agreement. EU AI Act Art. 50 requires visible "This is an AI" disclosure on the chat screen. Neither exists. |
-| **Registration privacy notice + age gate** | Legal / DPO | GDPR Art. 13 requires informing users at point of data collection. Add "By registering you agree to [Privacy Policy] and [Terms]" + "I confirm I am 16 or older" checkbox at registration. |
-| **Active nav link indicator** | UX Designer | `aria-current="page"` is set but has no visual companion — all nav links look identical. Users cannot tell which section they are in. One-line CSS addition (`font-medium text-green-700`) on the active class. |
-| **Status badges i18n on homepage** | UX / i18n | Homepage skill cards show raw English strings (`"available"`, `"busy"`) not `t('common.status.available')`. Bulgarian users see English on the most-visited page. |
 | **Uptime monitoring** | SRE | No external monitor. App downtime is discovered by users, not the team. Add UptimeRobot or Betterstack free tier → `/api/health`. 10-minute setup. |
 | **Sentry error tracking** | SRE | Server exceptions logged to Netlify console only. Add `@sentry/nextjs` (free tier). Zero configuration beyond one `sentry.server.config.ts` file. |
 | **Automated test suite** | QA / Architect | Zero unit tests — only smoke tests. Add Vitest for `lib/state-machine.ts`, Zod schemas, and auth helpers. The QA session found a bug that unit tests would have caught. |
 | Lint enforcement in CI | DevOps | ESLint runs locally but not in GitHub Actions. Add `npm run lint` step before the build job. |
+| ~~Mobile navigation~~ | ✅ Done | Hamburger drawer with all module links, Escape-to-close, auto-close on route change. |
+| ~~Privacy Policy page~~ | ✅ Done | `/privacy` — GDPR Art. 13 compliant: legal bases, all processors, retention, Art. 15–22 rights. |
+| ~~Terms of Service page~~ | ✅ Done | `/terms` — eligibility, acceptable use, module rules, AI disclaimer, governing law. |
+| ~~Privacy Policy link in cookie banner~~ | ✅ Done | Inline link to `/privacy` added to consent banner text. |
+| ~~Anthropic DPA + AI disclosure~~ | ✅ Done | EU AI Act Art. 50 blue banner on `/chat`; Anthropic listed as processor in Privacy Policy. |
+| ~~Registration privacy notice + age gate~~ | ✅ Done | Required 16+ checkbox + "By registering you agree to Privacy Policy and Terms" notice on register form. |
+| ~~Active nav link indicator~~ | ✅ Done | `navLinkClass()` helper: active = `font-medium text-green-700`. |
+| ~~Status badges i18n on homepage~~ | ✅ Done | Homepage uses `tCommon('status.${skill.status}')` — BG users see translated status. |
 | ~~Leaderboard API endpoint~~ | ✅ Fixed | Implemented + soft-delete filter added. |
 | ~~Forgot-password timing enumeration~~ | ✅ Fixed | `MIN_RESPONSE_MS = 400` padding in place. |
 | ~~`first_tool` badge never awarded~~ | ✅ Fixed | `checkAndAwardBadges` added to `POST /api/tools`. |
@@ -796,7 +796,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | Item | Role | Description |
 |------|------|-------------|
 | **Nav information architecture** | UX Designer | 11 top-level links at equal visual weight. Restructure: keep 5 core modules (Skills, Tools, Events, Drives, Food) visible; move Feed/Map/Radar/Leaderboard into a "Discover" dropdown; move Messages/AI Chat/Notifications/Profile into a right-side icon cluster. |
-| **Footer redesign** | UX Designer / Legal | Footer is one line: copyright + 6 module links. Add columns: Legal (Privacy Policy, Terms, Guidelines), Support (Help, Contact), Modules (Skills, Tools, Events, Drives, Food). Privacy Policy and Terms must have a home before launch. |
+| ~~**Footer redesign**~~ | ✅ Done | 4-column footer: Explore, Community, Support, Legal. Privacy Policy and Terms now have a permanent home. |
+| ~~**Health check endpoint**~~ | ✅ Done | `GET /api/health` → `{ status, db, ts }` — returns 503 if DB unreachable. |
 | **Reports / content flagging** | Trust & Safety | `reports` table + admin moderation queue in `/admin`. Without this, a single bad actor can post unlimited inappropriate listings with no removal path. |
 | **User blocking** | Trust & Safety | Users coordinate physical meetups (tool handoffs, food pickups). Without block functionality, harassment victims have no safe exit. Requires `blocks` table + enforcement in DM and listing APIs. |
 | **Content creation rate limits** | Trust & Safety | No per-user rate limit on `POST /api/skills`, `/api/tools`, `/api/food-shares`. A single account can flood the platform. Add daily limits via Upstash (existing dependency). |
