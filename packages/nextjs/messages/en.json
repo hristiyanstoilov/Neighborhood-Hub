@@ -826,7 +826,16 @@
   },
   "footer": {
     "tagline": "Connecting neighbors, one skill at a time.",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "col_explore": "Explore",
+    "col_community": "Community",
+    "col_support": "Support",
+    "col_legal": "Legal",
+    "contact": "Contact",
+    "help": "Help",
+    "guidelines": "Community Guidelines",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
   },
   "cookieConsent": {
     "text": "We use analytics cookies to understand how you use the app and improve it. No personal data is shared.",
