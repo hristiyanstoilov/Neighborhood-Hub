@@ -2,6 +2,8 @@
 
 A community platform for neighborhood sharing in Bulgaria.
 
+> Daily contribution marker: 2026-05-04.
+
 ---
 
 ## IMPORTANT: MVP Boundary
