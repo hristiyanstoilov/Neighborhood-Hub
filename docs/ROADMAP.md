@@ -470,6 +470,53 @@ All protected mutations check ownership before executing. All user-specific data
 
 ---
 
+## Extended Role Audit (2026-05-03) — AI Ethics, Security Depth & Behavioral Design
+
+> Three final professional perspectives closing the gap between technical correctness and real-world robustness.
+
+---
+
+### 19. EU AI Act / AI Ethics Officer
+
+**Verdict: AI chat feature has three overlooked regulatory obligations that apply right now.**
+
+The EU AI Act entered into force August 2024. Obligations for general-purpose AI systems and transparency rules apply from August 2025.
+
+**Findings:**
+- **GDPR data transfer to Anthropic (US)** — Every message sent to `/api/ai/chat` is forwarded to Anthropic's API, which processes it on US servers. This is a cross-border data transfer under GDPR Chapter V. Anthropic must be listed in the Privacy Policy as a third-party recipient and a Data Processing Agreement (DPA) must be in place. Anthropic offers a DPA — it must be signed before production use.
+- **No AI disclosure on chat screen** — EU AI Act Art. 50 requires that users are clearly informed they are interacting with an AI system. A small "Powered by AI" label or banner on the `/chat` page satisfies this — but it must be present and unambiguous.
+- **AI-generated food/health advice risk** — If the AI chat recommends specific food shares, gives nutritional advice, or comments on tool safety, it could be classified as a "high-risk" AI system under EU AI Act Annex III. The system prompt should explicitly limit the AI to neighborhood discovery assistance and add a disclaimer that AI responses are not professional advice.
+- **No content filtering on AI output** — If a user asks the AI to generate inappropriate content, there is no moderation layer. Anthropic's base model has safety filters, but no app-level guardrails (topic restriction, output review) are implemented.
+
+---
+
+### 20. Penetration Tester
+
+**Verdict: Code review is not a substitute for testing a running app. These attack surfaces have not been exercised.**
+
+**Findings:**
+- **JWT algorithm confusion** — The app uses `HS256` (symmetric). If the JWT library has a `none` algorithm bypass or if `alg` is not validated server-side, a crafted token without a signature could be accepted. Needs a running test, not a code read.
+- **Mass assignment in update endpoints** — PUT /api/skills/[id], /api/tools/[id], /api/profile etc. parse request body with Zod schemas. If a Zod schema inadvertently allows fields like `ownerId`, `role`, or `emailVerifiedAt`, a crafted request could elevate privileges. Needs fuzzing of every update endpoint with extra unexpected fields.
+- **SSRF via image URL** — Food shares, events, tools, and skills accept `imageUrl` strings. If any server-side code ever fetches that URL (e.g. for thumbnail generation or validation), it opens Server-Side Request Forgery. Confirm the imageUrl is only stored and rendered by the browser, never fetched server-side.
+- **Business logic abuse: reservation state cycling** — An automated script that creates, accepts, and cancels reservations in a loop could spam owners with notifications and exhaust their listing quota. No per-user daily interaction rate limits exist beyond IP-based limits.
+- **Cloudflare R2 object enumeration** — Uploaded files get UUID filenames, but if R2 bucket is misconfigured as public, a URL brute-forcer could discover and download private user avatars. Verify the bucket policy requires signed URLs or is not publicly enumerable.
+
+---
+
+### 21. Behavioral Economist / Gamification Designer
+
+**Verdict: The points and badge system exists but may actively discourage participation due to classic gamification anti-patterns.**
+
+**Findings:**
+- **Leaderboard discourages new users** — Research across community platforms consistently shows that visible ranked leaderboards suppress participation from users not in the top 20%. A user who joins and sees they're #47 out of 50 feels behind, not motivated. Better pattern: show personal progress ("You are in the top 40% of your neighborhood this week") instead of absolute rank.
+- **Points are invisible during key moments** — Users earn points when skill requests complete, but there is no in-the-moment feedback ("You earned +10 points!"). The reinforcement loop is broken: the rewarding action (completing an exchange) and the reward (seeing points go up) are disconnected.
+- **Badge criteria are not communicated** — Users cannot see which badges they can earn, what the criteria are, or how far they are from earning the next one. Hidden achievement systems are motivating only if there are surprise discoveries — but 7 badges is too few for surprise mechanics. Better: show locked badge outlines with criteria.
+- **Flat gamification** — All completed skill requests award the same points regardless of complexity. A 5-hour guitar lesson and a 30-minute tech help call award the same. This undervalues long-term commitment and favors quantity over quality.
+- **No streak or recency mechanics** — Users who were active last month but are now dormant receive no nudge to return. A "you haven't shared anything in 3 weeks" notification or streak counter drives re-engagement in community apps.
+- **community_hero badge requires 10 completed requests** — This is a very high bar for a new platform with few users. The first badge milestone should be reachable within the first 1-2 interactions to create early habit formation.
+
+---
+
 ## Extended Role Audit (2026-05-03) — Platform Reliability, Growth & Finance
 
 > Three additional roles identified as genuinely important gaps post first extended audit.
@@ -523,7 +570,103 @@ All protected mutations check ownership before executing. All user-specific data
 
 ---
 
-## Extended Role Audit (2026-05-03) — Business, Legal & Operations
+## Senior UI/UX Designer Audit (2026-05-03) — Full App Walkthrough
+
+> Deep review based on reading actual component code: `nav.tsx`, `footer.tsx`, `page.tsx` (homepage), `skills-client.tsx`, layout files, and component patterns. Split into Navigation, Visual Design System, Page-level findings, and Redesign recommendations.
+
+---
+
+### Navigation — Critical Issues
+
+**The nav has 11+ top-level links in a single horizontal flex row with no mobile menu.**
+
+Reading `nav.tsx` line 93–163: all links render in a `<nav className="flex items-center gap-4 text-sm">` with no breakpoint hiding. On a 375px phone, this overflows — there is no hamburger menu, no drawer, no bottom tab bar. Mobile users can only tap the "Search" link (which opens a search box). They cannot reach Tools, Events, Drives, Food, Feed, Map, Leaderboard, Messages, or Radar from a phone unless they type the URL directly.
+
+**Active state is invisible.** `aria-current="page"` is set correctly, but there is no corresponding visual CSS class that makes the active link look different from inactive ones. A user cannot tell which section they're in.
+
+**Information architecture is flat and overloaded.** 11 peer-level items (Skills, Tools, Events, Drives, Food, Feed, Map, Leaderboard, Messages, Radar, AI Chat) treats every section as equally important. The five core content modules (Skills, Tools, Events, Drives, Food) are mixed with utility screens (Map, Radar) and social features (Feed, Leaderboard, Messages, AI Chat) with no grouping.
+
+**Findings:**
+
+| # | Severity | Finding |
+|---|----------|---------|
+| N1 | **CRITICAL** | No mobile navigation. Users on phones cannot reach most sections of the app. No hamburger menu, no mobile drawer, no bottom tab bar. |
+| N2 | **HIGH** | No active link indicator. `aria-current` is set but has no visual companion. Users cannot tell which section they're in. |
+| N3 | **HIGH** | 11 top-level nav items at the same visual weight. No information hierarchy. On a 1280px screen this already crowds. |
+| N4 | **MEDIUM** | Footer only has 6 module links — no Privacy Policy, Terms, Contact, About, Help. Legal links have nowhere to live. |
+| N5 | **LOW** | Logout button uses `text-gray-500 hover:text-red-500` — hover reveal of red is jarring and not a standard pattern for logout (which is not destructive). |
+
+---
+
+### Visual Design System — Findings
+
+Reading `page.tsx`, `skills-client.tsx`, `layout.tsx`, and nav:
+
+**Single color for everything.** `green-700` is used for: primary CTAs ("Offer Skill", "Register"), nav hover states, active badges, link "View all", stats bubble, search ring, icon backgrounds. When everything is green, nothing stands out. A user's eye cannot prioritize — the CTA button looks the same as a nav link hover.
+
+**No brand typography.** The app uses the browser default system font (no `font-family` declared in `globals.css` or layout). All text renders in system-ui/Segoe UI/etc. depending on the device. No distinctive brand feel.
+
+**Narrow max-width.** `max-w-5xl` (1024px) means on a 1440px or 4K screen there are ~200px of empty gray on each side. Modern community apps use `max-w-7xl` (1280px) or fluid with a sidebar. The current width feels cramped on desktop despite looking fine on 1280px laptops.
+
+**Status badges show raw English strings.** In `page.tsx` lines 118–122 and 275–278: the homepage skill card shows `skill.status` directly (`"available"`, `"busy"`, `"unavailable"`) without running through the i18n formatter. Bulgarian users see English status labels on the homepage.
+
+**Hero section is bare.** The logged-out hero is three lines of text, two buttons, and a stats count. No illustration, no screenshot, no social proof quote, no background pattern. The visual impact is minimal — it looks like an MVP placeholder, not a product.
+
+**Browse tiles are good** — the icon grid on the logged-in dashboard (AppIcon + emerald background + label) is the strongest UI pattern in the app. Clean, consistent, recognizable.
+
+**Card border hover** (`hover:border-green-400 hover:shadow-sm`) is subtle and nice. Cards feel lightweight and modern.
+
+**Findings:**
+
+| # | Severity | Finding |
+|---|----------|---------|
+| D1 | **HIGH** | Single-color system: `green-700` is used for CTAs, nav hovers, links, active states, icon backgrounds — all at the same weight. No visual hierarchy between actions and navigation. |
+| D2 | **HIGH** | Homepage status badges show raw English strings (`"available"`) not i18n-formatted values. Breaks Bulgarian experience on the most-visited page. |
+| D3 | **MEDIUM** | No brand typography. System font renders differently on every device — no consistent brand feel. |
+| D4 | **MEDIUM** | `max-w-5xl` (1024px) content area leaves large empty margins on desktop monitors wider than 1280px. |
+| D5 | **MEDIUM** | Hero section (logged-out landing) has no visual anchor — no illustration, screenshot, or social proof. Reads as an unfinished placeholder. |
+| D6 | **LOW** | Footer is minimal — copyright + 6 module links. No company columns, no legal links, no contact. Has nowhere to put Privacy Policy and Terms links once they exist. |
+
+---
+
+### Page-level Findings
+
+**Logged-in Dashboard:**
+- "Browse" and "My Activity" icon grids are visually identical — same tile style, same icon treatment, same font size. A new user cannot distinguish "browse public content" from "manage my own stuff".
+- The radar widget (neighborhood pills) is a great concept but the pills have no hover tooltip explaining what "Лозенец · 8" means — new users don't know the number is the skill count.
+- `recentSkills` shows up to 6 cards but if the user has already seen all 6, the section feels stale. No "last updated" or personalization signal.
+
+**Skills List:**
+- The "Offer Skill" CTA is placed top-right opposite the page title — correct pattern.
+- Filters are present — good.
+- Empty state and error state are handled with shared components — correct.
+- Pagination exists — correct.
+
+**Footer:**
+- © 2026 Neighborhood Hub + tagline + 6 links — all in one horizontal line. Visually cramped on mobile.
+- Missing: Privacy Policy, Terms, Contact, About, Community Guidelines, Help.
+
+---
+
+### Redesign Recommendations (prioritized)
+
+**Immediate (code changes, high UX impact):**
+
+1. **Mobile navigation** — Add a hamburger button visible below `lg:`. On click, show a full-screen or slide-in drawer with all nav links. This is the #1 usability gap.
+2. **Active nav indicator** — Add `text-green-700 font-medium` to the active link class when `isActive()` returns true. One-line change.
+3. **Status badges i18n on homepage** — Replace `skill.status` on the homepage card with `t('status.' + skill.status)` using the existing `common.status.*` i18n keys.
+4. **Footer legal links** — Add Privacy Policy and Terms links to the footer now (even as `#` placeholders). When the pages exist, they'll be live.
+5. **CTA color differentiation** — Change the primary CTA buttons (`bg-green-700`) to `bg-emerald-600` and introduce `amber-600` for secondary-action buttons. This separates navigation affordances (green) from action affordances (amber) without a full rebrand.
+
+**Medium-term (design system changes):**
+
+6. **Brand font** — Add `Inter` or `Plus Jakarta Sans` via `next/font/google`. One import, applied to `<html>`. Immediately elevates the product feel.
+7. **Nav restructuring** — Keep 5 module links visible (Skills, Tools, Events, Drives, Food). Move Feed, Map, Radar, Leaderboard into a "Discover" dropdown. Move Messages, AI Chat, Notifications, Profile into a right-side user cluster with icons instead of text links.
+8. **Dashboard section differentiation** — Add a subtle background color difference (`bg-white` vs `bg-gray-50`) between "Browse" and "My Activity" grids, or separate with a labeled divider.
+9. **Hero improvement** — Add a 3-column "social proof" mini-section below the two CTAs: icons with stats (N skills · N users · N neighborhoods). Costs nothing technically, adds immediate trust signal.
+10. **Max-width to 7xl** — Change `max-w-5xl` to `max-w-7xl` in `layout.tsx`. Single character change, gives breathing room on large screens.
+
+---
 
 > Six additional professional perspectives not covered in the 9-role technical audit. These roles are critical for any real product launch, not just a capstone demo. Findings fed into the Improvement Backlog.
 
@@ -616,114 +759,131 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 ## Improvement Backlog (Post-MVP)
 
-> Items identified during code review, QA audit, and architecture analysis. Not feature additions — quality, architecture, and UX gaps in the existing product.
+> Full re-prioritization after 21-role audit (2026-05-03). Covers technical, legal, trust & safety, platform reliability, growth, and UX gaps.
+> ✅ = already fixed in current sessions.
 
-**Priority scale:** **P1** critical/now · **P2** high value · **P3** planned · **P4** UX/design polish · **P5** future/deferred
-
----
-
-### P1 – Critical
-
-| Item | Role | Area | Description |
-|------|------|------|-------------|
-| Automated test suite | QA / Architect | Architecture | Zero unit tests — only CI smoke tests. Add Vitest unit tests for `lib/state-machine.ts`, Zod schemas, and query functions. The state machine bug found in QA would have been caught by a test. |
-| Production Polish Wave 1 | UX Designer | UX | Toasts on food creation and reservation actions (reserve / approve / reject / picked_up / cancel). Confirm dialogs for all destructive mutations. Both web and mobile. |
-| Leaderboard API endpoint | Backend Dev | Feature | Web page `/leaderboard` exists and renders, but calls `/api/leaderboard` which does not exist. Page is broken in production. Fix: implement GET `/api/leaderboard` returning top users by points from `userStats`. 15-min fix. |
-| Forgot-password timing enumeration | Security | Security | `POST /api/auth/forgot-password` responds faster when the email does not exist, enabling user enumeration. Fix: add 150–250ms synthetic delay for non-matching emails. Documented as H2 in security audit. |
-| Lint enforcement in CI | DevOps | CI/CD | ESLint is configured locally but not run in GitHub Actions. Lint regressions (unused vars, type errors, import issues) are not caught before merge. Add `npm run lint` step before the build job. |
-| **Privacy Policy page** | Legal | **Hard launch blocker.** GDPR Art. 13 requires a Privacy Policy accessible at registration. Must cover: data collected, legal basis, retention period, third-party recipients (PostHog, Cloudflare R2, Resend, Neon/Vercel), and all 8 data subject rights. No Privacy Policy = illegal to operate in Bulgaria/EU. |
-| **Terms of Service page** | Legal | **Hard launch blocker.** Without T&C there is no enforceable agreement between platform and users — no IP license for uploaded content, no liability limitation for food/tool sharing, no rules of conduct, no dispute resolution clause. |
-| **Privacy Policy link in cookie banner** | Legal / GDPR | Cookie consent banner has no link to the Privacy Policy. GDPR requires it. One-line fix once the Privacy Policy page exists: add a `<Link href="/privacy">` inside the banner text. |
-| **Privacy Policy URL for mobile App Store** | App Store | Both Apple App Store and Google Play Store require a live Privacy Policy URL before approving any app. Hard blocker for mobile app submission — depends on the Privacy Policy page above. |
+**Priority scale:** **P1** critical blocker · **P2** high value, next sprint · **P3** planned · **P4** polish · **P5** future/deferred
 
 ---
 
-### P2 – High Value
+### P1 – Critical (launch blockers or active user harm)
 
-| Item | Area | Description |
+| Item | Role | Description |
 |------|------|-------------|
-| Internal HTTP self-fetch refactor | Architecture | 5+ API routes call `fetch('/api/feed')` or similar internally instead of invoking the function directly. Replace with shared helper function → lower latency, simpler error handling, no circular dependency risk. |
-| Shared `packages/shared` types | Architecture | Types for `MapMarker`, `FoodShare`, `ToolReservation` etc. are duplicated between `packages/nextjs` and `packages/mobile`. One shared package eliminates runtime drift between platforms. |
-| Reports / content flagging | Trust & Safety | `reports` table — users flag inappropriate listings (skills, food shares, events, profiles). Admin moderation queue in `/admin`. Without this, one bad actor can pollute the platform with no removal mechanism. |
-| GDPR data export + hard purge | Legal / DPO | Data export endpoint (Art. 15/20 — machine-readable copy of user's own data), and scheduled hard purge of soft-deleted users after 30 days (Art. 17). Cookie consent is now fixed; this completes the GDPR picture. |
-| **User blocking** | Trust & Safety | Users involved in physical exchanges (tool handoffs, food pickups, skill sessions) must be able to block harassers. Without blocking, victims of abuse have no recourse and no safe exit. Requires `blocks` table (`blocker_id`, `blocked_id`) and enforcement in DM + listing APIs. |
-| **Content creation rate limits** | Trust & Safety | No rate limit on `POST /api/skills`, `POST /api/tools`, `POST /api/food-shares`. A single user can flood the platform with hundreds of fake listings. Add per-user daily limits (e.g. 10 listings/day) using Upstash rate limiter. |
-| **Uptime monitoring** | SRE | No external monitor checks if the app is reachable. Add UptimeRobot or Betterstack (both have free tiers) pointing at `/api/health` (create a simple health endpoint). Alert via email/Slack on downtime. |
-| **Error tracking (Sentry)** | SRE | 500 errors and unhandled exceptions are logged to Netlify console only — not aggregated or alerted. Add Sentry (free tier: 5,000 errors/month) via `@sentry/nextjs`. One command to configure, catches all server + client errors with stack traces. |
-| **Infrastructure cost tracker** | Finance | Document current free tier limits and the cost per 1,000 active users for each service (Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2). Build a simple cost model spreadsheet. Required before pitching to any partner or investor. |
-| **Contact / support form** | Operations | No contact path for users with disputes, bugs, or account issues. Add a `/contact` page with a form that emails the support address. Zero backend change — a mailto: link or Resend email is sufficient for MVP. |
-| **Onboarding flow for new users** | Operations / UX | Users register and arrive at a blank dashboard with no guidance. Add a first-login welcome state (empty dashboard prompt) or a 3-step "what to do first" nudge. Dramatically improves activation rate. |
-| Event creator = auto attendee | Feature | When a user creates an event, they should be automatically added as the first attendee. Currently the creator is not registered as a participant. One-line fix in the event create API handler. |
-| Search for Events and Food | UX | Skills list has search + filters; Events and Food lists do not. Users cannot find content at scale without search. Add `q` (text search), `status`, and `city` filters matching the skills pattern. |
-| Food safety acknowledgment | BA / UX Designer | Trust | Checkbox + brief food safety guidelines shown before a user publishes a food share. Reduces liability and builds trust — standard in OLIO-type apps. No DB change needed, frontend only. |
-| Time-credit balance ("time wallet") | BA | Engagement | Show on user profile: hours given / hours received, derived from completed skill requests. Builds on existing `userStats` table. Makes the time-banking value proposition visible and motivating. |
-| Ratings display UI | Frontend Dev | Feature | `ratings` table and `/api/ratings` endpoint exist and are seeded. However there is no UI to view ratings on user profiles or listing pages. API is complete — only frontend work needed. |
-| Event RSVP capacity race condition | Security / Backend | Concurrency | Capacity check (`attending >= maxCapacity`) and INSERT are not atomic. Two concurrent RSVPs can both pass the check before either inserts, overbooking the event. Fix: enforce via SQL subquery in the INSERT or use a DB-level CHECK trigger. File: `api/events/[id]/rsvp/route.ts:36–66`. |
-| Food reservation quantity race condition | Security / Backend | Concurrency | Same pattern as RSVP — `activeCount >= quantity` check and INSERT are not atomic. Concurrent requests can exceed food share quantity. Fix: same atomic INSERT pattern. File: `api/food-shares/[id]/reservations/route.ts:78–93`. |
-| `first_tool` badge never awarded | Backend / Badges | Bug | `POST /api/tools` creates the tool and writes feed + audit, but never calls `checkAndAwardBadges`. The badge is defined and checked but was unreachable. Fixed in this session: added `void checkAndAwardBadges(user.sub).catch(() => undefined)` matching the pattern in `skills/route.ts` and `food-shares/route.ts`. |
-| `userConsents` GDPR write path missing | GDPR / Backend | Architecture | `userConsents` table defined in `schema.ts` with `userId, consentType, granted, grantedAt, version` columns. Cookie consent banner stores choice in `localStorage` only — no server-side consent record is ever written. EU compliance gap: no audit trail of when a user accepted or declined analytics tracking. Fix: add `POST /api/consent` endpoint that the banner calls on choice, writing a row to `user_consents`. |
+| **Mobile navigation** | UX Designer | No hamburger menu exists. All 11 nav links are in a horizontal flex row — overflows on any phone. Mobile users cannot reach Tools, Events, Drives, Food, Feed, Map, Leaderboard, or Messages. Highest-impact UX fix in the app. |
+| **Privacy Policy page** | Legal | GDPR Art. 13 hard requirement. Must cover: data collected, legal basis, retention, third-party recipients (PostHog, Anthropic, Cloudflare R2, Resend, Neon), and all 8 data subject rights. No Privacy Policy = operating illegally in Bulgaria/EU. |
+| **Terms of Service page** | Legal | Without T&C: no IP license for user-uploaded content, no liability limitation for food/tool sharing, no rules of conduct, no dispute resolution. Hard launch blocker. |
+| **Privacy Policy link in cookie banner** | Legal / GDPR | Cookie banner requires a link to Privacy Policy (GDPR Art. 13). One-line fix once the page exists. |
+| **Privacy Policy URL for App Store** | App Store Compliance | Apple App Store and Google Play both reject apps without a live Privacy Policy URL. Blocks mobile app submission entirely — depends on page above. |
+| **Anthropic DPA + AI disclosure** | EU AI Act / Legal | Every message sent to `/api/ai/chat` goes to Anthropic (US). GDPR Chapter V requires a Data Processing Agreement. EU AI Act Art. 50 requires visible "This is an AI" disclosure on the chat screen. Neither exists. |
+| **Registration privacy notice + age gate** | Legal / DPO | GDPR Art. 13 requires informing users at point of data collection. Add "By registering you agree to [Privacy Policy] and [Terms]" + "I confirm I am 16 or older" checkbox at registration. |
+| **Active nav link indicator** | UX Designer | `aria-current="page"` is set but has no visual companion — all nav links look identical. Users cannot tell which section they are in. One-line CSS addition (`font-medium text-green-700`) on the active class. |
+| **Status badges i18n on homepage** | UX / i18n | Homepage skill cards show raw English strings (`"available"`, `"busy"`) not `t('common.status.available')`. Bulgarian users see English on the most-visited page. |
+| **Uptime monitoring** | SRE | No external monitor. App downtime is discovered by users, not the team. Add UptimeRobot or Betterstack free tier → `/api/health`. 10-minute setup. |
+| **Sentry error tracking** | SRE | Server exceptions logged to Netlify console only. Add `@sentry/nextjs` (free tier). Zero configuration beyond one `sentry.server.config.ts` file. |
+| **Automated test suite** | QA / Architect | Zero unit tests — only smoke tests. Add Vitest for `lib/state-machine.ts`, Zod schemas, and auth helpers. The QA session found a bug that unit tests would have caught. |
+| Lint enforcement in CI | DevOps | ESLint runs locally but not in GitHub Actions. Add `npm run lint` step before the build job. |
+| ~~Leaderboard API endpoint~~ | ✅ Fixed | Implemented + soft-delete filter added. |
+| ~~Forgot-password timing enumeration~~ | ✅ Fixed | `MIN_RESPONSE_MS = 400` padding in place. |
+| ~~`first_tool` badge never awarded~~ | ✅ Fixed | `checkAndAwardBadges` added to `POST /api/tools`. |
+| ~~`userConsents` GDPR write path~~ | ✅ Fixed | `POST /api/consent` implemented, banner wired. |
+| ~~Cookie consent banner i18n~~ | ✅ Fixed | `useTranslations('cookieConsent')` + BG translation added. |
 
 ---
 
-### P3 – Planned
+### P2 – High Value (next development sprint)
 
-| Item | Area | Description |
+| Item | Role | Description |
 |------|------|-------------|
-| i18n full implementation | Feature | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. Seed with EN/BG. Stub currently satisfies TypeScript — install the real packages on a dedicated branch. |
-| Cookie consent banner not i18n'd | UX / i18n | Cookie consent text in `cookie-consent-banner.tsx` is hardcoded English. Every other user-facing string uses `t()` via next-intl. Inconsistent — Bulgarian users see English-only consent text. Add translation keys `cookieConsent.text`, `cookieConsent.accept`, `cookieConsent.decline` to `en.json`/`bg.json`. Fixed in current session ✅ |
-| **SEO meta tags on listing pages** | SEO | Dynamic pages (`/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]`) use the default site title and no description. Add `generateMetadata()` in each page.tsx to produce unique `<title>` and `<meta name="description">` from the listing data. 30-min fix per module. |
-| **Health check endpoint** | SRE | Add `GET /api/health` returning `{ status: "ok", db: "ok", ts: "<timestamp>" }`. Used by uptime monitors, load balancers, and deployment pipelines to verify the app is alive and the DB connection is healthy. |
-| **Netlify function timeout guard for AI chat** | SRE | Free tier serverless functions time out at 10 seconds. AI chat streams tokens from Anthropic — long responses or slow API calls will hit this silently. Add a `AbortController` with a 9-second timeout client-side and a `max_tokens` cap server-side. |
-| **Referral / invite system** | BD | "Invite your neighbor" flow — unique referral link per user, tracked in `referrals` table, awards points to referrer on successful registration. Community apps grow fastest through neighborhood word-of-mouth. This is the highest-ROI growth mechanic for this product type. |
-| **Municipality partnership page** | BD | A static `/partners` or `/for-municipalities` landing page explaining how local governments can use the platform for citizen engagement. Required before any municipality meeting — gives legitimacy and a concrete ask. |
-| **Open Graph tags for social sharing** | SEO / Growth | Sharing a listing on Viber/Messenger/Facebook shows no preview. Add `og:title`, `og:description`, `og:image` in `generateMetadata()`. Same code as the meta tags fix — just add the `openGraph` block. |
-| **sitemap.xml** | SEO | No sitemap means search engines must discover pages by crawling links. Add Next.js `app/sitemap.ts` that generates URLs for all public listing pages. Automatic with Next.js App Router — 1-hour implementation. |
-| **robots.txt** | SEO / Security | No `robots.txt` means admin panel, API routes, and auth pages are crawled and potentially indexed. Add `app/robots.ts` disallowing `/admin/**`, `/api/**`, `/profile/**`. |
-| **Food listing liability disclaimer** | Legal | At food share creation, show an explicit "I confirm this food is safe for consumption" checkbox. If litigation ever occurs, the platform can show the publisher acknowledged responsibility. Already in P2 backlog as "food safety acknowledgment" — now elevated with legal context. |
-| **Data breach incident response plan** | DPO | No documented procedure for notifying KZLD (Bulgaria's data protection authority) within 72 hours of a breach as required by GDPR Art. 33. Document the procedure in a private ops runbook. |
-| **Registration privacy notice** | Legal / DPO | GDPR Art. 13 requires informing users of data processing at the point of collection. The registration form collects name + email with no inline notice. Add a one-line "By registering you agree to our [Privacy Policy] and [Terms of Service]" with links. |
-| **Age minimum declaration** | Legal | GDPR requires parental consent for users under 16. Add a date-of-birth field or a simple "I confirm I am 16 or older" checkbox at registration. No DB change required if checkbox-only. |
-| Badge queries include deleted listings | Backend / Badges | `checkAndAwardBadges` counts skills/tools/food without filtering `isNull(deletedAt)`. A user who published and then deleted their only skill still earns `first_skill`. Low severity — badge is still "earned" in spirit — but inconsistent with soft-delete semantics everywhere else. |
-| Push notification tokens | DB + Feature | Add `push_tokens` table (`user_id`, `token`, `platform`, `created_at`). Required to send Expo push notifications for reservation updates, messages, and events. |
-| User preferences table | DB | Add `user_preferences` (`user_id`, `notification_settings jsonb`, `language`, `timezone`). Enables per-user notification control and language switch. |
-| Image upload UX | UX | Add preview-before-upload, re-upload, and remove-image to all image fields (skills, food shares, tools, events). Currently users upload blind with no visual confirmation. |
-| Map mobile support | Feature | Mobile map tab uses static/demo markers. Wire to live `/api/map` data via `react-native-maps` (Leaflet equivalent for Expo). Note in ROADMAP risks: non-trivial integration. |
-| Make / Remove Admin in Admin Panel | Feature | Verify `/admin/users` has promote/demote to admin role. If missing, add action buttons alongside existing user management. |
-| Multiple images / attachments | Feature | Currently every listing has a single `imageUrl`. Add `attachments` table (`id`, `entity_type`, `entity_id`, `url`, `order`) to support multiple images for events and food shares. First image becomes cover card. Requires storage + UI changes. |
-| "Story" motivation field on requests | Trust | Add a short optional text field on tool reservations and skill requests: "why do you need this?". Shown to the owner before accepting. Proven in Peerby-type apps to significantly increase acceptance rate. Uses existing `notes` field as foundation. |
-| Personal activity stats on profile | Engagement | Show per-user: "N swaps completed, N hours helped, N food shares". Derived from existing data — no new DB tables. Visible on public profile. Drives retention and social proof. |
-| Hourly time slots for tool reservations | BA / UX | UX | Extend tool reservation from date-only to date + time slot (e.g. 10:00–12:00). Useful for physical item hand-off coordination. Requires schema addition (`start_time`, `end_time` columns) and UI update. |
-| Mobile leaderboard screen | Mobile Dev | Parity | Web has `/leaderboard` page (once API is fixed). Mobile has no equivalent screen. Add leaderboard tab or profile section showing top neighbors. 30-min addition after API is implemented. |
-| Mobile build verification in CI | DevOps | CI/CD | CI currently runs `typecheck:mobile` (TS only) but not a full Expo build. Runtime bundling errors (missing native modules, bad imports) are not caught. Add EAS build dry-run or `expo export` step. |
-| DB indexes on date-filtered columns | Architect / Backend | Performance | Three columns used in queries lack indexes: `food_shares.available_until`, `events.starts_at`, `community_drives.deadline`. Add via new Drizzle migration — no data change needed, pure performance fix. |
-| `updatedAt` on junction tables | Architect | DB | `event_attendees` and `drive_pledges` have no `updatedAt` column. Cannot track when a user changed their RSVP or pledge status. Add via migration to support future audit/analytics. |
-| Notification table cleanup | Backend Dev | DB | Notifications accumulate indefinitely with no cleanup mechanism. Add `deletedAt` column (soft delete) and a periodic cleanup job to archive notifications older than 90 days. |
+| **Nav information architecture** | UX Designer | 11 top-level links at equal visual weight. Restructure: keep 5 core modules (Skills, Tools, Events, Drives, Food) visible; move Feed/Map/Radar/Leaderboard into a "Discover" dropdown; move Messages/AI Chat/Notifications/Profile into a right-side icon cluster. |
+| **Footer redesign** | UX Designer / Legal | Footer is one line: copyright + 6 module links. Add columns: Legal (Privacy Policy, Terms, Guidelines), Support (Help, Contact), Modules (Skills, Tools, Events, Drives, Food). Privacy Policy and Terms must have a home before launch. |
+| **Reports / content flagging** | Trust & Safety | `reports` table + admin moderation queue in `/admin`. Without this, a single bad actor can post unlimited inappropriate listings with no removal path. |
+| **User blocking** | Trust & Safety | Users coordinate physical meetups (tool handoffs, food pickups). Without block functionality, harassment victims have no safe exit. Requires `blocks` table + enforcement in DM and listing APIs. |
+| **Content creation rate limits** | Trust & Safety | No per-user rate limit on `POST /api/skills`, `/api/tools`, `/api/food-shares`. A single account can flood the platform. Add daily limits via Upstash (existing dependency). |
+| **GDPR data export + hard purge** | Legal / DPO | Art. 15/20 data export endpoint (machine-readable JSON of user's own data) + scheduled hard purge of soft-deleted accounts after 30 days (Art. 17). |
+| **Contact / support form** | Operations | No contact path for disputes, bugs, or account issues. A `/contact` page with a Resend email (already integrated) is a 30-minute implementation. |
+| **Onboarding flow** | Operations / UX | Users land on a blank dashboard after registration with no guidance. Add first-login "what to do first" nudge. Directly improves activation rate. |
+| **Points reinforcement feedback** | Behavioral Economist | Users earn points when requests complete but receive no in-moment signal. Add "+10 points!" toast at the moment of reward. Closes the broken reinforcement loop. |
+| **Leaderboard personal progress view** | Behavioral Economist | Absolute rank discourages users not in top 20%. Show "You are in the top 40% of your neighborhood this week" instead of "#47 of 50". Same data, better psychology. |
+| **Badge criteria visible to users** | Behavioral Economist | 7 badges with no visible criteria or progress. Add locked badge outlines + "Earn this by: completing 10 requests" text. Turns hidden achievements into visible goals. |
+| **Health check endpoint** | SRE | Add `GET /api/health` returning `{ status, db, ts }`. Required for uptime monitors (above) and deployment pipelines. |
+| **Infrastructure cost model** | Finance | Document free tier limits and projected cost at 1k/10k users for: Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2. Required before any partner or investor conversation. |
+| **AI chat timeout guard** | SRE | Netlify free tier functions time out at 10 seconds. AI chat streaming can exceed this on slow responses. Add `AbortController` (9s timeout) + `max_tokens` cap server-side. |
+| Event creator = auto attendee | Backend | One-line fix: automatically insert the event creator as first attendee at creation. Currently the organizer is not registered as a participant. |
+| Search for Events and Food | UX | Skills has search + filters. Events and Food lists have none. Unusable at scale without `q`, `status`, `city` filters. |
+| Food safety acknowledgment | Legal / Trust | Checkbox at food share creation: "I confirm this food is safe for consumption." Closes both the trust gap and the liability gap in one frontend-only change. |
+| Ratings display UI | Frontend | `ratings` table and API exist and are seeded. No UI on user profiles or listing pages. API is complete — frontend only. |
+| Event RSVP race condition | Security / Backend | Capacity check and INSERT are not atomic. Two concurrent RSVPs can both pass `attending >= maxCapacity`. Fix: atomic SQL subquery or DB CHECK trigger. `api/events/[id]/rsvp/route.ts:36–66`. |
+| Food reservation race condition | Security / Backend | Same pattern — `activeCount >= quantity` check and INSERT not atomic. `api/food-shares/[id]/reservations/route.ts:78–93`. |
+| Time-credit balance ("time wallet") | BA | Show hours given/received on profile, derived from completed skill requests. Makes the time-banking value proposition visible and motivating. |
 
 ---
 
-### P4 – Design / UX Polish
+### P3 – Planned (important, not urgent)
 
-| Item | Area | Description |
+| Item | Role | Description |
 |------|------|-------------|
-| Accent color system | Design | Add `amber-500` / `orange-500` as CTA accent alongside primary `green-700`. Currently all interactive elements share the same green — visual hierarchy is flat and CTAs don't stand out from nav links. |
-| UI transitions & microinteractions | Design | Route transitions, button press feedback, hover effects, skeleton loaders for home dashboard, skill list, and food list. Currently transitions are abrupt. |
-| Generate strong password | Feature | Frontend-only password generator on `/register` and `/reset-password` — show suggestion + copy button. No backend change required. |
-| Accessibility pass (WCAG 2.1 AA) | Accessibility | Add `aria-label`, `aria-expanded`, focus management to dropdowns, modals, and request forms. Keyboard and screen-reader navigation is currently inconsistent. Note: EN 301 549 (EU accessibility standard) applies to apps used in Bulgaria. |
-| Calendar export (Google/Apple/Outlook) | UX | "Add to calendar" button on event detail and confirmed tool/skill reservations. Generates `.ics` file or Google Calendar deep-link. No backend change — pure frontend utility. Standard expectation in 2025 community apps. |
-| **Help center / FAQ page** | Operations | A static `/help` page answering: how skill requests work, what status labels mean, how to cancel, how to reset password, how data is used. Reduces support load and answers the most common new-user confusion points. |
-| **App Store submission materials** | App Store | Before mobile app submission: prepare screenshots (6.5" iPhone, 12.9" iPad, Android), short/long descriptions in EN + BG, content rating questionnaire (both stores), keywords, and promotional text. Google Play Data Safety form must match Privacy Policy. |
-| **Community guidelines page** | Trust & Safety | A static `/guidelines` page defining acceptable use: no fake listings, no harassment, food must be safe for sharing, tool condition must be accurately described. Linked from footer and from listing creation forms. Required for defensible moderation. |
+| **SEO meta tags on listing pages** | SEO | `generateMetadata()` on `/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]` — unique `<title>` and `<meta description>` per listing. 30 min per module. |
+| **Open Graph tags** | SEO / Growth | Add `og:title`, `og:description`, `og:image` in same `generateMetadata()` pass. Sharing any listing on Viber/Messenger currently shows no preview. |
+| **sitemap.xml** | SEO | `app/sitemap.ts` generating URLs for all public listing pages. Next.js App Router makes this ~1 hour of work. |
+| **robots.txt** | SEO / Security | `app/robots.ts` disallowing `/admin/**`, `/api/**`, `/profile/**` from indexing. |
+| **Hero section improvement** | UX Designer | Logged-out hero is three lines of text + two buttons. Add a 3-column social proof row (N skills · N users · N neighborhoods) below the CTAs. No DB change — stats are already fetched. |
+| **Max-width to 7xl** | UX Designer | Change `max-w-5xl` (1024px) to `max-w-7xl` (1280px) in `layout.tsx`. One character change. On large monitors the current layout wastes 200px on each side. |
+| **Dashboard section visual separation** | UX Designer | "Browse" and "My Activity" icon grids are visually identical. Add a subtle background or labeled divider so users understand the difference between browsing content and managing their own. |
+| **Community guidelines page** | Trust & Safety | Static `/guidelines` page defining acceptable use. Linked from footer and listing creation forms. Required for defensible moderation decisions. |
+| **Referral / invite system** | BD | "Invite your neighbor" — unique link per user, `referrals` table, points awarded on successful registration. Highest-ROI growth mechanic for community apps. |
+| **Municipality partnership page** | BD | Static `/for-municipalities` landing page. Required before any government outreach — gives legitimacy and a clear ask. |
+| **Streak / re-engagement mechanics** | Behavioral Economist | Users who were active and then dormant receive no nudge. Add "You haven't shared in 3 weeks" notification or streak counter to drive return visits. |
+| **`community_hero` badge threshold reduction** | Behavioral Economist | Requires 10 completed requests — too high for a new platform. Reduce to 3 for early habit formation. First meaningful milestone should be reachable within 2–3 interactions. |
+| i18n mobile full implementation | Mobile / i18n | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG seed. |
+| Data breach incident response plan | DPO | Document KZLD notification procedure (GDPR Art. 33 — 72 hours). Private ops runbook. |
+| DB indexes on date-filtered columns | Architect | `food_shares.available_until`, `events.starts_at`, `community_drives.deadline` — new Drizzle migration, pure performance. |
+| `updatedAt` on junction tables | Architect | `event_attendees` and `drive_pledges` missing `updatedAt`. Add via migration for future audit/analytics. |
+| Notification table cleanup | Backend | No cleanup mechanism — table grows unbounded. Add soft-delete + 90-day archive job. |
+| Push notification tokens | DB | `push_tokens` table for Expo push notifications. |
+| User preferences table | DB | `user_preferences` for notification settings, language, timezone. |
+| Image upload UX | UX | Preview-before-upload, re-upload, remove-image across all image fields. |
+| Personal activity stats on profile | Engagement | "N swaps, N hours helped, N food shares" on public profile. Derived from existing data. |
+| Mobile leaderboard screen | Mobile | Web leaderboard exists; mobile has no equivalent. |
+| Mobile build verification in CI | DevOps | Add EAS build dry-run or `expo export` step — currently only typecheck runs. |
+| Map mobile support | Mobile | Wire live `/api/map` to mobile map tab. Currently static/demo markers. |
+| Badge queries soft-delete filter | Backend | `checkAndAwardBadges` counts listings without `isNull(deletedAt)`. Low severity but inconsistent. |
+| "Story" motivation field on requests | Trust | Optional "why do you need this?" field on tool/skill requests, visible to owner before accepting. Proven in Peerby-type apps to significantly increase acceptance rates. |
+| Make / Remove Admin in Admin Panel | Feature | Verify promote/demote buttons exist in `/admin/users`. Add if missing. |
+
+---
+
+### P4 – Design & UX Polish
+
+| Item | Role | Description |
+|------|------|-------------|
+| **Brand typography** | UX Designer | No custom font — system font renders differently on every device. Add `Inter` or `Plus Jakarta Sans` via `next/font/google`. One import, immediate brand elevation. |
+| **CTA color differentiation** | UX Designer | `green-700` is used for nav hovers AND primary CTA buttons — no visual hierarchy. Change CTA buttons to `emerald-600` or introduce `amber-600` for action affordances vs. navigation affordances. |
+| Accessibility pass (WCAG 2.1 AA) | Accessibility | Systematic `aria-label`, `aria-expanded`, focus management audit. EN 301 549 EU standard applies in Bulgaria. |
+| App Store submission materials | App Store | Screenshots, descriptions EN + BG, content rating forms, Google Play Data Safety form. |
+| Calendar export | UX | `.ics` / Google Calendar deep-link on event detail and confirmed reservations. |
+| Help center / FAQ page | Operations | Static `/help` answering most common new-user questions. |
+| Generate strong password | UX | Password suggestion + copy button on `/register` and `/reset-password`. Frontend only. |
+| AI chat content guardrails | AI Ethics | App-level topic restriction in system prompt ("neighborhood discovery only") + explicit "not professional advice" disclaimer. Reduces EU AI Act high-risk classification risk. |
+| UI transitions & microinteractions | Design | Route transitions, button press feedback, skeleton loaders for busiest screens. |
+| Hourly time slots for tool reservations | BA / UX | Date + time slot (10:00–12:00) for tool handoff coordination. Schema change required. |
+| Multiple images / attachments | Feature | `attachments` table for multiple images per listing. |
 
 ---
 
 ### P5 – Future / Deferred
 
-| Item | Area | Description |
+| Item | Role | Description |
 |------|------|-------------|
-| Gamification / achievements | Feature | Points, badges, leaderboard tiers — `points` and `achievements` tables already partially exist. Full implementation deferred post-capstone. |
-| Landing page improvements | Marketing | Features section, "How it works" flow, footer with links. Deferred until after all modules were complete. |
-| Enterprise / business accounts | Business | Analytics dashboard, API access, sponsored listings, white-label per neighborhood. Long-term revenue track. |
-| TanStack Query — Wave F | Architecture | Full query migration for food, tools, and events modules on web (Waves A–E complete). Low urgency now that all modules are stable. |
+| Pen tester engagement | Security | Code review is not a substitute for testing a running app. JWT algorithm confusion, mass assignment fuzzing, SSRF via imageUrl, Cloudflare R2 enumeration — none of these can be verified without an active pentest. |
+| Gamification redesign | Behavioral Economist | Variable points by exchange complexity, visible progress bars, streak mechanics, "neighborhood contribution score" rather than global ranking. Full redesign when platform has real users to calibrate on. |
+| Internal HTTP self-fetch refactor | Architect | 5+ routes call `fetch('/api/...')` internally. Replace with direct function calls for lower latency and no circular dependency risk. Low urgency as long as the pattern is consistent. |
+| Shared `packages/shared` types | Architect | Shared package for `MapMarker`, `FoodShare`, `ToolReservation` types between web and mobile. Eliminates drift. |
+| Flat point system redesign | Behavioral Economist | All completed requests award equal points regardless of complexity. Redesign with weighted scoring once there is enough data on exchange types. |
+| Referral incentive fine-tuning | BD | Once referral system (P3) ships, A/B test incentive sizes and messaging. |
+| Enterprise / business accounts | Business | Analytics, API, sponsored listings, white-label. Long-term revenue track. |
+| TanStack Query — Wave F | Architecture | Full query migration for food, tools, events on web. Low urgency now that all modules are stable. |
+| Landing page visual rebrand | Marketing | Full hero illustration, testimonials, product screenshots. Post-launch when there are real users to feature. |
 
 ---
 
