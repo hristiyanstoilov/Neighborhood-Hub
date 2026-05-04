@@ -35,6 +35,7 @@ type SkillPreview = {
 export default async function HomePage() {
   const t = await getTranslations('landing')
   const tMod = await getTranslations('modules')
+  const tCommon = await getTranslations('common')
   const cookieStore = await cookies()
   const refreshToken = cookieStore.get('refresh_token')?.value
   const user = refreshToken ? await queryUserByRefreshToken(refreshToken) : null
@@ -119,7 +120,7 @@ export default async function HomePage() {
                         skill.status === 'available' ? 'bg-green-100 text-green-700'
                         : skill.status === 'busy' ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-gray-100 text-gray-500'
-                      }`}>{skill.status}</span>
+                      }`}>{tCommon(`status.${skill.status}`)}</span>
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       {skill.categoryLabel && <span>{skill.categoryLabel}</span>}

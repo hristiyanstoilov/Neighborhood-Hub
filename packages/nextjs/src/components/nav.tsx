@@ -26,6 +26,12 @@ export default function Nav() {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
 
+  function navLinkClass(path: string) {
+    return isActive(path)
+      ? 'font-medium text-green-700 transition-colors'
+      : 'text-gray-600 hover:text-green-700 transition-colors'
+  }
+
   useEffect(() => {
     if (!dropdownOpen) return
 
@@ -100,16 +106,16 @@ export default function Nav() {
           >
             {t('search')}
           </button>
-          <Link href="/skills" aria-current={isActive('/skills') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('skills')}</Link>
-          <Link href="/tools" aria-current={isActive('/tools') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('tools')}</Link>
-          <Link href="/events" aria-current={isActive('/events') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('events')}</Link>
-          <Link href="/drives" aria-current={isActive('/drives') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('drives')}</Link>
-          <Link href="/food" aria-current={isActive('/food') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('food')}</Link>
-          <Link href="/feed" aria-current={isActive('/feed') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('feed')}</Link>
-          <Link href="/map" aria-current={isActive('/map') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('map')}</Link>
-          <Link href="/leaderboard" aria-current={isActive('/leaderboard') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('leaderboard')}</Link>
-          <Link href="/messages" aria-current={isActive('/messages') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('messages')}</Link>
-          <Link href="/radar" aria-current={isActive('/radar') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('radar')}</Link>
+          <Link href="/skills" aria-current={isActive('/skills') ? 'page' : undefined} className={navLinkClass('/skills')}>{t('skills')}</Link>
+          <Link href="/tools" aria-current={isActive('/tools') ? 'page' : undefined} className={navLinkClass('/tools')}>{t('tools')}</Link>
+          <Link href="/events" aria-current={isActive('/events') ? 'page' : undefined} className={navLinkClass('/events')}>{t('events')}</Link>
+          <Link href="/drives" aria-current={isActive('/drives') ? 'page' : undefined} className={navLinkClass('/drives')}>{t('drives')}</Link>
+          <Link href="/food" aria-current={isActive('/food') ? 'page' : undefined} className={navLinkClass('/food')}>{t('food')}</Link>
+          <Link href="/feed" aria-current={isActive('/feed') ? 'page' : undefined} className={navLinkClass('/feed')}>{t('feed')}</Link>
+          <Link href="/map" aria-current={isActive('/map') ? 'page' : undefined} className={navLinkClass('/map')}>{t('map')}</Link>
+          <Link href="/leaderboard" aria-current={isActive('/leaderboard') ? 'page' : undefined} className={navLinkClass('/leaderboard')}>{t('leaderboard')}</Link>
+          <Link href="/messages" aria-current={isActive('/messages') ? 'page' : undefined} className={navLinkClass('/messages')}>{t('messages')}</Link>
+          <Link href="/radar" aria-current={isActive('/radar') ? 'page' : undefined} className={navLinkClass('/radar')}>{t('radar')}</Link>
 
           <LanguageSwitcher />
           {!loading && (
@@ -120,7 +126,7 @@ export default function Nav() {
                     <Link
                       href="/admin"
                       aria-current={isActive('/admin') ? 'page' : undefined}
-                      className="text-gray-600 hover:text-green-700 transition-colors"
+                      className={navLinkClass('/admin')}
                     >
                       {t('admin')}
                     </Link>
@@ -146,14 +152,14 @@ export default function Nav() {
                       </div>
                     )}
                   </div>
-                  <Link href="/chat" aria-current={isActive('/chat') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('ai_chat')}</Link>
+                  <Link href="/chat" aria-current={isActive('/chat') ? 'page' : undefined} className={navLinkClass('/chat')}>{t('ai_chat')}</Link>
                   <NotificationsBell />
-                  <Link href="/profile" aria-current={isActive('/profile') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{user.profile?.name ?? user.email}</Link>
+                  <Link href="/profile" aria-current={isActive('/profile') ? 'page' : undefined} className={navLinkClass('/profile')}>{user.profile?.name ?? user.email}</Link>
                   <button type="button" onClick={handleLogout} className="text-gray-500 hover:text-red-500 transition-colors">{t('logout')}</button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" aria-current={isActive('/login') ? 'page' : undefined} className="text-gray-600 hover:text-green-700 transition-colors">{t('login')}</Link>
+                  <Link href="/login" aria-current={isActive('/login') ? 'page' : undefined} className={navLinkClass('/login')}>{t('login')}</Link>
                   <Link href="/register" aria-current={isActive('/register') ? 'page' : undefined} className="bg-green-700 text-white px-3 py-1.5 rounded-md hover:bg-green-800 transition-colors">{t('register')}</Link>
                 </>
               )}
