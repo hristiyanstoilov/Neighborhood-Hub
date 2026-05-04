@@ -26,6 +26,9 @@ jobs:
       CLOUDFLARE_R2_ACCESS_KEY: ci-access
       CLOUDFLARE_R2_SECRET_KEY: ci-secret
       CLOUDFLARE_R2_PUBLIC_URL: https://example.com
+      # Sentry disabled in CI (no DSN = disabled)
+      NEXT_PUBLIC_SENTRY_DSN: ''
+      SENTRY_DSN: ''
 
     steps:
       - name: Checkout

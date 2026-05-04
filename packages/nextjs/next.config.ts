@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next'
 import path from 'path'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
@@ -29,7 +30,7 @@ const nextConfig: NextConfig = {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: https:",
             "font-src 'self'",
-            "connect-src 'self' https://eu.i.posthog.com https://us.i.posthog.com",
+            "connect-src 'self' https://eu.i.posthog.com https://us.i.posthog.com https://*.ingest.sentry.io",
             "frame-ancestors 'none'",
           ].join('; '),
         },
@@ -40,4 +41,13 @@ const nextConfig: NextConfig = {
   ],
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  disableLogger: true,
+  widenClientFileUpload: true,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  // Source map upload requires SENTRY_AUTH_TOKEN env var — skipped if absent
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+})
