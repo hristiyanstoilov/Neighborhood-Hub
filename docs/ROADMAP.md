@@ -843,7 +843,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | Notification table cleanup | Backend | No cleanup mechanism — table grows unbounded. Add soft-delete + 90-day archive job. |
 | Push notification tokens | DB | `push_tokens` table for Expo push notifications. |
 | User preferences table | DB | `user_preferences` for notification settings, language, timezone. |
-| Image upload UX | UX | Preview-before-upload, re-upload, remove-image across all image fields. |
+| ~~Image upload — R2 backend + UI component~~ | ✅ Done | `POST /api/upload` (Cloudflare R2, magic-byte validation, 5 MB limit); `<ImageUpload>` component with live preview, Replace, Remove buttons. Wired to skills, tools, food-share create/edit forms. |
+| Image upload UX — wire to remaining forms | UX | `<ImageUpload>` not yet used in: tools/new, tools/[id]/edit, events/new, drives/new. Pattern exists — add import + field. |
 | Personal activity stats on profile | Engagement | "N swaps, N hours helped, N food shares" on public profile. Derived from existing data. |
 | Mobile leaderboard screen | Mobile | Web leaderboard exists; mobile has no equivalent. |
 | Mobile build verification in CI | DevOps | Add EAS build dry-run or `expo export` step — currently only typecheck runs. |
