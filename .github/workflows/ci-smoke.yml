@@ -47,6 +47,9 @@ jobs:
           npm ci --prefix packages/nextjs
           npm install --prefix packages/mobile --legacy-peer-deps
 
+      - name: Unit tests
+        run: npm run test:web
+
       - name: Lint web
         run: npm run lint:web
 
