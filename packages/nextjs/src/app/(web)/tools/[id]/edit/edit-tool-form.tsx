@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface ToolData {
   id: string
@@ -14,6 +15,7 @@ interface ToolData {
   locationId: string | null
   condition: string | null
   status: string
+  imageUrl: string | null
 }
 
 interface Category { id: string; slug: string; label: string }
@@ -32,6 +34,7 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
   const { showToast } = useToast()
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState<string | null>(null)
+  const [imageUrl, setImageUrl]       = useState(tool.imageUrl ?? '')
   const [titleLength, setTitleLength] = useState(tool.title?.length ?? 0)
   const [descLength, setDescLength]   = useState(tool.description?.length ?? 0)
 
@@ -49,6 +52,7 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
         locationId:  (form.get('locationId') as string) || undefined,
         condition:   (form.get('condition') as string) || undefined,
         status:      form.get('status') as string,
+        imageUrl:    imageUrl || null,
       }
 
       const res = await apiFetch(`/api/tools/${tool.id}`, {
@@ -156,6 +160,11 @@ export default function EditToolForm({ tool, categories, locations }: Props) {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
           />
           <p className="text-xs text-gray-400 mt-1 text-right">{descLength}/2000</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">

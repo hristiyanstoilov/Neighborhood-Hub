@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface Category { id: string; slug: string; label: string }
 interface Location { id: string; city: string; neighborhood: string }
@@ -20,51 +20,14 @@ export default function NewToolForm({ categories, locations }: Props) {
   const t = useTranslations('tools')
   const tCommon = useTranslations('common')
   const { showToast } = useToast()
-  const [loading, setLoading]           = useState(false)
-  const [submitError, setSubmitError]   = useState<string | null>(null)
-  const [uploadError, setUploadError]   = useState<string | null>(null)
-  const [imageUrl, setImageUrl]         = useState('')
-  const [uploading, setUploading]       = useState(false)
-  const [pendingFile, setPendingFile]   = useState<File | null>(null)
-  const [titleLength, setTitleLength]   = useState(0)
-  const [descLength, setDescLength]     = useState(0)
-
-  async function uploadImage(file: File) {
-    setUploading(true)
-    setUploadError(null)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (!res.ok) {
-        setUploadError(json.detail ?? 'Upload failed. Only JPEG, PNG, WebP up to 5 MB.')
-        return false
-      }
-      setImageUrl(json.data.url)
-      setPendingFile(null)
-      return true
-    } catch {
-      setUploadError('Upload failed. Please try again.')
-      return false
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPendingFile(file)
-    void uploadImage(file)
-  }
+  const [loading, setLoading]         = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [imageUrl, setImageUrl]       = useState('')
+  const [titleLength, setTitleLength] = useState(0)
+  const [descLength, setDescLength]   = useState(0)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (uploading) {
-      setSubmitError(t('form_upload_wait'))
-      return
-    }
     setSubmitError(null)
     setLoading(true)
 
@@ -148,40 +111,8 @@ export default function NewToolForm({ categories, locations }: Props) {
         </div>
 
         <div>
-          <label htmlFor="tool-image" className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
-          {imageUrl && (
-            <Image
-              src={imageUrl}
-              alt={t('form_image_preview_alt')}
-              width={1200}
-              height={720}
-              unoptimized
-              className="w-full max-h-48 object-cover rounded-md mb-2 border border-gray-200"
-            />
-          )}
-          <input
-            id="tool-image"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleImageChange}
-            disabled={uploading}
-            className="block text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
-          />
-          {uploading && <p className="text-xs text-gray-400 mt-1">{t('form_uploading')}</p>}
-          <p className="text-xs text-gray-400 mt-1">{t('form_image_hint')}</p>
-          {uploadError && (
-            <p role="alert" aria-live="assertive" className="mt-2 text-xs text-red-600">{uploadError}</p>
-          )}
-          {uploadError && pendingFile && (
-            <button
-              type="button"
-              onClick={() => void uploadImage(pendingFile)}
-              disabled={uploading}
-              className="mt-2 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
-            >
-              {t('form_retry_upload')}
-            </button>
-          )}
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('form_image_label')}</label>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4">
