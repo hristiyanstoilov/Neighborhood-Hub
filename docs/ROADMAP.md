@@ -855,6 +855,37 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 ---
 
+### P3 – QA / Automation Testing (Senior QA Audit)
+
+> **Current coverage snapshot (2026-05-04):**
+> - ✅ Unit tests: 16 (auth helpers + state machine) — Vitest
+> - ✅ Smoke tests: 10 scripts (web routes, auth, ratings, state transitions, Playwright browser)
+> - ✅ Contract tests: 2 (skills + skill-requests — node:test)
+> - ✅ CI: unit → lint → build → smoke pipeline
+> - ❌ Integration tests: 0
+> - ❌ Schema (Zod) tests: 0 (11 schema files untested)
+> - ❌ Format/util tests: 0 (`lib/format.ts` — 12 pure functions)
+> - ❌ Accessibility tests: 0
+> - ❌ E2E full user flows: partial (smoke ≠ full E2E cycle)
+> - ❌ Coverage threshold: configured but not enforced in CI
+
+| Item | Role | Description |
+|------|------|-------------|
+| **Unit tests — `lib/format.ts`** | QA | 12 pure functions (`formatDateTime`, `formatDate`, `humanizeValue`, `formatEventStatus`, `eventStatusClass`, etc.) — zero DB/network, perfect unit test targets. Edge cases: `null`, `undefined`, invalid date strings, unknown enum values. |
+| **Unit tests — Zod schemas** | QA | 11 schema files (`skill.ts`, `tool.ts`, `food.ts`, `event.ts`, `drive.ts`, `skill-request.ts`, …) contain business logic (min/max, enums, URL format, coercion). Test: valid payloads pass, invalid fail with correct `.issues`, boundary values (title length 3/200, page min/max). |
+| **Unit tests — `lib/badges.ts`** | QA | `checkAndAwardBadges` accepts optional `database` arg — inject a mock DB object. Test: each badge awarded at correct threshold, not awarded below threshold, idempotent on repeat call (`onConflictDoNothing`). |
+| **Unit tests — `lib/middleware.ts` (`getClientIp`)** | QA | Test IP extraction priority: `x-forwarded-for` → `x-real-ip` → fallback. Test comma-separated forwarded header (proxy chain). |
+| **Coverage threshold enforcement in CI** | QA / DevOps | Add `--coverage --coverage.thresholds.lines=70` to `npm run test:web`. CI fails if coverage of `src/lib/` drops below 70%. Prevents coverage regression silently shipping. |
+| **Contract tests — tools, food, events, drives, auth** | QA | We have contracts for `skills` + `skill-requests` only. Add equivalent `node:test` contract tests for the other 4 modules + auth endpoints. Each test: correct HTTP status, required fields in response shape. |
+| **E2E — full skill exchange cycle** | QA | Playwright: User A creates skill → User B requests it → User A accepts → User A marks complete → User B rates. Verifies the entire happy path across 5 API calls and 4 state transitions. |
+| **E2E — tool reservation cycle** | QA | Playwright: Create tool → reserve → owner approves → mark returned. Covers the tool state machine end-to-end. |
+| **E2E — food share pickup cycle** | QA | Playwright: Create food share → reserve → owner marks picked_up. Verifies food status reaches terminal state. |
+| **Accessibility tests (axe-core)** | QA / Accessibility | Add `@axe-core/playwright` to smoke-auth-browser. Scan: `/`, `/skills`, `/login`, `/register`, `/chat`. Fail CI on any WCAG 2.1 AA critical violation. Covers the EN 301 549 EU standard required in Bulgaria. |
+| **Negative / error path smoke tests** | QA | Current smoke tests only cover happy paths. Add: 401 on unauthenticated requests, 403 on wrong-user mutations, 409 on duplicate reservation, 422 on invalid state transitions. Already partially covered by contract tests — expand to all modules. |
+| **Rate-limit smoke test** | QA | Fire N+1 rapid requests to `/api/skills` → assert 429 on the final one. Verifies Upstash rate limiting is wired in production, not just in code. |
+
+---
+
 ### P4 – Design & UX Polish
 
 | Item | Role | Description |
@@ -870,6 +901,9 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | UI transitions & microinteractions | Design | Route transitions, button press feedback, skeleton loaders for busiest screens. |
 | Hourly time slots for tool reservations | BA / UX | Date + time slot (10:00–12:00) for tool handoff coordination. Schema change required. |
 | Multiple images / attachments | Feature | `attachments` table for multiple images per listing. |
+| Visual regression tests | QA | Playwright `page.screenshot()` baseline for key pages (homepage, skill list, food list). Compare on each PR. Prevents CSS regressions from shipping silently. |
+| Performance baseline (k6) | QA / SRE | k6 script targeting `/api/skills`, `/api/events`, `/api/food-shares` — establish p95 latency baseline at 50 VU. Run before/after DB index changes. |
+| Mobile unit tests | QA | Vitest or Jest for `packages/mobile/lib/` — state management hooks, formatting utils. Currently zero test coverage on the mobile package. |
 
 ---
 
@@ -877,6 +911,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 | Item | Role | Description |
 |------|------|-------------|
+| Mutation testing (Stryker) | QA | Run Stryker on `lib/state-machine.ts` and `lib/badges.ts` to verify tests are meaningful — not just passing but actually catching regressions. High signal on whether current unit tests have real value. |
+| SAST — Semgrep / CodeQL | Security | Static analysis for common vulnerability patterns (SQL injection via template strings, unescaped user input in HTML, JWT none-algorithm). Add as GitHub Actions job. |
 | Pen tester engagement | Security | Code review is not a substitute for testing a running app. JWT algorithm confusion, mass assignment fuzzing, SSRF via imageUrl, Cloudflare R2 enumeration — none of these can be verified without an active pentest. |
 | Gamification redesign | Behavioral Economist | Variable points by exchange complexity, visible progress bars, streak mechanics, "neighborhood contribution score" rather than global ranking. Full redesign when platform has real users to calibrate on. |
 | Internal HTTP self-fetch refactor | Architect | 5+ routes call `fetch('/api/...')` internally. Replace with direct function calls for lower latency and no circular dependency risk. Low urgency as long as the pattern is consistent. |
