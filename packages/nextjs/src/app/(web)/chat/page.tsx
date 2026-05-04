@@ -28,6 +28,15 @@ export default async function ChatPage() {
           Ask anything about Neighborhood Hub — skills, requests, or how to get started.
         </p>
       </div>
+
+      {/* EU AI Act Art. 50 — mandatory AI disclosure */}
+      <div className="mb-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>
+          You are chatting with an <strong>AI assistant</strong> powered by Claude (Anthropic). Responses are generated automatically and are not professional advice.
+        </span>
+      </div>
+
       <ChatClient />
     </div>
   )

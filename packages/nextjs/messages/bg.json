@@ -1,5 +1,9 @@
 {
   "nav": {
+    "open_menu": "Отвори меню",
+    "close_menu": "Затвори меню",
+    "section_explore": "Разгледай",
+    "section_account": "Акаунт",
     "skills": "Умения",
     "tools": "Инструменти",
     "events": "Събития",

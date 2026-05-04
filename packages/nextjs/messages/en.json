@@ -1,5 +1,9 @@
 {
   "nav": {
+    "open_menu": "Open menu",
+    "close_menu": "Close menu",
+    "section_explore": "Explore",
+    "section_account": "Account",
     "skills": "Skills",
     "tools": "Tools",
     "events": "Events",
