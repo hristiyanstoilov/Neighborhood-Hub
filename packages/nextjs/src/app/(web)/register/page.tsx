@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 
 export default function RegisterPage() {
   const t = useTranslations('auth')
+  const tFooter = useTranslations('footer')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -126,6 +127,19 @@ export default function RegisterPage() {
           {fieldErrors.password && <p id="register-password-error" className="text-xs text-red-600 mt-1">{fieldErrors.password}</p>}
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="age-confirmed"
+            name="age_confirmed"
+            type="checkbox"
+            required
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-500 shrink-0"
+          />
+          <label htmlFor="age-confirmed" className="text-sm text-gray-600 leading-snug">
+            {t('register_age')}
+          </label>
+        </div>
+
         {error && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
             {error}
@@ -139,6 +153,13 @@ export default function RegisterPage() {
         >
           {loading ? t('creating_account') : t('register_btn')}
         </button>
+
+        <p className="text-xs text-gray-500 text-center leading-relaxed">
+          {t('register_agree')}{' '}
+          <Link href="/privacy" className="text-green-700 hover:underline">{tFooter('privacy')}</Link>
+          {' '}{t('and')}{' '}
+          <Link href="/terms" className="text-green-700 hover:underline">{tFooter('terms')}</Link>.
+        </p>
       </form>
 
       <p className="text-center text-sm text-gray-600 mt-6">

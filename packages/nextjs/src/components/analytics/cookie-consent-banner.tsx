@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import posthog from 'posthog-js'
 import { apiFetch } from '@/lib/api'
@@ -71,7 +72,10 @@ export default function CookieConsentBanner() {
       aria-live="polite"
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white px-4 py-4 shadow-lg sm:flex sm:items-center sm:justify-between sm:gap-6"
     >
-      <p className="text-sm text-gray-600 mb-3 sm:mb-0">{t('text')}</p>
+      <p className="text-sm text-gray-600 mb-3 sm:mb-0">
+        {t('text')}{' '}
+        <Link href="/privacy" className="underline hover:text-green-700">{t('privacy_link')}</Link>
+      </p>
       <div className="flex gap-3 shrink-0">
         <button
           onClick={() => handleChoice('declined')}

@@ -131,7 +131,10 @@
       "password_too_short": "Password must be at least 8 characters.",
       "invalid_token": "Invalid reset link. Please request a new one.",
       "token_expired": "This reset link has expired. Please request a new one."
-    }
+    },
+    "register_age": "I confirm I am at least 16 years old",
+    "register_agree": "By registering, you agree to our",
+    "and": "and"
   },
   "profile": {
     "title": "My Profile",
@@ -844,6 +847,7 @@
   "cookieConsent": {
     "text": "We use analytics cookies to understand how you use the app and improve it. No personal data is shared.",
     "accept": "Accept",
-    "decline": "Decline"
+    "decline": "Decline",
+    "privacy_link": "Privacy Policy"
   }
 }
