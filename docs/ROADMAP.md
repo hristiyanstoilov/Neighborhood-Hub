@@ -908,6 +908,52 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 ---
 
+## Technical Backlog (Priority Ordered)
+
+> Focused engineering backlog for architecture, backend, frontend, mobile, observability, and QA debt. Use this section when choosing the next technical task without scanning the broader product roadmap.
+
+### P1 – Critical Technical Debt
+
+| Item | Domain | Description |
+|------|--------|-------------|
+| **Event RSVP atomicity** | Backend / Security | Capacity check and INSERT are not atomic. Two concurrent RSVPs can overbook the event. Fix with a single SQL statement or transaction-safe guard. |
+| **Food reservation atomicity** | Backend / Security | Quantity check and INSERT are not atomic. Two concurrent reservations can exceed available quantity. Fix with an atomic write path. |
+| **Forgot-password timing parity** | Security | Keep response timing indistinguishable for existing vs non-existing emails to prevent user enumeration. |
+| **Mobile navigation verification** | Mobile | Confirm all top-level routes remain reachable on phones after any nav refactor. Regression here breaks product discoverability on mobile. |
+
+### P2 – High Priority Technical Debt
+
+| Item | Domain | Description |
+|------|--------|-------------|
+| **Ratings UI wiring** | Frontend | Display existing ratings data on profiles and completion flows so the API and DB are actually visible to users. |
+| **Search/filter expansion** | Frontend / Product | Add filters to Events and Food lists to match the Skills module discoverability pattern. |
+| **Notification retention job** | Backend | Add cleanup or archival for the notifications table so it does not grow unbounded. |
+| **Content creation rate limits** | Backend / Trust | Add per-user limits to skill, tool, and food creation endpoints to prevent spam and platform abuse. |
+| **Event creator auto-attendance** | Backend | Register the organizer as the first attendee when creating an event. |
+| **Mobile i18n implementation** | Mobile / i18n | Replace the mobile locale stub with real translation loading and locale-aware formatting. |
+
+### P3 – Planned Technical Debt
+
+| Item | Domain | Description |
+|------|--------|-------------|
+| **DB indexes on date columns** | Database | Add/verify indexes for date-filtered queries on `available_until`, `starts_at`, and `deadline`. |
+| **UpdatedAt on junction tables** | Database | Add `updatedAt` to `event_attendees` and `drive_pledges` for auditability and analytics. |
+| **Shared types package** | Architecture | Extract common domain types used by web and mobile to a shared package to prevent drift. |
+| **Structured logging** | Observability | Replace free-form console logs with structured JSON logs that include request and user context. |
+| **Integration test layer** | QA | Add real-DB integration tests for auth, skills, requests, events, food, and tools. |
+
+### P4 – Technical Polish
+
+| Item | Domain | Description |
+|------|--------|-------------|
+| **Skeleton loaders everywhere** | Frontend | Add reusable skeleton states for high-traffic screens to improve perceived performance. |
+| **Error boundary per feature zone** | Frontend | Keep one broken widget from blanking the whole page. |
+| **Dynamic imports for heavy screens** | Frontend | Lazy-load AI chat, map, and leaderboard bundles to reduce initial JS size. |
+| **Feature-level visual regression tests** | QA | Capture screenshots for the homepage, skills list, and detail pages to catch CSS regressions. |
+| **Canary deployment playbook** | DevOps | Document a rollback-safe release process for risky changes. |
+
+---
+
 ### P5 – Future / Deferred
 
 | Item | Role | Description |
