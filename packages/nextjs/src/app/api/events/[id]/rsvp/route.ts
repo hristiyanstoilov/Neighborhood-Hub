@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { events, eventAttendees, users } from '@/db/schema'
-import { and, count, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -32,38 +32,44 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     if (event.organizerId === user.sub) return NextResponse.json({ error: 'CANNOT_RSVP_OWN_EVENT' }, { status: 422 })
     if (event.status !== 'published') return NextResponse.json({ error: 'EVENT_NOT_OPEN' }, { status: 422 })
 
-    // Check capacity
-    if (event.maxCapacity !== null) {
-      const [{ attending }] = await db
-        .select({ attending: count() })
-        .from(eventAttendees)
-        .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.status, 'attending')))
-
-      if (attending >= event.maxCapacity) {
-        return NextResponse.json({ error: 'EVENT_FULL' }, { status: 409 })
-      }
-    }
-
     // Idempotent — if already attending return 200
     const existing = await queryUserRsvp(eventId, user.sub)
     if (existing?.status === 'attending') {
       return NextResponse.json({ data: { status: 'attending' } })
     }
 
+    // Capacity guard is folded into the write so the check+write is atomic.
+    // If maxCapacity is null the subquery evaluates to TRUE (no limit).
+    const capacityOk = event.maxCapacity !== null
+      ? sql`(SELECT COUNT(*) FROM event_attendees WHERE event_id = ${eventId}::uuid AND status = 'attending') < ${event.maxCapacity}`
+      : sql`TRUE`
+
+    let attendee: typeof eventAttendees.$inferSelect | undefined
+
     if (existing) {
-      // Re-attending after cancelling
-      const [updated] = await db
-        .update(eventAttendees)
-        .set({ status: 'attending' })
-        .where(eq(eventAttendees.id, existing.id))
-        .returning()
-      return NextResponse.json({ data: updated })
+      // Re-attending after cancelling — atomic capacity-guarded UPDATE
+      const result = await db.execute<typeof eventAttendees.$inferSelect>(
+        sql`UPDATE event_attendees
+            SET status = 'attending'
+            WHERE id = ${existing.id}::uuid
+              AND (${capacityOk})
+            RETURNING *`
+      )
+      attendee = result.rows[0]
+    } else {
+      // New attendee — atomic capacity-guarded INSERT
+      const result = await db.execute<typeof eventAttendees.$inferSelect>(
+        sql`INSERT INTO event_attendees (event_id, user_id)
+            SELECT ${eventId}::uuid, ${user.sub}::uuid
+            WHERE (${capacityOk})
+            RETURNING *`
+      )
+      attendee = result.rows[0]
     }
 
-    const [attendee] = await db.insert(eventAttendees).values({
-      eventId,
-      userId: user.sub,
-    }).returning()
+    if (!attendee) {
+      return NextResponse.json({ error: 'EVENT_FULL' }, { status: 409 })
+    }
 
     // Notify organizer
     void createNotification({
