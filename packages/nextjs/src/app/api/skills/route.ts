@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { checkAndAwardBadges } from '@/lib/badges'
 import { listSkillsSchema, createSkillSchema } from '@/lib/schemas/skill'
 import { skillSelect, buildSkillConditions } from '@/lib/queries/skills'
+import { createFeedEvent } from '@/lib/create-feed-event'
 
 // ─── GET /api/skills — public listing ───────────────────────────────────────
 
@@ -111,22 +112,13 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     void checkAndAwardBadges(user.sub).catch(() => undefined)
 
-    const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-      void fetch(`${req.nextUrl.origin}/api/feed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-        body: JSON.stringify({
-          eventType: 'skill_listed',
-          targetId: skill.id,
-          targetTitle: skill.title,
-          targetUrl: `/skills/${skill.id}`,
-        }),
-      }).catch(() => undefined)
-    }
+    void createFeedEvent({
+      actorId:    user.sub,
+      eventType:  'skill_listed',
+      targetId:   skill.id,
+      targetTitle: skill.title,
+      targetUrl:  `/skills/${skill.id}`,
+    }).catch(() => undefined)
 
     return NextResponse.json({ data: skill }, { status: 201 })
   } catch (err) {

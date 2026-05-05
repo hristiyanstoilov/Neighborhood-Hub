@@ -9,6 +9,7 @@ import { checkAndAwardBadges } from '@/lib/badges'
 import { createFoodShareSchema, listFoodSharesSchema } from '@/lib/schemas/food'
 import { buildFoodShareConditions, queryFoodShares } from '@/lib/queries/food'
 import { eq } from 'drizzle-orm'
+import { createFeedEvent } from '@/lib/create-feed-event'
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,22 +72,13 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     void checkAndAwardBadges(user.sub).catch(() => undefined)
 
-    const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-      void fetch(`${req.nextUrl.origin}/api/feed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-        body: JSON.stringify({
-          eventType: 'food_shared',
-          targetId: foodShare.id,
-          targetTitle: foodShare.title,
-          targetUrl: `/food/${foodShare.id}`,
-        }),
-      }).catch(() => undefined)
-    }
+    void createFeedEvent({
+      actorId:    user.sub,
+      eventType:  'food_shared',
+      targetId:   foodShare.id,
+      targetTitle: foodShare.title,
+      targetUrl:  `/food/${foodShare.id}`,
+    }).catch(() => undefined)
 
     return NextResponse.json({ data: foodShare }, { status: 201 })
   } catch (err) {

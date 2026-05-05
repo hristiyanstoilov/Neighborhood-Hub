@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { checkAndAwardBadges } from '@/lib/badges'
 import { createToolSchema, listToolsSchema } from '@/lib/schemas/tool'
 import { buildToolConditions, toolSelect } from '@/lib/queries/tools'
+import { createFeedEvent } from '@/lib/create-feed-event'
 
 // ─── GET /api/tools — public listing ────────────────────────────────────────
 
@@ -96,22 +97,13 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       ipAddress: ip,
     })
 
-    const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-      void fetch(`${req.nextUrl.origin}/api/feed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-        body: JSON.stringify({
-          eventType: 'tool_listed',
-          targetId: tool.id,
-          targetTitle: tool.title,
-          targetUrl: `/tools/${tool.id}`,
-        }),
-      }).catch(() => undefined)
-    }
+    void createFeedEvent({
+      actorId:    user.sub,
+      eventType:  'tool_listed',
+      targetId:   tool.id,
+      targetTitle: tool.title,
+      targetUrl:  `/tools/${tool.id}`,
+    }).catch(() => undefined)
 
     void checkAndAwardBadges(user.sub).catch(() => undefined)
 

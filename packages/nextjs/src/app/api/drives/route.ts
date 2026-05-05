@@ -8,6 +8,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { createDriveSchema, listDrivesSchema } from '@/lib/schemas/drive'
 import { buildDriveConditions, queryDrives } from '@/lib/queries/drives'
 import { eq } from 'drizzle-orm'
+import { createFeedEvent } from '@/lib/create-feed-event'
 
 // ─── GET /api/drives — public listing ───────────────────────────────────────
 
@@ -72,22 +73,13 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'community_drives', entityId: drive.id, ipAddress: ip })
 
-    const authHeader = req.headers.get('authorization')
-    if (authHeader) {
-      void fetch(`${req.nextUrl.origin}/api/feed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-        },
-        body: JSON.stringify({
-          eventType: 'drive_opened',
-          targetId: drive.id,
-          targetTitle: drive.title,
-          targetUrl: `/drives/${drive.id}`,
-        }),
-      }).catch(() => undefined)
-    }
+    void createFeedEvent({
+      actorId:    user.sub,
+      eventType:  'drive_opened',
+      targetId:   drive.id,
+      targetTitle: drive.title,
+      targetUrl:  `/drives/${drive.id}`,
+    }).catch(() => undefined)
 
     return NextResponse.json({ data: drive }, { status: 201 })
   } catch (err) {
