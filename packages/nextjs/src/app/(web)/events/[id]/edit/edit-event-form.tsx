@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { toDatetimeLocal } from '@/lib/datetime'
 
 interface EventData {
   id:          string
@@ -23,12 +24,6 @@ interface Props {
   event: EventData
 }
 
-function toDatetimeLocal(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export default function EditEventForm({ event }: Props) {
   const router = useRouter()
