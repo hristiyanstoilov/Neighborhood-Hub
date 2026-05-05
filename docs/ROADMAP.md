@@ -757,6 +757,106 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 ---
 
+## Senior Architect + Senior Tech Lead Full Audit (2026-05-04)
+
+> Two-role deep audit: (1) **Senior Architect** — data integrity, missing abstractions, security posture, scaling risks, business domain gaps; (2) **Senior Tech Lead** — code quality, duplication, anti-patterns, correctness bugs. All findings fed into the Improvement Backlog below.
+
+---
+
+### Senior Architect Findings
+
+#### Data Integrity Gaps
+
+| ID | Severity | Finding | Backlog |
+|----|----------|---------|---------|
+| DA-01 | **CRITICAL** | `conversations` table has `UNIQUE(participant_a, participant_b)` with no `CHECK(participant_a < participant_b)`. Two rows for the same pair can be inserted in reverse order — both pass the unique constraint. | P1 |
+| DA-02 | **HIGH** | `queryDrivePledges(driveId)` has no `.limit()` clause — returns all rows. OOM crash risk at scale. | P2 |
+| DA-03 | **HIGH** | `queryFoodReservations(foodShareId)` has no `.limit()` clause — same unbounded risk. | P2 |
+| DA-04 | **MEDIUM** | `ratings.contextId`, `notifications.entityId`, `feedEvents.targetId` have no FK — orphan rows accumulate silently after soft-deletes. | P3 |
+| DA-05 | **MEDIUM** | `profiles.avgRating` + `profiles.ratingCount` updated only in app layer. Stats drift if any rating write fails or a rating is deleted. No trigger or recalculation job. | P3 |
+
+#### Missing Business Features (Architectural Gaps)
+
+| ID | Gap | Impact |
+|----|-----|--------|
+| AF-01 | No `defaultLocationId` on `profiles` | Discovery is unfocused — no "near you" pre-filter |
+| AF-02 | No event waitlist table | Capacity-full events have no recourse path |
+| AF-03 | `communityDrives.goalDescription` is text-only — no numeric goal/progress columns | "57 of 100 items collected" is impossible |
+| AF-04 | Tool reservations have no return date or auto-expiry | Loans go stale with no reminder |
+| AF-05 | No `skill_endorsements` table | Cold-start trust problem — skills are self-declared only |
+| AF-06 | No email notifications for reservation/request status changes | Users miss time-sensitive updates; Resend is already wired |
+| AF-07 | `push_tokens` table exists but no Expo Push API calls implemented | Mobile retention loop is broken for DMs and reservation events |
+
+#### Security Architecture
+
+| ID | Severity | Finding | Backlog |
+|----|----------|---------|---------|
+| SA-01 | **HIGH** | CSP `img-src` allows any `https:` domain. Should be scoped to the R2 bucket hostname only. | P2 |
+| SA-02 | **HIGH** | Refresh token cookie missing `SameSite=Strict` — `SameSite=Lax` allows CSRF to force token refresh. | P2 |
+| SA-03 | **MEDIUM** | No JWT secret rotation mechanism — if `JWT_SECRET` leaks, all tokens are forgeable until manual env var change. | P4 |
+| SA-04 | **LOW** | `auditLog` is write-only with no tamper detection — a compromised admin could delete entries. Critical actions should go to an append-only sink. | P4 |
+
+#### Performance
+
+| ID | Finding | Backlog |
+|----|---------|---------|
+| PF-01 | No `pg_trgm` GIN indexes on `title` columns — search uses a full sequential scan at scale. | P3 |
+| PF-02 | Public list endpoints (`/api/skills`, `/api/tools`, etc.) return no `Cache-Control` headers — every request hits the DB. | P3 |
+| PF-03 | SSE notification stream (`/api/notifications/stream`) creates a long-lived connection incompatible with Netlify's 10-second serverless timeout. | P4 |
+
+#### Missing Mobile CRUD Screens
+
+| Screen | File | Backlog |
+|--------|------|---------|
+| Create Tool | `packages/mobile/app/(app)/tools/new.tsx` — does not exist | P3 |
+| Edit Tool | `packages/mobile/app/(app)/tools/edit/[id].tsx` — does not exist | P3 |
+| Edit Event | `packages/mobile/app/(app)/events/edit/[id].tsx` — does not exist | P3 |
+| Edit Drive | `packages/mobile/app/(app)/drives/edit/[id].tsx` — does not exist | P3 |
+| Achievements / Badges | `packages/mobile/app/(app)/profile/achievements.tsx` — does not exist | P3 |
+| Map tap → detail | `radar.tsx` pin tap does not navigate to listing | P3 |
+
+---
+
+### Senior Tech Lead Findings
+
+#### Critical Code Bugs
+
+| ID | Severity | File | Finding | Backlog |
+|----|----------|------|---------|---------|
+| TL-01 | **CRITICAL** | `drives/[id]/pledges/route.ts`, `food-shares/[id]/reservations/route.ts` | POST handlers parse `req.url` manually instead of using `params` from the Next.js route context. GET uses `params` correctly. Risk: ID mismatch under URL encoding edge cases. | P1 |
+| TL-02 | **HIGH** | 10+ routes | `req.json()` parse failures are silently treated as validation errors — the real cause is hidden. Fix: explicit catch returning `400 INVALID_JSON`. | P1 |
+
+#### Technical Debt
+
+| ID | Severity | Finding | Locations | Backlog |
+|----|----------|---------|-----------|---------|
+| TL-03 | **HIGH** | Identical `isUniqueViolation()` helper duplicated in two route files | `tool-reservations/route.ts`, `food-shares/[id]/reservations/route.ts` | P2 |
+| TL-04 | **HIGH** | Feed event creation uses `fetch('/api/feed', ...)` internal HTTP call instead of direct function — unnecessary network round-trip, fire-and-forget swallows failures | 5 routes: skills, tools, events, drives, food-shares | P2 |
+| TL-05 | **HIGH** | Email verification DB check (`!dbUser?.emailVerifiedAt → UNVERIFIED_EMAIL`) copy-pasted into 8+ create routes | All create routes | P2 |
+| TL-06 | **MEDIUM** | Rate-limit check boilerplate (`apiRatelimit.limit(user.sub) → 429`) duplicated in 40+ routes | All protected routes | P2 |
+| TL-07 | **MEDIUM** | FK validation (category/location existence check) repeated inline 10+ times | All create routes | P3 |
+| TL-08 | **MEDIUM** | Hardcoded pagination defaults (`limit=20`, `page=1`) scattered across 6+ query files — no single source of truth | `queries/*.ts` | P3 |
+
+#### Code Smells
+
+| ID | Finding | Risk | Backlog |
+|----|---------|------|---------|
+| TL-09 | Status values (`'available'`, `'pending'`, `'pledged'`) duplicated as string literals in schemas, routes, queries, and format helpers | Typos fail silently — no type error, wrong comparison | P3 |
+| TL-10 | `skillSelect`, `toolSelect`, etc. defined then partially re-spread in individual query functions | Field drift — adding a column requires updating two places | P4 |
+| TL-11 | Default profile name `'Neighbor'` hardcoded in multiple files | Copy drift | P4 |
+| TL-12 | Feed pagination uses `{ limit, offset }` while all other list routes use `{ page, limit }` | Inconsistent client API | P4 |
+| TL-13 | `queryFoodReservationsForUser` hardcoded `.limit(50)` with no page parameter | Users with 50+ food reservations see a silently truncated list | P3 |
+
+#### Mobile-Specific
+
+| ID | Finding | File | Backlog |
+|----|---------|------|---------|
+| TL-14 | Load-more can be triggered twice simultaneously — no guard against duplicate fetches | `food/index.tsx`, `tools/index.tsx` | P4 |
+| TL-15 | `isFetchingRef` created but never read — dead code | `food/index.tsx:57` | P4 |
+| TL-16 | Status tab values hardcoded as string literals — breaks silently if backend enum changes | `food/index.tsx:22`, `tools/index.tsx:23` | P3 |
+
+---
+
 ## Improvement Backlog (Post-MVP)
 
 > Full re-prioritization after 21-role audit (2026-05-03). Covers technical, legal, trust & safety, platform reliability, growth, and UX gaps.
@@ -788,6 +888,9 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | ~~`first_tool` badge never awarded~~ | ✅ Fixed | `checkAndAwardBadges` added to `POST /api/tools`. |
 | ~~`userConsents` GDPR write path~~ | ✅ Fixed | `POST /api/consent` implemented, banner wired. |
 | ~~Cookie consent banner i18n~~ | ✅ Fixed | `useTranslations('cookieConsent')` + BG translation added. |
+| **`conversations` pair ordering** | Architect (DA-01) | `conversations_pair_idx` is `UNIQUE(participant_a, participant_b)` with no ordering constraint. Two rows can exist for the same pair. Fix: `CHECK(participant_a < participant_b)` + normalize in API before INSERT. |
+| **URL `params` in POST handlers** | Tech Lead (TL-01) | `drives/[id]/pledges` and `food-shares/[id]/reservations` POST handlers parse `req.url` manually. GET uses `params` correctly. Risk: ID mismatch on URL encoding edge cases. Fix: use `params` in all handlers. |
+| **JSON parse errors swallowed** | Tech Lead (TL-02) | `req.json()` failures silently treated as validation errors in 10+ routes. Fix: explicit JSON parse catch returning `400 INVALID_JSON`. |
 
 ---
 
@@ -817,6 +920,16 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | Event RSVP race condition | Security / Backend | Capacity check and INSERT are not atomic. Two concurrent RSVPs can both pass `attending >= maxCapacity`. Fix: atomic SQL subquery or DB CHECK trigger. `api/events/[id]/rsvp/route.ts:36–66`. |
 | Food reservation race condition | Security / Backend | Same pattern — `activeCount >= quantity` check and INSERT not atomic. `api/food-shares/[id]/reservations/route.ts:78–93`. |
 | Time-credit balance ("time wallet") | BA | Show hours given/received on profile, derived from completed skill requests. Makes the time-banking value proposition visible and motivating. |
+| **Bound `queryDrivePledges`** | Architect (DA-02) | No `.limit()` — returns all pledge rows. OOM crash risk at scale. Add `limit(100)` + page param; expose in `/drives/[id]/pledges?page=`. |
+| **Bound `queryFoodReservations`** | Architect (DA-03) | No `.limit()` — returns all reservation rows. Same crash risk. Add pagination. |
+| **Event edit page (web)** | Architect | `/events/[id]/edit` does not exist on web. Event creators can only delete, never update an event after creation. |
+| **Cookie banner "Reject All"** | Legal / GDPR | GDPR requires an equally prominent "Reject All" option. Current banner has "Accept All" only — closing implies consent. Add "Reject All" that persists `analytics=false` to `userConsents`. |
+| **CSP `img-src` tighten to R2 domain** | Architect (SA-01) | `img-src https:` allows any HTTPS image source. Scope to `https://<bucket>.r2.cloudflarestorage.com`. |
+| **`SameSite=Strict` on refresh cookie** | Architect (SA-02) | Refresh token cookie uses `SameSite=Lax` — a CSRF attack can force token refresh. Upgrade to `SameSite=Strict`. |
+| **`requireVerifiedAuth` middleware** | Tech Lead (TL-05) | Email verification check (`!dbUser?.emailVerifiedAt → UNVERIFIED_EMAIL`) copy-pasted into 8+ create routes. Extract into `requireVerifiedAuth()` wrapper in `lib/middleware.ts`. |
+| **`requireAuthWithRateLimit` middleware** | Tech Lead (TL-06) | Rate-limit boilerplate (`apiRatelimit.limit(user.sub) → 429`) duplicated in 40+ routes. Extract into reusable middleware wrapper. |
+| **Feed creation: HTTP fetch → direct call** | Tech Lead (TL-04) | 5 create routes call `fetch('/api/feed', ...)` internally — extra HTTP round-trip, fire-and-forget swallows failures. Replace with direct function call. Promoted from P5. |
+| **Extract shared `isUniqueViolation`** | Tech Lead (TL-03) | Identical helper duplicated in `tool-reservations/route.ts` and `food-shares/[id]/reservations/route.ts`. Extract to `lib/db-errors.ts`. |
 
 ---
 
@@ -852,6 +965,28 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | Badge queries soft-delete filter | Backend | `checkAndAwardBadges` counts listings without `isNull(deletedAt)`. Low severity but inconsistent. |
 | "Story" motivation field on requests | Trust | Optional "why do you need this?" field on tool/skill requests, visible to owner before accepting. Proven in Peerby-type apps to significantly increase acceptance rates. |
 | Make / Remove Admin in Admin Panel | Feature | Verify promote/demote buttons exist in `/admin/users`. Add if missing. |
+| **User home neighborhood** | Architect (AF-01) | No `defaultLocationId` on `profiles` — discovery has no "near you" filter. Add FK to `locations.id` in profiles; surface in onboarding and filter UI. |
+| **Event waitlist** | Architect (AF-02) | `events.maxCapacity` hard-rejects over-capacity RSVPs with no waitlist. Add `event_waitlist` table with ordered position + auto-promotion when an attendee cancels. |
+| **Drive numeric goals** | Architect (AF-03) | `goalDescription` is text-only. Add `goalAmount: integer` + `currentAmount: integer` columns so drives can show "57 of 100 items collected." |
+| **Tool return date enforcement** | Architect (AF-04) | Tool reservations have no `returnBy` date or auto-expiry. Loans go stale indefinitely. Add `returnBy` column + overdue notification. |
+| **Skill endorsements** | Architect (AF-05) | Skills are self-declared only. Add `skill_endorsements` table — neighbors who completed exchanges can vouch, solving cold-start trust. |
+| **Email notifications for key events** | Architect (AF-06) | No transactional emails for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Resend is already integrated — wire notification events to email templates. |
+| **Push notifications for DMs + reservations** | Architect (AF-07) | `push_tokens` table exists but no Expo Push API calls made anywhere. DM received + reservation status changed are core mobile retention events. |
+| **Mobile: Create Tool screen** | Architect | `packages/mobile/app/(app)/tools/new.tsx` does not exist. Mobile users can browse and reserve tools but cannot list their own. |
+| **Mobile: Edit Tool screen** | Architect | `packages/mobile/app/(app)/tools/edit/[id].tsx` does not exist. |
+| **Mobile: Edit Event screen** | Architect | `packages/mobile/app/(app)/events/edit/[id].tsx` does not exist. |
+| **Mobile: Edit Drive screen** | Architect | `packages/mobile/app/(app)/drives/edit/[id].tsx` does not exist. |
+| **Mobile: Achievements / Badges screen** | Architect | `badges` + `userStats` tables exist but no mobile screen surfaces them. Add `packages/mobile/app/(app)/profile/achievements.tsx`. |
+| **Mobile: map pin → detail navigation** | Architect | `radar.tsx` shows location density but tapping a pin does not navigate to the listing. Wire tap to the relevant detail page. |
+| **`pg_trgm` GIN indexes for search** | Architect (PF-01) | Search uses `plainto_tsquery` / `ILIKE` without trigram indexes — full sequential scan at scale. Add `CREATE INDEX USING GIN(title gin_trgm_ops)` on `skills.title`, `tools.title`, `events.title`, `food_shares.title` via Drizzle migration. |
+| **Cache-Control on public list endpoints** | Architect (PF-02) | `/api/skills`, `/api/tools`, `/api/events`, `/api/food-shares` serve public data with no caching headers. Add `Cache-Control: public, max-age=30, stale-while-revalidate=60`. |
+| **Orphan cleanup job** | Architect (DA-04) | `ratings.contextId`, `notifications.entityId`, `feedEvents.targetId` have no FK — orphan rows accumulate after soft-deletes. Add weekly scheduled cleanup (Neon scheduled function or server-side cron). |
+| **Profile rating stats recalculation** | Architect (DA-05) | `profiles.avgRating` + `profiles.ratingCount` can drift if a rating write fails. Add a Postgres trigger or scheduled recalculation endpoint. |
+| **FK validation helper** | Tech Lead (TL-07) | Category/location existence checks copy-pasted in 10+ create routes. Extract `validateForeignKey()` to `lib/db-helpers.ts`. |
+| **Status string constants** | Tech Lead (TL-09) | Status values (`'available'`, `'pending'`, `'pledged'`) duplicated as string literals across schemas, routes, queries, and format helpers. Typos fail silently. Extract to `lib/constants/statuses.ts`. |
+| **Domain-specific notification helpers** | Tech Lead | `createNotification({...})` called with raw params in 15+ routes. Extract helpers: `notifySkillOwnerOfRequest()`, `notifyToolOwnerOfReservation()`, etc. |
+| **`queryFoodReservationsForUser` pagination** | Tech Lead (TL-13) | Hardcoded `.limit(50)` with no page param — users with 50+ food reservations get a silently truncated list. Add `limit` + `offset` params. |
+| **Mobile hardcoded status string values** | Tech Lead (TL-16) | Status tab values are string literals in `food/index.tsx` and `tools/index.tsx` — break silently if backend enum changes. Import from shared constants once TL-09 is done. |
 
 ---
 
@@ -905,12 +1040,22 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | Visual regression tests | QA | Playwright `page.screenshot()` baseline for key pages (homepage, skill list, food list). Compare on each PR. Prevents CSS regressions from shipping silently. |
 | Performance baseline (k6) | QA / SRE | k6 script targeting `/api/skills`, `/api/events`, `/api/food-shares` — establish p95 latency baseline at 50 VU. Run before/after DB index changes. |
 | Mobile unit tests | QA | Vitest or Jest for `packages/mobile/lib/` — state management hooks, formatting utils. Currently zero test coverage on the mobile package. |
+| **SSE stream → polling or managed WebSocket** | Architect (PF-03) | `/api/notifications/stream` (SSE) creates a long-lived connection incompatible with Netlify's 10-second serverless timeout. Replace with polling (`GET /api/notifications?after=<ts>`) or a managed service (Pusher/Ably). |
+| **JWT key rotation procedure** | Architect (SA-03) | `JWT_SECRET` is static. If compromised, all tokens are forgeable. Document: bump token version counter in DB → force logout all sessions → rotate env var. |
+| **Audit log append-only sink** | Architect (SA-04) | Critical audit events (login, delete, admin actions) written to a table a compromised admin could delete. Add append-only sink: separate table with `REVOKE DELETE` or external structured log. |
+| **Select object DRY in query files** | Tech Lead (TL-10) | `skillSelect`, `toolSelect` etc. are defined then partially re-spread in per-function selects. Use the constant everywhere — field added once, not twice. |
+| **Pagination variable name standardization** | Tech Lead (TL-12) | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach to avoid client-side confusion. |
+| **Hardcoded defaults → central constant** | Tech Lead (TL-08) | Each query file declares `limit = 20`, `page = 1` independently. Extract to `lib/query-defaults.ts`. |
+| **Mobile load-more race condition** | Tech Lead (TL-14) | `food/index.tsx` and `tools/index.tsx` — tapping "load more" twice triggers duplicate fetches. Add `isLoadingMore` guard flag. |
+| **Remove unused `isFetchingRef`** | Tech Lead (TL-15) | `food/index.tsx:57` — a `useRef` created but never read. Remove dead code. |
+| **Default profile name constant** | Tech Lead (TL-11) | `'Neighbor'` hardcoded in multiple files (feed route, query files). Extract to `lib/constants.ts`. |
 
 ---
 
 ## Technical Backlog (Priority Ordered)
 
 > Focused engineering backlog for architecture, backend, frontend, mobile, observability, and QA debt. Use this section when choosing the next technical task without scanning the broader product roadmap.
+> Last synced: 2026-05-05.
 
 ### P1 – Critical Technical Debt
 
@@ -920,6 +1065,9 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Food reservation atomicity** | Backend / Security | Quantity check and INSERT are not atomic. Two concurrent reservations can exceed available quantity. Fix with an atomic write path. |
 | **Forgot-password timing parity** | Security | Keep response timing indistinguishable for existing vs non-existing emails to prevent user enumeration. |
 | **Mobile navigation verification** | Mobile | Confirm all top-level routes remain reachable on phones after any nav refactor. Regression here breaks product discoverability on mobile. |
+| **`conversations` pair ordering constraint** | Database | Add `CHECK(participant_a < participant_b)` to `conversations` table + normalize pair order in `POST /api/conversations` before INSERT. Prevents duplicate conversation rows. (DA-01) |
+| **URL `params` in POST route handlers** | Backend | `drives/[id]/pledges/route.ts` and `food-shares/[id]/reservations/route.ts` POST handlers parse `req.url` manually. Replace with `params` from route context, same as their GET counterparts. (TL-01) |
+| **JSON parse error handling** | Backend | `req.json()` failures silently treated as validation errors in 10+ routes. Add explicit `try/catch` returning `400 INVALID_JSON` before the Zod `safeParse` call. (TL-02) |
 
 ### P2 – High Priority Technical Debt
 
@@ -931,6 +1079,15 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Content creation rate limits** | Backend / Trust | Add per-user limits to skill, tool, and food creation endpoints to prevent spam and platform abuse. |
 | **Event creator auto-attendance** | Backend | Register the organizer as the first attendee when creating an event. |
 | **Mobile i18n implementation** | Mobile / i18n | Replace the mobile locale stub with real translation loading and locale-aware formatting. |
+| **Bound `queryDrivePledges` + `queryFoodReservations`** | Database / Backend | Both queries return unlimited rows — OOM crash risk. Add `.limit(100)` + pagination params; expose via `?page=` on the API routes. (DA-02, DA-03) |
+| **Event edit page (web)** | Frontend | `/events/[id]/edit` does not exist. Event creators cannot update after creation — only delete. |
+| **Cookie banner "Reject All" button** | Frontend / Legal | GDPR requires an equally prominent reject option. Add "Reject All" that writes `analytics=false` to `userConsents`. |
+| **CSP `img-src` scoped to R2** | Security (SA-01) | Change `img-src https:` to `img-src 'self' data: blob: https://<r2-bucket-hostname>` in `next.config.ts`. |
+| **`SameSite=Strict` on refresh cookie** | Security (SA-02) | Upgrade from `SameSite=Lax` on the refresh token cookie to prevent CSRF-forced refresh. |
+| **`requireVerifiedAuth` middleware** | Backend (TL-05) | Extract email verification check into a reusable `requireVerifiedAuth()` wrapper — removes 20+ duplicate lines across create routes. |
+| **`requireAuthWithRateLimit` middleware** | Backend (TL-06) | Extract rate-limit check into a middleware wrapper — removes 40+ duplicate patterns. |
+| **Feed event direct function call** | Backend (TL-04) | Replace internal `fetch('/api/feed', ...)` calls in 5 create routes with direct function invocation. |
+| **Extract `isUniqueViolation` helper** | Backend (TL-03) | Move duplicated helper to `lib/db-errors.ts` so all routes share one implementation. |
 
 ### P3 – Planned Technical Debt
 
@@ -941,6 +1098,18 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Shared types package** | Architecture | Extract common domain types used by web and mobile to a shared package to prevent drift. |
 | **Structured logging** | Observability | Replace free-form console logs with structured JSON logs that include request and user context. |
 | **Integration test layer** | QA | Add real-DB integration tests for auth, skills, requests, events, food, and tools. |
+| **Mobile: Create + Edit Tool screens** | Mobile | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist on mobile. Skills have full CRUD; tools are browse-only. (AF) |
+| **Mobile: Edit Event + Edit Drive screens** | Mobile | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
+| **Mobile: Achievements screen** | Mobile | `profile/achievements.tsx` does not exist — badges and user stats are invisible to mobile users. |
+| **Push notification wiring** | Backend / Mobile | `push_tokens` table exists but no Expo Push API calls implemented. Wire DM received + reservation status changed events. (AF-07) |
+| **Email notification templates** | Backend | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. (AF-06) |
+| **`pg_trgm` GIN search indexes** | Database (PF-01) | Add trigram indexes on `title` columns for skills, tools, events, food_shares. New Drizzle migration. Cuts search latency 10x at 100k+ rows. |
+| **Cache-Control on public list endpoints** | Backend (PF-02) | Add `Cache-Control: public, max-age=30, stale-while-revalidate=60` to public GET list routes. |
+| **Orphan cleanup job** | Database (DA-04) | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where the referenced entity no longer exists. |
+| **Status string constants** | Architecture (TL-09) | Extract all status string literals to `lib/constants/statuses.ts`. Use in schemas, routes, queries, and format helpers. |
+| **FK validation helper** | Backend (TL-07) | Extract `validateForeignKey()` to `lib/db-helpers.ts` — removes 50+ lines of duplicated category/location existence checks. |
+| **`queryFoodReservationsForUser` pagination** | Backend (TL-13) | Add `limit` + `offset` params — current hardcoded `.limit(50)` silently truncates for users with many reservations. |
+| **Map pin tap → detail navigation** | Mobile | Wire `radar.tsx` pin tap to listing detail pages. (AF) |
 
 ### P4 – Technical Polish
 
@@ -951,6 +1120,15 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Dynamic imports for heavy screens** | Frontend | Lazy-load AI chat, map, and leaderboard bundles to reduce initial JS size. |
 | **Feature-level visual regression tests** | QA | Capture screenshots for the homepage, skills list, and detail pages to catch CSS regressions. |
 | **Canary deployment playbook** | DevOps | Document a rollback-safe release process for risky changes. |
+| **SSE stream → polling / managed WebSocket** | Backend (PF-03) | SSE at `/api/notifications/stream` incompatible with Netlify 10s timeout. Replace with polling or Pusher/Ably. |
+| **JWT key rotation procedure** | Security (SA-03) | Document rotation: bump version counter in DB → force logout → rotate `JWT_SECRET` env var. |
+| **Audit log append-only sink** | Security (SA-04) | Write critical audit events to a separate table with `REVOKE DELETE` or an external log sink. |
+| **Select objects DRY in query files** | Backend (TL-10) | `skillSelect`, `toolSelect` etc. partially re-spread in query functions. Use the constant everywhere. |
+| **Pagination variable standardization** | Backend (TL-12) | Feed uses `offset`; all other routes use `page`. Standardize on one style. |
+| **Mobile load-more race guard** | Mobile (TL-14) | Add `isLoadingMore` flag to prevent duplicate fetches on rapid taps in `food/index.tsx` and `tools/index.tsx`. |
+| **Remove dead `isFetchingRef`** | Mobile (TL-15) | Remove unused `useRef` in `food/index.tsx:57`. |
+| **Default profile name constant** | Backend (TL-11) | Extract `'Neighbor'` to `lib/constants.ts` — currently hardcoded in multiple files. |
+| **Profile stats recalculation** | Database (DA-05) | `profiles.avgRating` + `profiles.ratingCount` can drift. Add Postgres trigger or a `/admin/recalculate-stats` endpoint. |
 
 ---
 
