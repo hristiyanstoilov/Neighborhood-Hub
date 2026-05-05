@@ -769,7 +769,7 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 | ID | Severity | Finding | Backlog |
 |----|----------|---------|---------|
-| DA-01 | **CRITICAL** | `conversations` table has `UNIQUE(participant_a, participant_b)` with no `CHECK(participant_a < participant_b)`. Two rows for the same pair can be inserted in reverse order — both pass the unique constraint. | P1 |
+| DA-01 | ~~CRITICAL~~ → **LOW** | `conversations` table has `UNIQUE(participant_a, participant_b)` with no DB-level `CHECK(participant_a < participant_b)`. However, `conversations/route.ts` already has `normalizePair()` that always normalizes `a < b` before INSERT — application layer handles this correctly. Only defense-in-depth gap remains. | P4 |
 | DA-02 | **HIGH** | `queryDrivePledges(driveId)` has no `.limit()` clause — returns all rows. OOM crash risk at scale. | P2 |
 | DA-03 | **HIGH** | `queryFoodReservations(foodShareId)` has no `.limit()` clause — same unbounded risk. | P2 |
 | DA-04 | **MEDIUM** | `ratings.contextId`, `notifications.entityId`, `feedEvents.targetId` have no FK — orphan rows accumulate silently after soft-deletes. | P3 |
@@ -784,15 +784,15 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | AF-03 | `communityDrives.goalDescription` is text-only — no numeric goal/progress columns | "57 of 100 items collected" is impossible |
 | AF-04 | Tool reservations have no return date or auto-expiry | Loans go stale with no reminder |
 | AF-05 | No `skill_endorsements` table | Cold-start trust problem — skills are self-declared only |
-| AF-06 | No email notifications for reservation/request status changes | Users miss time-sensitive updates; Resend is already wired |
-| AF-07 | `push_tokens` table exists but no Expo Push API calls implemented | Mobile retention loop is broken for DMs and reservation events |
+| AF-06 | No **email** notifications for reservation/request status changes | Users miss time-sensitive updates; Resend is already wired — push notifications exist, emails do not |
+| ~~AF-07~~ | ~~`push_tokens` exist but no Expo Push API calls~~  | ✅ **Already done** — `lib/push.ts` + `lib/create-notification.ts` wire Expo Push API to all 15+ notification types across all 5 modules |
 
 #### Security Architecture
 
 | ID | Severity | Finding | Backlog |
 |----|----------|---------|---------|
 | SA-01 | **HIGH** | CSP `img-src` allows any `https:` domain. Should be scoped to the R2 bucket hostname only. | P2 |
-| SA-02 | **HIGH** | Refresh token cookie missing `SameSite=Strict` — `SameSite=Lax` allows CSRF to force token refresh. | P2 |
+| SA-02 | ~~HIGH~~ → **LOW** | Refresh token cookie uses `SameSite=Lax`. `Lax` already blocks cross-origin POST requests — CSRF cannot force a token refresh. Upgrading to `Strict` is minor hardening (blocks navigation-link cross-origin sends), not a real vulnerability fix. | P4 |
 | SA-03 | **MEDIUM** | No JWT secret rotation mechanism — if `JWT_SECRET` leaks, all tokens are forgeable until manual env var change. | P4 |
 | SA-04 | **LOW** | `auditLog` is write-only with no tamper detection — a compromised admin could delete entries. Critical actions should go to an append-only sink. | P4 |
 
@@ -823,8 +823,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 
 | ID | Severity | File | Finding | Backlog |
 |----|----------|------|---------|---------|
-| TL-01 | **CRITICAL** | `drives/[id]/pledges/route.ts`, `food-shares/[id]/reservations/route.ts` | POST handlers parse `req.url` manually instead of using `params` from the Next.js route context. GET uses `params` correctly. Risk: ID mismatch under URL encoding edge cases. | P1 |
-| TL-02 | **HIGH** | 10+ routes | `req.json()` parse failures are silently treated as validation errors — the real cause is hidden. Fix: explicit catch returning `400 INVALID_JSON`. | P1 |
+| TL-01 | ~~CRITICAL~~ → **MEDIUM** | `drives/[id]/pledges/route.ts`, `food-shares/[id]/reservations/route.ts` | POST handlers use `extractDriveId(req.url)` / `extractFoodShareId(req.url)` (manual URL parsing) instead of `params`. Works correctly for all standard Next.js routing but is inconsistent with GET handlers and fragile if route structure changes. Code consistency issue, not a production bug. | P3 |
+| TL-02 | ~~HIGH~~ → **MEDIUM** | 10+ routes | `req.json().catch(() => null)` — parse failure results in `VALIDATION_ERROR 400`, not a silent failure. But the error code is misleading. Fix: explicit catch returning `400 INVALID_JSON`. | P3 |
 
 #### Technical Debt
 
@@ -888,9 +888,7 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | ~~`first_tool` badge never awarded~~ | ✅ Fixed | `checkAndAwardBadges` added to `POST /api/tools`. |
 | ~~`userConsents` GDPR write path~~ | ✅ Fixed | `POST /api/consent` implemented, banner wired. |
 | ~~Cookie consent banner i18n~~ | ✅ Fixed | `useTranslations('cookieConsent')` + BG translation added. |
-| **`conversations` pair ordering** | Architect (DA-01) | `conversations_pair_idx` is `UNIQUE(participant_a, participant_b)` with no ordering constraint. Two rows can exist for the same pair. Fix: `CHECK(participant_a < participant_b)` + normalize in API before INSERT. |
-| **URL `params` in POST handlers** | Tech Lead (TL-01) | `drives/[id]/pledges` and `food-shares/[id]/reservations` POST handlers parse `req.url` manually. GET uses `params` correctly. Risk: ID mismatch on URL encoding edge cases. Fix: use `params` in all handlers. |
-| **JSON parse errors swallowed** | Tech Lead (TL-02) | `req.json()` failures silently treated as validation errors in 10+ routes. Fix: explicit JSON parse catch returning `400 INVALID_JSON`. |
+| ~~`conversations` pair ordering~~ | ✅ Already handled (DA-01) | `normalizePair()` in `conversations/route.ts` already enforces `a < b` at app layer. Remaining: add DB-level `CHECK` constraint as defense-in-depth → moved to P4. |
 
 ---
 
@@ -925,7 +923,6 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Event edit page (web)** | Architect | `/events/[id]/edit` does not exist on web. Event creators can only delete, never update an event after creation. |
 | **Cookie banner "Reject All"** | Legal / GDPR | GDPR requires an equally prominent "Reject All" option. Current banner has "Accept All" only — closing implies consent. Add "Reject All" that persists `analytics=false` to `userConsents`. |
 | **CSP `img-src` tighten to R2 domain** | Architect (SA-01) | `img-src https:` allows any HTTPS image source. Scope to `https://<bucket>.r2.cloudflarestorage.com`. |
-| **`SameSite=Strict` on refresh cookie** | Architect (SA-02) | Refresh token cookie uses `SameSite=Lax` — a CSRF attack can force token refresh. Upgrade to `SameSite=Strict`. |
 | **`requireVerifiedAuth` middleware** | Tech Lead (TL-05) | Email verification check (`!dbUser?.emailVerifiedAt → UNVERIFIED_EMAIL`) copy-pasted into 8+ create routes. Extract into `requireVerifiedAuth()` wrapper in `lib/middleware.ts`. |
 | **`requireAuthWithRateLimit` middleware** | Tech Lead (TL-06) | Rate-limit boilerplate (`apiRatelimit.limit(user.sub) → 429`) duplicated in 40+ routes. Extract into reusable middleware wrapper. |
 | **Feed creation: HTTP fetch → direct call** | Tech Lead (TL-04) | 5 create routes call `fetch('/api/feed', ...)` internally — extra HTTP round-trip, fire-and-forget swallows failures. Replace with direct function call. Promoted from P5. |
@@ -971,7 +968,7 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Tool return date enforcement** | Architect (AF-04) | Tool reservations have no `returnBy` date or auto-expiry. Loans go stale indefinitely. Add `returnBy` column + overdue notification. |
 | **Skill endorsements** | Architect (AF-05) | Skills are self-declared only. Add `skill_endorsements` table — neighbors who completed exchanges can vouch, solving cold-start trust. |
 | **Email notifications for key events** | Architect (AF-06) | No transactional emails for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Resend is already integrated — wire notification events to email templates. |
-| **Push notifications for DMs + reservations** | Architect (AF-07) | `push_tokens` table exists but no Expo Push API calls made anywhere. DM received + reservation status changed are core mobile retention events. |
+| ~~**Push notifications for DMs + reservations**~~ | ✅ Done (AF-07) | `lib/push.ts` + `lib/create-notification.ts` + mobile `lib/push-notifications.ts` fully implemented. All 15+ event types send push notifications. |
 | **Mobile: Create Tool screen** | Architect | `packages/mobile/app/(app)/tools/new.tsx` does not exist. Mobile users can browse and reserve tools but cannot list their own. |
 | **Mobile: Edit Tool screen** | Architect | `packages/mobile/app/(app)/tools/edit/[id].tsx` does not exist. |
 | **Mobile: Edit Event screen** | Architect | `packages/mobile/app/(app)/events/edit/[id].tsx` does not exist. |
@@ -1065,9 +1062,6 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Food reservation atomicity** | Backend / Security | Quantity check and INSERT are not atomic. Two concurrent reservations can exceed available quantity. Fix with an atomic write path. |
 | **Forgot-password timing parity** | Security | Keep response timing indistinguishable for existing vs non-existing emails to prevent user enumeration. |
 | **Mobile navigation verification** | Mobile | Confirm all top-level routes remain reachable on phones after any nav refactor. Regression here breaks product discoverability on mobile. |
-| **`conversations` pair ordering constraint** | Database | Add `CHECK(participant_a < participant_b)` to `conversations` table + normalize pair order in `POST /api/conversations` before INSERT. Prevents duplicate conversation rows. (DA-01) |
-| **URL `params` in POST route handlers** | Backend | `drives/[id]/pledges/route.ts` and `food-shares/[id]/reservations/route.ts` POST handlers parse `req.url` manually. Replace with `params` from route context, same as their GET counterparts. (TL-01) |
-| **JSON parse error handling** | Backend | `req.json()` failures silently treated as validation errors in 10+ routes. Add explicit `try/catch` returning `400 INVALID_JSON` before the Zod `safeParse` call. (TL-02) |
 
 ### P2 – High Priority Technical Debt
 
@@ -1083,7 +1077,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Event edit page (web)** | Frontend | `/events/[id]/edit` does not exist. Event creators cannot update after creation — only delete. |
 | **Cookie banner "Reject All" button** | Frontend / Legal | GDPR requires an equally prominent reject option. Add "Reject All" that writes `analytics=false` to `userConsents`. |
 | **CSP `img-src` scoped to R2** | Security (SA-01) | Change `img-src https:` to `img-src 'self' data: blob: https://<r2-bucket-hostname>` in `next.config.ts`. |
-| **`SameSite=Strict` on refresh cookie** | Security (SA-02) | Upgrade from `SameSite=Lax` on the refresh token cookie to prevent CSRF-forced refresh. |
+| **URL `params` in POST route handlers** | Backend (TL-01) | `drives/[id]/pledges` and `food-shares/[id]/reservations` POST handlers parse `req.url` manually. Replace with `params` — consistency fix, not a production bug. |
+| **JSON parse explicit error code** | Backend (TL-02) | `req.json().catch(() => null)` returns `VALIDATION_ERROR` on parse failure. Add explicit catch returning `400 INVALID_JSON` for clearer debugging. |
 | **`requireVerifiedAuth` middleware** | Backend (TL-05) | Extract email verification check into a reusable `requireVerifiedAuth()` wrapper — removes 20+ duplicate lines across create routes. |
 | **`requireAuthWithRateLimit` middleware** | Backend (TL-06) | Extract rate-limit check into a middleware wrapper — removes 40+ duplicate patterns. |
 | **Feed event direct function call** | Backend (TL-04) | Replace internal `fetch('/api/feed', ...)` calls in 5 create routes with direct function invocation. |
@@ -1101,8 +1096,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Mobile: Create + Edit Tool screens** | Mobile | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist on mobile. Skills have full CRUD; tools are browse-only. (AF) |
 | **Mobile: Edit Event + Edit Drive screens** | Mobile | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
 | **Mobile: Achievements screen** | Mobile | `profile/achievements.tsx` does not exist — badges and user stats are invisible to mobile users. |
-| **Push notification wiring** | Backend / Mobile | `push_tokens` table exists but no Expo Push API calls implemented. Wire DM received + reservation status changed events. (AF-07) |
-| **Email notification templates** | Backend | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. (AF-06) |
+| ~~**Push notification wiring**~~ | ~~Backend / Mobile~~ | ✅ **Done** — `lib/push.ts` sends via Expo Push API; `lib/create-notification.ts` wires all 15+ event types; mobile registers tokens in `lib/push-notifications.ts`. |
+| **Email notification templates** | Backend | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Push is done; email is not. (AF-06) |
 | **`pg_trgm` GIN search indexes** | Database (PF-01) | Add trigram indexes on `title` columns for skills, tools, events, food_shares. New Drizzle migration. Cuts search latency 10x at 100k+ rows. |
 | **Cache-Control on public list endpoints** | Backend (PF-02) | Add `Cache-Control: public, max-age=30, stale-while-revalidate=60` to public GET list routes. |
 | **Orphan cleanup job** | Database (DA-04) | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where the referenced entity no longer exists. |
@@ -1129,6 +1124,8 @@ Every app that collects personal data from EU residents must comply with GDPR �
 | **Remove dead `isFetchingRef`** | Mobile (TL-15) | Remove unused `useRef` in `food/index.tsx:57`. |
 | **Default profile name constant** | Backend (TL-11) | Extract `'Neighbor'` to `lib/constants.ts` — currently hardcoded in multiple files. |
 | **Profile stats recalculation** | Database (DA-05) | `profiles.avgRating` + `profiles.ratingCount` can drift. Add Postgres trigger or a `/admin/recalculate-stats` endpoint. |
+| **`SameSite=Strict` on refresh cookie** | Security (SA-02) | Hardening only — `SameSite=Lax` already blocks CSRF on POST. `Strict` additionally blocks navigation-link cross-origin sends. Minor improvement. |
+| **`conversations` DB CHECK constraint** | Database (DA-01) | `normalizePair()` in API already ensures correct order. Add `CHECK(participant_a < participant_b)` for DB-level defense-in-depth only. |
 
 ---
 
