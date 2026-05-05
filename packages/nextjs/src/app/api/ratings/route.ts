@@ -5,36 +5,11 @@ import { foodReservations, profiles, ratings, skillRequests, toolReservations } 
 import { apiRatelimit } from '@/lib/ratelimit'
 import { createRatingSchema, listRatingsQuerySchema, type RatingContextType } from '@/lib/schemas/rating'
 import { requireAuth } from '@/lib/middleware'
+import { isUniqueViolation } from '@/lib/db-errors'
 
 type ContextParticipantInfo = {
   participantA: string
   participantB: string
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  const queue: unknown[] = [err]
-  const seen = new Set<unknown>()
-
-  while (queue.length > 0) {
-    const current = queue.shift()
-    if (!current || seen.has(current)) continue
-    seen.add(current)
-
-    if (typeof current === 'object') {
-      const obj = current as { code?: unknown; message?: unknown; cause?: unknown }
-      if (obj.code === '23505') return true
-      if (typeof obj.message === 'string' && obj.message.toLowerCase().includes('duplicate key value')) {
-        return true
-      }
-      if ('cause' in obj) queue.push(obj.cause)
-    }
-
-    if (current instanceof Error && current.cause) {
-      queue.push(current.cause)
-    }
-  }
-
-  return false
 }
 
 async function getContextParticipants(contextType: RatingContextType, contextId: string): Promise<{
