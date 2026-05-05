@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, skills, users } from '@/db/schema'
+import { skillRequests, skills } from '@/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
 import { querySkillRequestsByUser, countSkillRequestsByUser } from '@/lib/queries/skill-requests'
@@ -37,18 +37,12 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── POST /api/skill-requests — create a request ─────────────────────────────
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
-    // Email must be verified
-    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
-    if (!dbUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
     }
 
     const body = await req.json().catch(() => null)

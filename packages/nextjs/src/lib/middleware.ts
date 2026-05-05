@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAccessToken, JwtPayload } from './auth'
+import { db } from '@/db'
+import { users } from '@/db/schema'
+import { eq } from 'drizzle-orm'
 
 const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
 
@@ -35,6 +38,21 @@ export function requireAuth(
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 401 })
     }
   }
+}
+
+export function requireVerifiedAuth(
+  handler: (req: NextRequest, context: { user: JwtPayload; params: Record<string, string> }) => Promise<NextResponse>
+) {
+  return requireAuth(async (req, context) => {
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, context.user.sub),
+      columns: { emailVerifiedAt: true },
+    })
+    if (!dbUser?.emailVerifiedAt) {
+      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
+    }
+    return handler(req, context)
+  })
 }
 
 export function requireAdmin(

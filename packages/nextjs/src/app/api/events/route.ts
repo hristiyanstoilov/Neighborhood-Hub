@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, users } from '@/db/schema'
+import { events } from '@/db/schema'
 import { and, count, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createEventSchema, listEventsSchema } from '@/lib/schemas/event'
 import { buildEventConditions, eventSelect, queryEvents } from '@/lib/queries/events'
@@ -41,16 +41,11 @@ export async function GET(req: NextRequest) {
 
 // ─── POST /api/events — create ───────────────────────────────────────────────
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
-    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
-    if (!dbUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
-    }
 
     const body = await req.json().catch(() => null)
     const parsed = createEventSchema.safeParse(body)

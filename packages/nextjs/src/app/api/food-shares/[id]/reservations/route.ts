@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations, users } from '@/db/schema'
+import { foodShares, foodReservations } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservations } from '@/lib/queries/food'
 import { createNotification } from '@/lib/create-notification'
@@ -34,15 +34,10 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
   }
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
-    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
-    if (!dbUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
-    }
 
     const foodShareId = extractFoodShareId(req.url)
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })

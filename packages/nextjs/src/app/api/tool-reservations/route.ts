@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, tools, users } from '@/db/schema'
+import { toolReservations, tools } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { z } from 'zod'
@@ -30,16 +30,11 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── POST /api/tool-reservations — create ───────────────────────────────────
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
-    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
-    if (!dbUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
-    }
 
     const body = await req.json().catch(() => null)
     const parsed = createToolReservationSchema.safeParse(body)

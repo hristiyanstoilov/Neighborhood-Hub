@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, users } from '@/db/schema'
+import { events, eventAttendees } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
 import { createNotification } from '@/lib/create-notification'
@@ -16,15 +16,10 @@ function extractEventId(url: string): string {
 
 // ─── POST /api/events/[id]/rsvp — attend ────────────────────────────────────
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
-    const dbUser = await db.query.users.findFirst({ where: eq(users.id, user.sub) })
-    if (!dbUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
-    }
 
     const eventId = extractEventId(req.url)
     const event = await db.query.events.findFirst({ where: and(eq(events.id, eventId), isNull(events.deletedAt)) })
