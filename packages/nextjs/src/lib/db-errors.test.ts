@@ -25,9 +25,16 @@ describe('isUniqueViolation', () => {
     expect(isUniqueViolation(top)).toBe(true)
   })
 
-  it('returns true when message contains the indexHint', () => {
-    const err = new Error('duplicate key value violates unique constraint "food_reservations_active_idx"')
+  it('returns true via indexHint when message lacks the generic "duplicate key value" phrase', () => {
+    // Some DB adapters emit only the index name without the standard phrase.
+    // This tests the third detection path in isolation.
+    const err = { message: 'unique constraint "food_reservations_active_idx" violated' }
     expect(isUniqueViolation(err, 'food_reservations_active_idx')).toBe(true)
+  })
+
+  it('returns false when indexHint does not match and no other detection fires', () => {
+    const err = { message: 'unique constraint "some_other_idx" violated' }
+    expect(isUniqueViolation(err, 'food_reservations_active_idx')).toBe(false)
   })
 
   it('returns false for a different PG error code (FK violation 23503)', () => {

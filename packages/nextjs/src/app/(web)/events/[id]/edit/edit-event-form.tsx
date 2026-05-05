@@ -24,7 +24,6 @@ interface Props {
   event: EventData
 }
 
-
 export default function EditEventForm({ event }: Props) {
   const router = useRouter()
   const t = useTranslations('events')
