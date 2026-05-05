@@ -151,10 +151,16 @@ export default async function EventDetailPage({
             </div>
           </dl>
 
-          {isOrganizer && event!.status === 'published' && (
-            <p className="text-xs text-gray-400 text-center mb-4">
-              {t('organizer_note')}
-            </p>
+          {isOrganizer && (
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-gray-400">{t('organizer_note')}</p>
+              <Link
+                href={`/events/${event!.id}/edit`}
+                className="text-sm text-green-700 hover:underline font-medium"
+              >
+                {t('edit_link')}
+              </Link>
+            </div>
           )}
 
           <RsvpButton
