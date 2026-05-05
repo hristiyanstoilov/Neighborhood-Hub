@@ -54,7 +54,7 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     // Active statuses that consume a slot are 'reserved' and 'picked_up'.
     const pickupAt = new Date(parsed.data.pickupAt)
     const notes    = parsed.data.notes ?? null
-    const result = await db.execute<typeof foodReservations.$inferSelect>(
+    const result = await db.execute<{ id: string }>(
       sql`INSERT INTO food_reservations (food_share_id, requester_id, owner_id, pickup_at, notes)
           SELECT ${foodShareId}::uuid, ${user.sub}::uuid, ${foodShare.ownerId}::uuid, ${pickupAt}, ${notes}
           WHERE (
@@ -62,13 +62,15 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
             FROM food_reservations
             WHERE food_share_id = ${foodShareId}::uuid
           ) < ${foodShare.quantity}
-          RETURNING *`
+          RETURNING id`
     )
 
-    const reservation = result.rows[0]
-    if (!reservation) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'FOOD_NOT_AVAILABLE' }, { status: 422 })
     }
+
+    // Re-fetch via ORM to get properly-named camelCase columns (raw execute returns snake_case)
+    const [reservation] = await db.select().from(foodReservations).where(eq(foodReservations.id, result.rows[0].id))
 
     void createNotification({
       userId: foodShare.ownerId,
