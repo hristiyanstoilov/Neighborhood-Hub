@@ -119,4 +119,5 @@ export async function queryDrivePledges(driveId: string) {
     .leftJoin(profiles, eq(profiles.userId, drivePledges.userId))
     .where(eq(drivePledges.driveId, driveId))
     .orderBy(desc(drivePledges.createdAt))
+    .limit(200)
 }

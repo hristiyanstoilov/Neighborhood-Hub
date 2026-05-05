@@ -137,6 +137,7 @@ export async function queryFoodReservations(foodShareId: string) {
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
     .where(eq(foodReservations.foodShareId, foodShareId))
     .orderBy(desc(foodReservations.createdAt))
+    .limit(200)
 }
 
 export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner') {
