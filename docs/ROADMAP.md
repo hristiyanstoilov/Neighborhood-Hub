@@ -293,6 +293,19 @@ Status: ✅ Done.
 
 ---
 
+## Technical Sync (2026-05-05)
+
+> Small roadmap refresh to keep the technical backlog visible on the default branch.
+
+### Current Priority Focus
+
+1. Fix atomic reservation flows for events and food.
+2. Wire ratings UI so the existing API becomes visible to users.
+3. Keep mobile navigation reachable on phones after any nav refactor.
+4. Add the first round of technical debt items to the prioritized backlog.
+
+---
+
 ## v0.2 – Module 2: Neighborhood Tool Library *(✅ Done)*
 
 - Share tools and household items (drill, ladder, lawnmower, etc.)
