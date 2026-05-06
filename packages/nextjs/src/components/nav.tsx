@@ -16,8 +16,10 @@ export default function Nav() {
   const { user, loading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const activityDropdownRef = useRef<HTMLDivElement>(null)
+  const discoverDropdownRef = useRef<HTMLDivElement>(null)
+  const [activityOpen, setActivityOpen] = useState(false)
+  const [discoverOpen, setDiscoverOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isDemoUser = user?.email?.toLowerCase() === DEMO_USER_EMAIL
@@ -40,24 +42,26 @@ export default function Nav() {
     }`
   }
 
-  // Close mobile menu on navigation
+  // Close menus on navigation
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false)
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDropdownOpen(false)
+    setActivityOpen(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDiscoverOpen(false)
   }, [pathname])
 
-  // Escape / outside-click close for desktop dropdown
+  // Outside-click + Escape for activity dropdown
   useEffect(() => {
-    if (!dropdownOpen) return
+    if (!activityOpen) return
     function handleMouseDown(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false)
+      if (activityDropdownRef.current && !activityDropdownRef.current.contains(event.target as Node)) {
+        setActivityOpen(false)
       }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setDropdownOpen(false)
+      if (event.key === 'Escape') setActivityOpen(false)
     }
     document.addEventListener('mousedown', handleMouseDown)
     document.addEventListener('keydown', handleKeyDown)
@@ -65,7 +69,26 @@ export default function Nav() {
       document.removeEventListener('mousedown', handleMouseDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [dropdownOpen])
+  }, [activityOpen])
+
+  // Outside-click + Escape for discover dropdown
+  useEffect(() => {
+    if (!discoverOpen) return
+    function handleMouseDown(event: MouseEvent) {
+      if (discoverDropdownRef.current && !discoverDropdownRef.current.contains(event.target as Node)) {
+        setDiscoverOpen(false)
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setDiscoverOpen(false)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [discoverOpen])
 
   // Escape to close mobile menu
   useEffect(() => {
@@ -96,26 +119,30 @@ export default function Nav() {
     router.push('/login')
   }
 
-  const MODULE_LINKS = [
-    { href: '/skills',      label: t('skills')      },
-    { href: '/tools',       label: t('tools')       },
-    { href: '/events',      label: t('events')      },
-    { href: '/drives',      label: t('drives')      },
-    { href: '/food',        label: t('food')        },
+  const CORE_LINKS = [
+    { href: '/skills',  label: t('skills')  },
+    { href: '/tools',   label: t('tools')   },
+    { href: '/events',  label: t('events')  },
+    { href: '/drives',  label: t('drives')  },
+    { href: '/food',    label: t('food')    },
+  ]
+
+  const DISCOVER_LINKS = [
     { href: '/feed',        label: t('feed')        },
     { href: '/map',         label: t('map')         },
-    { href: '/leaderboard', label: t('leaderboard') },
-    { href: '/messages',    label: t('messages')    },
     { href: '/radar',       label: t('radar')       },
+    { href: '/leaderboard', label: t('leaderboard') },
   ]
 
   const MY_LINKS = [
-    { href: '/my-requests',      label: t('my_requests')          },
-    { href: '/my-reservations',  label: t('my_tool_reservations') },
+    { href: '/my-requests',       label: t('my_requests')          },
+    { href: '/my-reservations',   label: t('my_tool_reservations') },
     { href: '/food/reservations', label: t('my_food_reservations') },
-    { href: '/my-events',        label: t('my_events')            },
-    { href: '/my-drives',        label: t('my_pledges')           },
+    { href: '/my-events',         label: t('my_events')            },
+    { href: '/my-drives',         label: t('my_pledges')           },
   ]
+
+  const isDiscoverActive = DISCOVER_LINKS.some(({ href }) => isActive(href))
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -140,11 +167,43 @@ export default function Nav() {
 
         {/* Desktop nav — hidden on mobile */}
         <nav className="hidden lg:flex items-center gap-4 text-sm" aria-label="Primary">
-          {MODULE_LINKS.map(({ href, label }) => (
+          {/* 5 core module links */}
+          {CORE_LINKS.map(({ href, label }) => (
             <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} className={navLinkClass(href)}>
               {label}
             </Link>
           ))}
+
+          {/* Discover dropdown */}
+          <div className="relative" ref={discoverDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setDiscoverOpen((o) => !o)}
+              className={`flex items-center gap-1 transition-colors text-sm ${
+                isDiscoverActive ? 'font-medium text-green-700' : 'text-gray-600 hover:text-green-700'
+              }`}
+              aria-haspopup="menu"
+              aria-expanded={discoverOpen}
+            >
+              {t('discover')}
+              <span aria-hidden="true">▾</span>
+            </button>
+            {discoverOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[160px]">
+                {DISCOVER_LINKS.map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={isActive(href) ? 'page' : undefined}
+                    onClick={() => setDiscoverOpen(false)}
+                    className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive(href) ? 'text-green-700' : 'text-gray-700'}`}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
 
           <LanguageSwitcher />
 
@@ -152,34 +211,59 @@ export default function Nav() {
             <>
               {user ? (
                 <>
+                  {/* Icon cluster: Messages + AI Chat */}
+                  <Link
+                    href="/messages"
+                    aria-label={t('messages')}
+                    aria-current={isActive('/messages') ? 'page' : undefined}
+                    className={`p-1 rounded transition-colors ${isActive('/messages') ? 'text-green-700' : 'text-gray-500 hover:text-green-700'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </Link>
+                  <Link
+                    href="/chat"
+                    aria-label={t('ai_chat')}
+                    aria-current={isActive('/chat') ? 'page' : undefined}
+                    className={`p-1 rounded transition-colors ${isActive('/chat') ? 'text-green-700' : 'text-gray-500 hover:text-green-700'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                  </Link>
+
+                  <NotificationsBell />
+
                   {user.role === 'admin' && (
                     <Link href="/admin" aria-current={isActive('/admin') ? 'page' : undefined} className={navLinkClass('/admin')}>
                       {t('admin')}
                     </Link>
                   )}
-                  <div className="relative" ref={dropdownRef}>
+
+                  {/* My Activity dropdown */}
+                  <div className="relative" ref={activityDropdownRef}>
                     <button
                       type="button"
-                      onClick={() => setDropdownOpen((o) => !o)}
+                      onClick={() => setActivityOpen((o) => !o)}
                       className="text-gray-600 hover:text-green-700 transition-colors flex items-center gap-1 text-sm"
                       aria-haspopup="menu"
-                      aria-expanded={dropdownOpen}
+                      aria-expanded={activityOpen}
                     >
                       {t('my_activity')}
                       <span aria-hidden="true">▾</span>
                     </button>
-                    {dropdownOpen && (
+                    {activityOpen && (
                       <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]">
                         {MY_LINKS.map(({ href, label }) => (
-                          <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} onClick={() => setDropdownOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive(href) ? 'text-green-700' : 'text-gray-700'}`}>
+                          <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} onClick={() => setActivityOpen(false)} className={`block w-full px-4 py-2 text-sm hover:bg-gray-50 hover:text-green-700 ${isActive(href) ? 'text-green-700' : 'text-gray-700'}`}>
                             {label}
                           </Link>
                         ))}
                       </div>
                     )}
                   </div>
-                  <Link href="/chat" aria-current={isActive('/chat') ? 'page' : undefined} className={navLinkClass('/chat')}>{t('ai_chat')}</Link>
-                  <NotificationsBell />
+
                   <Link href="/profile" aria-current={isActive('/profile') ? 'page' : undefined} className={navLinkClass('/profile')}>{user.profile?.name ?? user.email}</Link>
                   <button type="button" onClick={handleLogout} className="text-gray-500 hover:text-red-500 transition-colors">{t('logout')}</button>
                 </>
@@ -224,7 +308,7 @@ export default function Nav() {
         </div>
       )}
 
-      {/* Mobile nav drawer */}
+      {/* Mobile nav drawer — unchanged */}
       {mobileMenuOpen && (
         <div id="mobile-nav-panel" className="lg:hidden border-t border-gray-200 bg-white">
           {/* Mobile search */}
@@ -242,10 +326,10 @@ export default function Nav() {
             </form>
           </div>
 
-          {/* Explore links */}
+          {/* Explore links (all modules) */}
           <div className="px-3 pb-2">
             <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('section_explore')}</p>
-            {MODULE_LINKS.map(({ href, label }) => (
+            {[...CORE_LINKS, ...DISCOVER_LINKS].map(({ href, label }) => (
               <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} className={mobileLinkClass(href)}>
                 {label}
               </Link>
