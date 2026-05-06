@@ -5,26 +5,27 @@ import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 
+type TargetType = 'skill' | 'tool' | 'event' | 'food' | 'drive' | 'user' | 'message'
 type Reason = 'spam' | 'inappropriate' | 'misleading' | 'dangerous' | 'other'
-const REASONS: Reason[] = ['spam', 'inappropriate', 'misleading', 'dangerous', 'other']
 
-type FlagButtonProps = {
-  entityType: string
-  entityId: string
+interface Props {
+  targetType: TargetType
+  targetId: string
 }
 
-export function FlagButton({ entityType, entityId }: FlagButtonProps) {
+const REASONS: Reason[] = ['spam', 'inappropriate', 'misleading', 'dangerous', 'other']
+
+export function ReportButton({ targetType, targetId }: Props) {
   const t = useTranslations('common')
   const { user } = useAuth()
-  const [open, setOpen]       = useState(false)
-  const [reason, setReason]   = useState<Reason>('spam')
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState<Reason>('spam')
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
-  const [done, setDone]       = useState(false)
-  const [error, setError]     = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!user) return null
-  if (done) return <span className="text-xs text-gray-400">{t('report_sent')}</span>
 
   async function handleSubmit() {
     setError(null)
@@ -33,10 +34,12 @@ export function FlagButton({ entityType, entityId }: FlagButtonProps) {
       const res = await apiFetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetType: entityType, targetId: entityId, reason, details: details.trim() || undefined }),
+        body: JSON.stringify({ targetType, targetId, reason, details: details.trim() || undefined }),
       })
-      if (res.status === 409 || res.ok) { setDone(true); setOpen(false); return }
-      throw new Error()
+      if (res.status === 409) { setDone(true); setOpen(false); return }
+      if (!res.ok) throw new Error()
+      setDone(true)
+      setOpen(false)
     } catch {
       setError(t('report_failed'))
     } finally {
@@ -44,25 +47,28 @@ export function FlagButton({ entityType, entityId }: FlagButtonProps) {
     }
   }
 
+  if (done) {
+    return <span className="text-xs text-gray-400">{t('report_sent')}</span>
+  }
+
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
-        aria-label={t('report')}
+        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M4 4v16" />
-          <path d="M4 4h11l-1 5 1 5H4" />
-        </svg>
-        <span>{t('report')}</span>
+        {t('report')}
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div role="dialog" aria-modal="true" className="relative w-full max-w-sm rounded-xl bg-white border border-gray-200 shadow-xl p-5 space-y-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-sm rounded-xl bg-white border border-gray-200 shadow-xl p-5 space-y-4"
+          >
             <h3 className="text-base font-semibold text-gray-900">{t('report_title')}</h3>
 
             <div>
@@ -92,10 +98,19 @@ export function FlagButton({ entityType, entityId }: FlagButtonProps) {
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
                 {t('cancel')}
               </button>
-              <button type="button" onClick={() => void handleSubmit()} disabled={loading} className="px-3 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors">
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={loading}
+                className="px-3 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+              >
                 {loading ? '…' : t('report_submit')}
               </button>
             </div>

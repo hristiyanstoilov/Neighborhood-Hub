@@ -799,3 +799,43 @@ export const badges = pgTable(
     ),
   ]
 )
+
+// ─────────────────────────────────────────────
+// REPORTS — content flagging
+// ─────────────────────────────────────────────
+
+export const reports = pgTable(
+  'reports',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetType: varchar('target_type', { length: 30 }).notNull(),
+    targetId: uuid('target_id').notNull(),
+    reason: varchar('reason', { length: 50 }).notNull(),
+    details: text('details'),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    reviewedById: uuid('reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('reports_reporter_id_idx').on(t.reporterId),
+    index('reports_target_idx').on(t.targetType, t.targetId),
+    index('reports_status_idx').on(t.status),
+    uniqueIndex('reports_reporter_target_idx').on(t.reporterId, t.targetType, t.targetId),
+    check(
+      'reports_target_type_check',
+      sql`${t.targetType} IN ('skill', 'tool', 'event', 'food', 'drive', 'user', 'message')`
+    ),
+    check(
+      'reports_reason_check',
+      sql`${t.reason} IN ('spam', 'inappropriate', 'misleading', 'dangerous', 'other')`
+    ),
+    check(
+      'reports_status_check',
+      sql`${t.status} IN ('pending', 'reviewed', 'dismissed')`
+    ),
+  ]
+)

@@ -32,6 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {navLink('/admin/dashboard', 'Dashboard')}
           {navLink('/admin/users',     'Users')}
           {navLink('/admin/listings',  'Listings')}
+          {navLink('/admin/reports',   'Reports')}
           {navLink('/admin/audit',     'Audit Log')}
         </nav>
       </aside>
