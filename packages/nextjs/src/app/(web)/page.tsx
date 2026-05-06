@@ -11,6 +11,7 @@ import { isNull, sql } from 'drizzle-orm'
 import { FeaturesSection } from '@/components/landing/features-section'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { AppIcon, type AppIconName } from '@/components/ui/app-icon'
+import { OnboardingBanner } from '@/components/onboarding-banner'
 
 export const dynamic = 'force-dynamic'
 
@@ -140,6 +141,7 @@ export default async function HomePage() {
   // ── Logged-in dashboard ───────────────────────────────────────────────────
   return (
     <div>
+      <OnboardingBanner />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('welcome_back')}</h1>

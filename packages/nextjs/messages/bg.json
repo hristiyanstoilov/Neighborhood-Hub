@@ -53,7 +53,13 @@
     "radar_link": "Отвори картата →",
     "neighborhoods_empty": "{count, plural, one {# квартал} other {# квартала}} без умения засега.",
     "be_first": "Бъдете първите да предложите.",
-    "recently_added_skills": "Наскоро добавени умения"
+    "recently_added_skills": "Наскоро добавени умения",
+    "onboarding_title": "Добре дошли в Neighborhood Hub! 👋",
+    "onboarding_subtitle": "Ето няколко начина да започнете:",
+    "onboarding_action_profile": "Попълнете профила си",
+    "onboarding_action_skill": "Предложете умение",
+    "onboarding_action_browse": "Разгледайте умения",
+    "onboarding_dismiss": "Разбрах"
   },
   "modules": {
     "skills": "Умения",

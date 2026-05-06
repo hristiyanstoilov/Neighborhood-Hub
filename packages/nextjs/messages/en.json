@@ -53,7 +53,13 @@
     "radar_link": "Open map →",
     "neighborhoods_empty": "{count, plural, one {# neighborhood} other {# neighborhoods}} with no skills yet.",
     "be_first": "Be the first to offer one.",
-    "recently_added_skills": "Recently added skills"
+    "recently_added_skills": "Recently added skills",
+    "onboarding_title": "Welcome to Neighborhood Hub! 👋",
+    "onboarding_subtitle": "Here are a few ways to get started:",
+    "onboarding_action_profile": "Complete your profile",
+    "onboarding_action_skill": "Offer a skill",
+    "onboarding_action_browse": "Browse skills",
+    "onboarding_dismiss": "Got it"
   },
   "modules": {
     "skills": "Skills",
