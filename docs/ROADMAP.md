@@ -306,6 +306,18 @@ Status: ✅ Done.
 
 ---
 
+## Technical Sync (2026-05-06)
+
+> Daily sync to keep default-branch engineering priorities visible.
+
+### Current Priority Focus
+
+1. Confirm Playwright status: browser smoke exists, full E2E suite still pending.
+2. Prioritize ratings end-to-end delivery (API wiring + web/mobile UI + seed alignment).
+3. Keep race-condition fixes (events/food reservations) at the top of backend safety work.
+
+---
+
 ## v0.2 – Module 2: Neighborhood Tool Library *(✅ Done)*
 
 - Share tools and household items (drill, ladder, lawnmower, etc.)
