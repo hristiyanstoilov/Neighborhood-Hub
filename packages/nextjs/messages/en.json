@@ -317,6 +317,10 @@
     "pts": "pts",
     "error": "Could not load leaderboard. Please refresh.",
     "anonymous": "Anonymous",
+    "your_progress": "Your Progress",
+    "top_percent": "Top {percent}%",
+    "rank_of": "Rank {rank} of {total}",
+    "no_rank_yet": "Earn points to appear on the leaderboard.",
     "levels": {
       "1": "Newcomer",
       "2": "Helper",

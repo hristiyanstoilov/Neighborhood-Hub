@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
+import { useAuth } from '@/contexts/auth'
 
 const LEVEL_COLORS = ['', '#6b7280', '#15803d', '#1d4ed8', '#7c3aed', '#b45309']
 const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
@@ -15,19 +16,46 @@ type Entry = {
   avatarUrl:   string | null
 }
 
+type MyStats = {
+  totalPoints: number
+  level:       number
+  rank:        number | null
+  totalUsers:  number
+}
+
 export default function LeaderboardPage() {
   const t = useTranslations('leaderboard')
+  const { user, loading: authLoading } = useAuth()
   const [entries, setEntries] = useState<Entry[]>([])
+  const [myStats, setMyStats] = useState<MyStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(false)
 
   useEffect(() => {
-    apiFetch('/api/leaderboard')
-      .then((r) => r.json())
-      .then((j) => setEntries(Array.isArray(j?.data) ? j.data : []))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
-  }, [])
+    const fetches: Promise<void>[] = [
+      apiFetch('/api/leaderboard')
+        .then((r) => r.json())
+        .then((j) => setEntries(Array.isArray(j?.data) ? j.data : []))
+        .catch(() => setError(true)),
+    ]
+
+    if (!authLoading && user) {
+      fetches.push(
+        apiFetch('/api/me/stats')
+          .then((r) => r.json())
+          .then((j) => { if (j?.data) setMyStats(j.data) })
+          .catch(() => { /* stats are optional — fail silently */ })
+      )
+    }
+
+    Promise.all(fetches).finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading])
+
+  const percentile =
+    myStats?.rank != null && myStats.totalUsers > 0
+      ? Math.ceil((myStats.rank / myStats.totalUsers) * 100)
+      : null
 
   return (
     <div className="max-w-lg space-y-4">
@@ -35,6 +63,31 @@ export default function LeaderboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
+
+      {/* Personal progress banner */}
+      {!authLoading && user && !loading && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">{t('your_progress')}</p>
+            {percentile != null ? (
+              <>
+                <p className="text-2xl font-bold text-green-800 leading-tight">
+                  {t('top_percent', { percent: percentile })}
+                </p>
+                <p className="text-xs text-green-600 mt-0.5">
+                  {t('rank_of', { rank: myStats!.rank, total: myStats!.totalUsers })}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-green-700 mt-0.5">{t('no_rank_yet')}</p>
+            )}
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xl font-bold text-green-800">{myStats?.totalPoints ?? 0}</p>
+            <p className="text-xs text-green-600">{t('pts')}</p>
+          </div>
+        </div>
+      )}
 
       {loading && (
         <div className="space-y-2">
