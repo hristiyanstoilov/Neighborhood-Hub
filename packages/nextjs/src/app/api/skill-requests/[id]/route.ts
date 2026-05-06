@@ -142,12 +142,16 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     let pointsAwarded = 0
     if (action === 'complete') {
       const SKILL_COMPLETE_POINTS = 10
-      void Promise.all([
-        awardPoints(existing.userFromId, SKILL_COMPLETE_POINTS),
-        awardPoints(existing.userToId, SKILL_COMPLETE_POINTS),
-        checkAndAwardBadges(existing.userFromId),
-        checkAndAwardBadges(existing.userToId),
-      ]).catch(() => undefined)
+      try {
+        await Promise.all([
+          awardPoints(existing.userFromId, SKILL_COMPLETE_POINTS),
+          awardPoints(existing.userToId, SKILL_COMPLETE_POINTS),
+          checkAndAwardBadges(existing.userFromId),
+          checkAndAwardBadges(existing.userToId),
+        ])
+      } catch (err) {
+        console.error('[skill-requests complete] points/badges award failed', err)
+      }
       pointsAwarded = SKILL_COMPLETE_POINTS
     }
 

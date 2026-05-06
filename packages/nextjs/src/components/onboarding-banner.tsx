@@ -11,13 +11,21 @@ export function OnboardingBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setVisible(true)
+    try {
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        setVisible(true)
+      }
+    } catch {
+      // localStorage unavailable (private/incognito with strict settings)
     }
   }, [])
 
   function dismiss() {
-    localStorage.setItem(STORAGE_KEY, '1')
+    try {
+      localStorage.setItem(STORAGE_KEY, '1')
+    } catch {
+      // ignore
+    }
     setVisible(false)
   }
 

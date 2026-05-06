@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { badges, categories, locations, profiles, skills, users } from '@/db/schema'
+import { badges, categories, locations, profiles, skills, userBlocks, users } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
@@ -14,6 +15,7 @@ import { PublicProfileRatings } from './_components/public-profile-ratings'
 import { PrivateProfileState } from './_components/private-profile-state'
 import type { BadgeType } from '@/lib/badges'
 import { BlockButton } from '@/components/ui/block-button'
+import { queryUserByRefreshToken } from '@/lib/queries/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,7 +97,11 @@ export default async function PublicProfilePage({ params }: Props) {
     )
   }
 
-  const [userSkills, badgeRows] = await Promise.all([
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get('refresh_token')?.value
+  const viewerUser = refreshToken ? await queryUserByRefreshToken(refreshToken) : null
+
+  const [userSkills, badgeRows, blockRow] = await Promise.all([
     db
       .select({
         id: skills.id,
@@ -115,7 +121,16 @@ export default async function PublicProfilePage({ params }: Props) {
       .from(badges)
       .where(eq(badges.userId, id))
       .orderBy(badges.awardedAt),
+    viewerUser
+      ? db
+          .select({ id: userBlocks.id })
+          .from(userBlocks)
+          .where(and(eq(userBlocks.blockerId, viewerUser.id), eq(userBlocks.blockedId, id)))
+          .limit(1)
+      : Promise.resolve([] as { id: string }[]),
   ])
+
+  const initialBlocked = blockRow.length > 0
 
   const location = row.neighborhood
     ? `${row.neighborhood}, ${row.city ?? ''}`
@@ -164,9 +179,11 @@ export default async function PublicProfilePage({ params }: Props) {
       <div className="mt-6">
         <PublicProfileRatings userId={id} />
       </div>
-      <div className="flex gap-4 pt-2">
-        <BlockButton userId={id} />
-      </div>
+      {viewerUser && viewerUser.id !== id && (
+        <div className="flex gap-4 pt-2">
+          <BlockButton userId={id} initialBlocked={initialBlocked} />
+        </div>
+      )}
     </div>
   )
 }

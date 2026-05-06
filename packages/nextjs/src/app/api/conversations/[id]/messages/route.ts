@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, desc, eq, inArray, isNull, lt, ne } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages } from '@/db/schema'
+import { conversations, messages, userBlocks } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { createMessageSchema, listMessagesSchema } from '@/lib/schemas/dm'
@@ -100,6 +100,20 @@ export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
 
     if (!isParticipant(conversation, user.sub)) {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+    }
+
+    const otherUserId = conversation.participantA === user.sub ? conversation.participantB : conversation.participantA
+    const [blockRow] = await db
+      .select({ id: userBlocks.id })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, otherUserId)),
+        and(eq(userBlocks.blockerId, otherUserId), eq(userBlocks.blockedId, user.sub)),
+      ))
+      .limit(1)
+
+    if (blockRow) {
+      return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 
     const body = await req.json().catch(() => null)

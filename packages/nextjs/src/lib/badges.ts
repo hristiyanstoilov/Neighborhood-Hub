@@ -12,6 +12,7 @@ function computeLevel(points: number): number {
 }
 
 export async function awardPoints(userId: string, points: number): Promise<number> {
+  if (points <= 0) throw new Error(`awardPoints: points must be positive, got ${points}`)
   const [row] = await db
     .insert(userStats)
     .values({ userId, totalPoints: points, level: computeLevel(points) })

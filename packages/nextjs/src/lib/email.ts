@@ -5,6 +5,15 @@ if (!process.env.RESEND_FROM) throw new Error('RESEND_FROM env var is required')
 if (!process.env.NEXT_PUBLIC_APP_URL) throw new Error('NEXT_PUBLIC_APP_URL env var is required')
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 const FROM = process.env.RESEND_FROM
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL
 
@@ -42,10 +51,10 @@ export async function sendContactEmail(params: {
     subject: `[Contact] ${params.subject}`,
     html: `
       <h2>New contact message</h2>
-      <p><strong>From:</strong> ${params.senderName} &lt;${params.senderEmail}&gt;</p>
-      <p><strong>Subject:</strong> ${params.subject}</p>
+      <p><strong>From:</strong> ${escapeHtml(params.senderName)} &lt;${escapeHtml(params.senderEmail)}&gt;</p>
+      <p><strong>Subject:</strong> ${escapeHtml(params.subject)}</p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;" />
-      <p style="white-space:pre-wrap;">${params.message}</p>
+      <p style="white-space:pre-wrap;">${escapeHtml(params.message)}</p>
     `,
   })
 }

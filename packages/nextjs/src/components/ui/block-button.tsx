@@ -18,8 +18,8 @@ export function BlockButton({ userId, initialBlocked = false }: Props) {
   async function handleBlock() {
     setLoading(true)
     try {
-      await apiFetch(`/api/users/${userId}/block`, { method: 'POST' })
-      setBlocked(true)
+      const res = await apiFetch(`/api/users/${userId}/block`, { method: 'POST' })
+      if (res.ok) setBlocked(true)
     } finally {
       setLoading(false)
       setConfirmOpen(false)
@@ -29,8 +29,8 @@ export function BlockButton({ userId, initialBlocked = false }: Props) {
   async function handleUnblock() {
     setLoading(true)
     try {
-      await apiFetch(`/api/users/${userId}/block`, { method: 'DELETE' })
-      setBlocked(false)
+      const res = await apiFetch(`/api/users/${userId}/block`, { method: 'DELETE' })
+      if (res.ok) setBlocked(false)
     } finally {
       setLoading(false)
     }
