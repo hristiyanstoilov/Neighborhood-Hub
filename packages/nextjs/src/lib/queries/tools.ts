@@ -72,7 +72,11 @@ export async function queryTools(opts: ToolFilterOpts & { limit?: number; page?:
 
 export async function queryToolById(id: string) {
   const [row] = await db
-    .select(toolSelect)
+    .select({
+      ...toolSelect,
+      ownerAvgRating: profiles.avgRating,
+      ownerRatingCount: profiles.ratingCount,
+    })
     .from(tools)
     .leftJoin(profiles,   eq(profiles.userId,    tools.ownerId))
     .leftJoin(categories, eq(categories.id,       tools.categoryId))

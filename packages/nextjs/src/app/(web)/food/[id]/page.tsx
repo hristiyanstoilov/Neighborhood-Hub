@@ -119,10 +119,17 @@ export default async function FoodDetailPage({ params }: { params: Promise<{ id:
             </div>
             <div>
               <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_organised_by')}</dt>
-              <dd className="font-medium">
+              <dd className="font-medium flex items-center gap-2 flex-wrap">
                 <Link href={`/users/${foodShare!.ownerId}`} className="hover:text-green-700 hover:underline">
                   {foodShare!.ownerName ?? t('anonymous')}
                 </Link>
+                {(foodShare!.ownerRatingCount ?? 0) > 0 && (
+                  <span className="text-xs text-amber-600 font-normal whitespace-nowrap">
+                    {'★'.repeat(Math.round(parseFloat(foodShare!.ownerAvgRating ?? '0')))}
+                    {' '}{parseFloat(foodShare!.ownerAvgRating ?? '0').toFixed(1)}
+                    {' '}({foodShare!.ownerRatingCount})
+                  </span>
+                )}
               </dd>
             </div>
             <div className="col-span-2">

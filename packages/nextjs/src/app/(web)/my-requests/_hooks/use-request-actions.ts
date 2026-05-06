@@ -14,6 +14,7 @@ type UseRequestActionsParams = {
   cancelReason: string
   onSuccessStatus: (status: string) => void
   onErrorMessage: (message: string) => void
+  onPointsAwarded?: (points: number) => void
 }
 
 export function useRequestActions({
@@ -23,6 +24,7 @@ export function useRequestActions({
   cancelReason,
   onSuccessStatus,
   onErrorMessage,
+  onPointsAwarded,
 }: UseRequestActionsParams) {
   const queryClient = useQueryClient()
 
@@ -46,6 +48,9 @@ export function useRequestActions({
       }
 
       onSuccessStatus(json.data.status)
+      if (json.pointsAwarded && onPointsAwarded) {
+        onPointsAwarded(json.pointsAwarded as number)
+      }
       await queryClient.invalidateQueries({ queryKey: skillRequestsQueryKey(viewerId, role) })
     },
     onError: () => {

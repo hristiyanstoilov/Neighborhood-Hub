@@ -1,15 +1,16 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, isNull } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { db } from '@/db'
-import { badges, profiles, users } from '@/db/schema'
+import { badges, profiles, skillRequests, users } from '@/db/schema'
 import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import { ProfilePageHeader } from './_components/profile-page-header'
 import { ProfileSummaryCard } from './_components/profile-summary-card'
 import { ProfileEmailWarning } from './_components/profile-email-warning'
 import { DangerZone } from './_components/danger-zone'
 import { PointsBadge } from './_components/points-badge'
+import { TimeCreditCard } from './_components/time-credit-card'
 import { AchievementBadges } from '@/components/achievement-badges'
 import type { Achievement } from '@/components/achievement-badges'
 import type { BadgeType } from '@/lib/badges'
@@ -26,7 +27,7 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  const [profileRow, badgeRows] = await Promise.all([
+  const [profileRow, badgeRows, taughtRows, receivedRows] = await Promise.all([
     db
       .select({
         email: users.email,
@@ -51,12 +52,19 @@ export default async function ProfilePage() {
       .from(badges)
       .where(eq(badges.userId, authedUser.id))
       .orderBy(badges.awardedAt),
+    db.select({ total: count() }).from(skillRequests)
+      .where(and(eq(skillRequests.userToId, authedUser.id), eq(skillRequests.status, 'completed'))),
+    db.select({ total: count() }).from(skillRequests)
+      .where(and(eq(skillRequests.userFromId, authedUser.id), eq(skillRequests.status, 'completed'))),
   ])
 
   const profile = profileRow[0]
   if (!profile) {
     redirect('/login')
   }
+
+  const taught   = taughtRows[0]?.total ?? 0
+  const received = receivedRows[0]?.total ?? 0
 
   const user = {
     email: profile.email,
@@ -82,6 +90,16 @@ export default async function ProfilePage() {
     community_hero: t('achievement_community_hero'),
   }
 
+  const badgeCriteria: Record<BadgeType, string> = {
+    first_skill: t('criteria_first_skill'),
+    first_tool: t('criteria_first_tool'),
+    first_food: t('criteria_first_food'),
+    ten_points: t('criteria_ten_points'),
+    fifty_points: t('criteria_fifty_points'),
+    five_star_giver: t('criteria_five_star_giver'),
+    community_hero: t('criteria_community_hero'),
+  }
+
   return (
     <div className="max-w-lg space-y-4">
       <ProfilePageHeader />
@@ -89,10 +107,12 @@ export default async function ProfilePage() {
       <AchievementBadges
         badges={badgeRows as Achievement[]}
         labels={badgeLabels}
+        criteria={badgeCriteria}
         title={t('achievements_title')}
         emptyLabel={t('achievements_empty')}
         caption={t('achievements_caption')}
       />
+      <TimeCreditCard taught={taught} received={received} />
       <PointsBadge />
       {!profile.emailVerifiedAt && <ProfileEmailWarning />}
       <DangerZone />

@@ -82,6 +82,9 @@ export default function RequestCard({ request, viewerId, role }: Props) {
         message: t('toast_message', { status: statusLabels[nextStatus] ?? nextStatus }),
       })
     },
+    onPointsAwarded: (points) => {
+      showToast({ variant: 'success', title: t('toast_points_awarded', { points }) })
+    },
     onErrorMessage: (message) => {
       setError(message)
     },

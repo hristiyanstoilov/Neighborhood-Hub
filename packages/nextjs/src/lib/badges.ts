@@ -1,6 +1,40 @@
-import { and, count, eq, or } from 'drizzle-orm'
+import { and, count, eq, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { badges, foodShares, ratings, skillRequests, skills, tools, userStats } from '@/db/schema'
+
+const LEVEL_THRESHOLDS = [0, 10, 30, 60, 100, 200]
+
+function computeLevel(points: number): number {
+  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (points >= LEVEL_THRESHOLDS[i]) return i + 1
+  }
+  return 1
+}
+
+export async function awardPoints(userId: string, points: number): Promise<number> {
+  const [row] = await db
+    .insert(userStats)
+    .values({ userId, totalPoints: points, level: computeLevel(points) })
+    .onConflictDoUpdate({
+      target: userStats.userId,
+      set: {
+        totalPoints: sql`user_stats.total_points + ${points}`,
+        level: sql`GREATEST(1, (
+          SELECT CASE
+            WHEN user_stats.total_points + ${points} >= 200 THEN 6
+            WHEN user_stats.total_points + ${points} >= 100 THEN 5
+            WHEN user_stats.total_points + ${points} >= 60  THEN 4
+            WHEN user_stats.total_points + ${points} >= 30  THEN 3
+            WHEN user_stats.total_points + ${points} >= 10  THEN 2
+            ELSE 1
+          END
+        ))`,
+        updatedAt: sql`now()`,
+      },
+    })
+    .returning({ totalPoints: userStats.totalPoints })
+  return row?.totalPoints ?? 0
+}
 
 export const BADGE_TYPES = [
   'first_skill',

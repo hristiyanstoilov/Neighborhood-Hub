@@ -1,4 +1,4 @@
-import type { BadgeType } from '@/lib/badges'
+import { BADGE_TYPES, type BadgeType } from '@/lib/badges'
 
 export type Achievement = {
   type: BadgeType
@@ -8,6 +8,7 @@ export type Achievement = {
 type AchievementBadgesProps = {
   badges: Achievement[]
   labels: Record<BadgeType, string>
+  criteria: Record<BadgeType, string>
   title: string
   emptyLabel: string
   caption: string
@@ -33,25 +34,31 @@ const BADGE_DOTS: Record<BadgeType, string> = {
   community_hero: 'bg-teal-500',
 }
 
-export function AchievementBadges({ badges, labels, title, emptyLabel, caption }: AchievementBadgesProps) {
-  const orderedBadges = [...badges].sort((left, right) => right.awardedAt.getTime() - left.awardedAt.getTime())
+export function AchievementBadges({ badges, labels, criteria, title, emptyLabel, caption }: AchievementBadgesProps) {
+  const earned = new Set(badges.map((b) => b.type))
+  const earnedSorted = [...badges].sort((a, b) => b.awardedAt.getTime() - a.awardedAt.getTime())
+  const locked = BADGE_TYPES.filter((t) => !earned.has(t))
 
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        <span className="text-xs font-medium text-gray-500">{orderedBadges.length}</span>
+        <span className="text-xs font-medium text-gray-500">{earnedSorted.length} / {BADGE_TYPES.length}</span>
       </div>
 
-      {orderedBadges.length > 0 ? (
+      {earnedSorted.length === 0 && locked.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+          {emptyLabel}
+        </div>
+      ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {orderedBadges.map((badge) => (
+          {earnedSorted.map((badge) => (
             <div
               key={`${badge.type}-${badge.awardedAt.toISOString()}`}
               className={`rounded-xl border px-4 py-3 shadow-sm ${BADGE_STYLES[badge.type]}`}
             >
               <div className="flex items-center gap-3">
-                <span className={`h-2.5 w-2.5 rounded-full ${BADGE_DOTS[badge.type]}`} />
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${BADGE_DOTS[badge.type]}`} />
                 <div>
                   <p className="text-sm font-semibold">{labels[badge.type]}</p>
                   <p className="text-xs opacity-80">{caption}</p>
@@ -59,10 +66,21 @@ export function AchievementBadges({ badges, labels, title, emptyLabel, caption }
               </div>
             </div>
           ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-          {emptyLabel}
+
+          {locked.map((type) => (
+            <div
+              key={type}
+              className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-300" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-400">{labels[type]}</p>
+                  <p className="text-xs text-gray-400">{criteria[type]}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </section>

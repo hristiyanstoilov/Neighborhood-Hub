@@ -24,11 +24,16 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
   const [availableUntil, setAvailableUntil] = useState('')
   const [pickupInstructions, setPickupInstructions] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [safetyConfirmed, setSafetyConfirmed] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!safetyConfirmed) {
+      setError(t('safety_acknowledgment_required'))
+      return
+    }
     setSaving(true)
     setError('')
 
@@ -96,6 +101,19 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
         <Field label={t('field_image_url_label')}>
           <ImageUpload value={imageUrl} onChange={setImageUrl} />
         </Field>
+
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <input
+            id="safety-confirmed"
+            type="checkbox"
+            checked={safetyConfirmed}
+            onChange={(e) => setSafetyConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-green-700"
+          />
+          <label htmlFor="safety-confirmed" className="text-sm text-amber-900 leading-snug cursor-pointer">
+            {t('safety_acknowledgment')}
+          </label>
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -73,7 +73,11 @@ export async function querySkillsPage(opts: SkillFilterOpts & {
 
 export async function querySkillById(id: string) {
   const [row] = await db
-    .select(skillSelect)
+    .select({
+      ...skillSelect,
+      ownerAvgRating: profiles.avgRating,
+      ownerRatingCount: profiles.ratingCount,
+    })
     .from(skills)
     .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
     .leftJoin(categories, eq(categories.id, skills.categoryId))

@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
-import { checkAndAwardBadges } from '@/lib/badges'
+import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
@@ -139,11 +139,16 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       entityId: id,
     }).catch(() => {})
 
+    let pointsAwarded = 0
     if (action === 'complete') {
+      const SKILL_COMPLETE_POINTS = 10
       void Promise.all([
+        awardPoints(existing.userFromId, SKILL_COMPLETE_POINTS),
+        awardPoints(existing.userToId, SKILL_COMPLETE_POINTS),
         checkAndAwardBadges(existing.userFromId),
         checkAndAwardBadges(existing.userToId),
       ]).catch(() => undefined)
+      pointsAwarded = SKILL_COMPLETE_POINTS
     }
 
     await writeAuditLog({
@@ -155,7 +160,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
       ipAddress: ip,
     })
 
-    return NextResponse.json({ data: updated })
+    return NextResponse.json({ data: updated, pointsAwarded: pointsAwarded > 0 ? pointsAwarded : undefined })
   } catch (err) {
     console.error('[PATCH /api/skill-requests/[id]]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

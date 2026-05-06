@@ -133,10 +133,17 @@ export default async function ToolDetailPage({
           </div>
           <div>
             <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_listed_by')}</dt>
-            <dd className="font-medium">
+            <dd className="font-medium flex items-center gap-2 flex-wrap">
               <Link href={`/users/${tool!.ownerId}`} className="hover:text-green-700 hover:underline">
                 {tool!.ownerName ?? t('anonymous')}
               </Link>
+              {(tool!.ownerRatingCount ?? 0) > 0 && (
+                <span className="text-xs text-amber-600 font-normal whitespace-nowrap">
+                  {'★'.repeat(Math.round(parseFloat(tool!.ownerAvgRating ?? '0')))}
+                  {' '}{parseFloat(tool!.ownerAvgRating ?? '0').toFixed(1)}
+                  {' '}({tool!.ownerRatingCount})
+                </span>
+              )}
             </dd>
           </div>
         </dl>

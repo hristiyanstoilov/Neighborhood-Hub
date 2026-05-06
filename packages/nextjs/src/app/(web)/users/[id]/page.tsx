@@ -130,6 +130,16 @@ export default async function PublicProfilePage({ params }: Props) {
     community_hero: t('achievement_community_hero'),
   }
 
+  const badgeCriteria: Record<BadgeType, string> = {
+    first_skill: t('criteria_first_skill'),
+    first_tool: t('criteria_first_tool'),
+    first_food: t('criteria_first_food'),
+    ten_points: t('criteria_ten_points'),
+    fifty_points: t('criteria_fifty_points'),
+    five_star_giver: t('criteria_five_star_giver'),
+    community_hero: t('criteria_community_hero'),
+  }
+
   return (
     <div className="max-w-2xl space-y-4">
       <PublicProfileBackLink />
@@ -144,6 +154,7 @@ export default async function PublicProfilePage({ params }: Props) {
       <AchievementBadges
         badges={badgeRows as Achievement[]}
         labels={badgeLabels}
+        criteria={badgeCriteria}
         title={t('achievements_title')}
         emptyLabel={t('achievements_empty')}
         caption={t('achievements_caption')}

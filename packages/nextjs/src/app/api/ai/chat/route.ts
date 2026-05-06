@@ -149,7 +149,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
   // Build personalised system prompt (includes user context from DB)
   const systemPrompt = await buildSystemPrompt(user.sub)
 
-  // Call Anthropic
+  // Call Anthropic — 9 s timeout keeps us under Netlify's 10 s serverless limit
   let assistantContent: string
   try {
     const response = await client.messages.create({
@@ -157,7 +157,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       max_tokens: 1024,
       system: systemPrompt,
       messages: contextMessages,
-    })
+    }, { timeout: 9000 })
     assistantContent = response.content[0].type === 'text' ? response.content[0].text : ''
   } catch {
     return NextResponse.json({ error: 'AI_UNAVAILABLE' }, { status: 503 })

@@ -124,10 +124,17 @@ export default async function SkillDetailPage({
           </div>
           <div>
             <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_offered_by')}</dt>
-            <dd className="font-medium">
+            <dd className="font-medium flex items-center gap-2 flex-wrap">
               <Link href={`/users/${skill!.ownerId}`} className="hover:text-green-700 hover:underline">
                 {skill!.ownerName ?? t('anonymous')}
               </Link>
+              {(skill!.ownerRatingCount ?? 0) > 0 && (
+                <span className="text-xs text-amber-600 font-normal whitespace-nowrap">
+                  {'★'.repeat(Math.round(parseFloat(skill!.ownerAvgRating ?? '0')))}
+                  {' '}{parseFloat(skill!.ownerAvgRating ?? '0').toFixed(1)}
+                  {' '}({skill!.ownerRatingCount})
+                </span>
+              )}
             </dd>
           </div>
         </dl>
