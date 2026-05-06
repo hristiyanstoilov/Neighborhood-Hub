@@ -13,6 +13,7 @@ import { PublicProfileSkills } from './_components/public-profile-skills'
 import { PublicProfileRatings } from './_components/public-profile-ratings'
 import { PrivateProfileState } from './_components/private-profile-state'
 import type { BadgeType } from '@/lib/badges'
+import { BlockButton } from '@/components/ui/block-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -162,6 +163,9 @@ export default async function PublicProfilePage({ params }: Props) {
       <PublicProfileSkills skills={userSkills} />
       <div className="mt-6">
         <PublicProfileRatings userId={id} />
+      </div>
+      <div className="flex gap-4 pt-2">
+        <BlockButton userId={id} />
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages, profiles, users } from '@/db/schema'
+import { conversations, messages, profiles, users, userBlocks } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { createConversationSchema } from '@/lib/schemas/dm'
@@ -113,6 +113,20 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     const otherUser = await db.query.users.findFirst({ where: eq(users.id, otherUserId) })
     if (!otherUser || otherUser.deletedAt) {
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
+    }
+
+    // Reject if either party has blocked the other
+    const [blockRow] = await db
+      .select({ id: userBlocks.id })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, otherUserId)),
+        and(eq(userBlocks.blockerId, otherUserId), eq(userBlocks.blockedId, user.sub)),
+      ))
+      .limit(1)
+
+    if (blockRow) {
+      return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 
     const { participantA, participantB } = normalizePair(user.sub, otherUserId)

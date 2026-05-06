@@ -839,3 +839,27 @@ export const reports = pgTable(
     ),
   ]
 )
+
+// ─────────────────────────────────────────────
+// USER BLOCKS
+// ─────────────────────────────────────────────
+
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    blockerId: uuid('blocker_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('user_blocks_pair_idx').on(t.blockerId, t.blockedId),
+    index('user_blocks_blocker_idx').on(t.blockerId),
+    index('user_blocks_blocked_idx').on(t.blockedId),
+    check('user_blocks_self_check', sql`${t.blockerId} != ${t.blockedId}`),
+  ]
+)
