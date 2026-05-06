@@ -18,12 +18,13 @@ export function DangerZone() {
 
   async function handleExport() {
     try {
-      const res = await apiFetch('/api/account')
+      const res = await apiFetch('/api/profile/export')
+      if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `neighborhood-hub-data.json`
+      a.download = 'neighborhood-hub-data-export.json'
       a.click()
       URL.revokeObjectURL(url)
     } catch {
