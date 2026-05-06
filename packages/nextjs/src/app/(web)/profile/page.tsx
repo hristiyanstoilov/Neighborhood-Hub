@@ -36,6 +36,8 @@ export default async function ProfilePage() {
         name: profiles.name,
         bio: profiles.bio,
         isPublic: profiles.isPublic,
+        avgRating: profiles.avgRating,
+        ratingCount: profiles.ratingCount,
       })
       .from(users)
       .leftJoin(profiles, eq(profiles.userId, users.id))
@@ -65,6 +67,8 @@ export default async function ProfilePage() {
       name: profile.name,
       bio: profile.bio,
       isPublic: profile.isPublic,
+      avgRating: profile.avgRating,
+      ratingCount: profile.ratingCount,
     },
   }
 

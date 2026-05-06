@@ -14,6 +14,8 @@ type ProfileSummaryCardProps = {
       name?: string | null
       bio?: string | null
       isPublic?: boolean | null
+      avgRating?: string | null
+      ratingCount?: number | null
     } | null
   }
 }
@@ -60,6 +62,14 @@ export function ProfileSummaryCard({ user }: ProfileSummaryCardProps) {
             {user.profile?.isPublic === false ? t('private') : t('public')}
           </dd>
         </div>
+        {(user.profile?.ratingCount ?? 0) > 0 && (
+          <div className="py-3 flex justify-between">
+            <dt className="text-gray-500">{t('community_rating')}</dt>
+            <dd className="font-medium text-amber-700">
+              ★ {Number(user.profile?.avgRating).toFixed(1)} ({user.profile?.ratingCount} {t('reviews')})
+            </dd>
+          </div>
+        )}
         {user.profile?.bio && (
           <div className="py-3">
             <dt className="text-gray-500 mb-1">{t('bio')}</dt>

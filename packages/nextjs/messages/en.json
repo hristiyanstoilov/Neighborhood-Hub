@@ -198,7 +198,9 @@
       "too_many_requests": "Too many attempts. Please wait.",
       "network_error": "Network error. Please check your connection.",
       "unexpected": "Something went wrong. Please try again."
-    }
+    },
+    "community_rating": "Community rating",
+    "reviews": "reviews"
   },
   "edit_profile": {
     "title": "Edit Profile",
