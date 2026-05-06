@@ -2,7 +2,7 @@
 import { db } from '@/db'
 import { tools, categories, locations, profiles } from '@/db/schema'
 import { eq, and, desc, count } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { checkAndAwardBadges } from '@/lib/badges'
@@ -55,6 +55,8 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    const { success: createOk } = await createRatelimit.limit(user.sub)
+    if (!createOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

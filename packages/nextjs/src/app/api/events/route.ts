@@ -1,8 +1,8 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events } from '@/db/schema'
+import { events, eventAttendees } from '@/db/schema'
 import { and, count, isNull } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createEventSchema, listEventsSchema } from '@/lib/schemas/event'
@@ -46,6 +46,8 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    const { success: createOk } = await createRatelimit.limit(user.sub)
+    if (!createOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
@@ -71,6 +73,9 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
       maxCapacity:  maxCapacity ?? null,
       imageUrl:     imageUrl ?? null,
     }).returning()
+
+    // Organizer is automatically the first attendee
+    await db.insert(eventAttendees).values({ eventId: event.id, userId: user.sub })
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'events', entityId: event.id, ipAddress: ip })
 

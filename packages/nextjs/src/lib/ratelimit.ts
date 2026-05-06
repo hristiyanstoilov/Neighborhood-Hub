@@ -61,3 +61,10 @@ export const feedPublicRatelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(30, '1 m'),
   prefix: 'rl:feed:public',
 })
+
+// 10 creations per hour per user — anti-spam for content creation endpoints
+export const createRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  prefix: 'rl:create',
+})
