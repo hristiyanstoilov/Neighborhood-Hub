@@ -19,10 +19,10 @@ function formatDate(d: Date | null) {
 export default async function FoodPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>
+  searchParams: Promise<{ status?: string; search?: string; page?: string }>
 }) {
   const t = await getTranslations('food')
-  const { status, page: rawPage } = await searchParams
+  const { status, search, page: rawPage } = await searchParams
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
 
   let foodShares: Awaited<ReturnType<typeof queryFoodSharesPage>>['foodShares'] = []
@@ -33,7 +33,7 @@ export default async function FoodPage({
     const cookieStore = await cookies()
     const refreshToken = cookieStore.get('refresh_token')?.value
     const [foodResult, user] = await Promise.all([
-      queryFoodSharesPage({ status: status ?? 'available', limit: 20, page }),
+      queryFoodSharesPage({ status: status ?? 'available', search, limit: 20, page }),
       refreshToken ? queryUserByRefreshToken(refreshToken) : Promise.resolve(null),
     ])
     foodShares = foodResult.foodShares
@@ -78,11 +78,34 @@ export default async function FoodPage({
         )}
       </div>
 
+      {/* Search */}
+      <form method="GET" action="/food" className="mb-4">
+        {activeStatus !== 'available' && <input type="hidden" name="status" value={activeStatus} />}
+        <div className="flex gap-2">
+          <input
+            name="search"
+            type="search"
+            defaultValue={search ?? ''}
+            placeholder={t('search_placeholder')}
+            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <button type="submit" className="px-4 py-2 bg-green-700 text-white rounded-md text-sm font-medium hover:bg-green-800 transition-colors">
+            {t('search_btn')}
+          </button>
+          {search && (
+            <Link href={`/food?status=${activeStatus}`} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors">
+              {t('search_clear')}
+            </Link>
+          )}
+        </div>
+      </form>
+
+      {/* Status filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {(['available', 'reserved', 'picked_up'] as const).map((s) => (
           <Link
             key={s}
-            href={`/food?status=${s}`}
+            href={`/food?status=${s}${search ? `&search=${encodeURIComponent(search)}` : ''}`}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeStatus === s
                 ? 'bg-green-700 text-white'
@@ -157,7 +180,7 @@ export default async function FoodPage({
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Link
-              href={`/food?status=${activeStatus}&page=${page - 1}`}
+              href={`/food?status=${activeStatus}${search ? `&search=${encodeURIComponent(search)}` : ''}&page=${page - 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
               {t('prev')}
@@ -168,7 +191,7 @@ export default async function FoodPage({
           </span>
           {page < totalPages && (
             <Link
-              href={`/food?status=${activeStatus}&page=${page + 1}`}
+              href={`/food?status=${activeStatus}${search ? `&search=${encodeURIComponent(search)}` : ''}&page=${page + 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
               {t('next')}

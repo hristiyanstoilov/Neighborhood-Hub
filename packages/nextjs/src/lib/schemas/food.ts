@@ -24,10 +24,11 @@ export const updateFoodShareSchema = z.object({
 })
 
 export const listFoodSharesSchema = z.object({
-  status: z.enum(['available', 'reserved', 'picked_up']).optional(),
+  status:  z.enum(['available', 'reserved', 'picked_up']).optional(),
   ownerId: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-  page: z.coerce.number().int().min(1).default(1),
+  search:  z.string().trim().max(100).optional(),
+  limit:   z.coerce.number().int().min(1).max(50).default(20),
+  page:    z.coerce.number().int().min(1).default(1),
 })
 
 export const createFoodReservationSchema = z.object({

@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { status, from, limit, page } = parsed.data
-    const conditions = buildEventConditions({ status, from })
+    const { status, from, search, limit, page } = parsed.data
+    const conditions = buildEventConditions({ status, from, search })
 
     const [rows, [{ total }]] = await Promise.all([
-      queryEvents({ status, from, limit, page }),
+      queryEvents({ status, from, search, limit, page }),
       db.select({ total: count() }).from(events).where(and(...conditions)),
     ])
 

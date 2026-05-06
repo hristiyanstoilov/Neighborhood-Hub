@@ -26,6 +26,7 @@ export const updateEventSchema = z.object({
 export const listEventsSchema = z.object({
   status:  z.enum(['published', 'cancelled', 'completed']).optional(),
   from:    z.string().datetime().optional(),
+  search:  z.string().trim().max(100).optional(),
   limit:   z.coerce.number().int().min(1).max(50).default(20),
   page:    z.coerce.number().int().min(1).default(1),
 })

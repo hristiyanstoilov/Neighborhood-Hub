@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { foodShares, foodReservations, profiles, locations } from '@/db/schema'
-import { and, count, desc, eq, gte, isNull, sql, SQL } from 'drizzle-orm'
+import { and, count, desc, eq, gte, ilike, isNull, sql, SQL } from 'drizzle-orm'
 
 export const foodShareSelect = {
   id: foodShares.id,
@@ -34,12 +34,14 @@ export const foodShareSelect = {
 export type FoodFilterOpts = {
   status?: string
   ownerId?: string
+  search?: string
 }
 
 export function buildFoodShareConditions(opts: FoodFilterOpts): SQL[] {
   const conditions: SQL[] = [isNull(foodShares.deletedAt)]
   if (opts.status) conditions.push(eq(foodShares.status, opts.status))
   if (opts.ownerId) conditions.push(eq(foodShares.ownerId, opts.ownerId))
+  if (opts.search)  conditions.push(ilike(foodShares.title, `%${opts.search}%`))
   return conditions
 }
 

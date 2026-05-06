@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { events, eventAttendees, profiles, locations } from '@/db/schema'
-import { and, count, desc, eq, gte, isNull, sql, SQL } from 'drizzle-orm'
+import { and, count, desc, eq, gte, ilike, isNull, sql, SQL } from 'drizzle-orm'
 
 export const eventSelect = {
   id:                   events.id,
@@ -24,6 +24,7 @@ export const eventSelect = {
 export type EventFilterOpts = {
   status?:  string
   from?:    string
+  search?:  string
   ownerId?: string
 }
 
@@ -32,6 +33,7 @@ export function buildEventConditions(opts: EventFilterOpts): SQL[] {
   if (opts.status)  conditions.push(eq(events.status, opts.status))
   if (opts.ownerId) conditions.push(eq(events.organizerId, opts.ownerId))
   if (opts.from)    conditions.push(gte(events.startsAt, new Date(opts.from)))
+  if (opts.search)  conditions.push(ilike(events.title, `%${opts.search}%`))
   return conditions
 }
 

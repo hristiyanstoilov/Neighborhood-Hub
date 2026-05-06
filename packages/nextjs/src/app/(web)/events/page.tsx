@@ -21,11 +21,11 @@ function formatDate(d: Date) {
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>
+  searchParams: Promise<{ status?: string; search?: string; page?: string }>
 }) {
   const t = await getTranslations('events')
   const tCommon = await getTranslations('common')
-  const { status, page: rawPage } = await searchParams
+  const { status, search, page: rawPage } = await searchParams
   const page = Math.max(1, parseInt(rawPage ?? '1', 10) || 1)
 
   let events: Awaited<ReturnType<typeof queryEventsPage>>['events'] = []
@@ -36,7 +36,7 @@ export default async function EventsPage({
     const cookieStore = await cookies()
     const refreshToken = cookieStore.get('refresh_token')?.value
     const [eventsResult, user] = await Promise.all([
-      queryEventsPage({ status: status ?? 'published', limit: 20, page }),
+      queryEventsPage({ status: status ?? 'published', search, limit: 20, page }),
       refreshToken ? queryUserByRefreshToken(refreshToken) : Promise.resolve(null),
     ])
     events = eventsResult.events
@@ -73,12 +73,34 @@ export default async function EventsPage({
         )}
       </div>
 
-      {/* Filters */}
+      {/* Search */}
+      <form method="GET" action="/events" className="mb-4">
+        {status && status !== 'published' && <input type="hidden" name="status" value={status} />}
+        <div className="flex gap-2">
+          <input
+            name="search"
+            type="search"
+            defaultValue={search ?? ''}
+            placeholder={t('search_placeholder')}
+            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <button type="submit" className="px-4 py-2 bg-green-700 text-white rounded-md text-sm font-medium hover:bg-green-800 transition-colors">
+            {t('search_btn')}
+          </button>
+          {search && (
+            <Link href={`/events?status=${status ?? 'published'}`} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 transition-colors">
+              {t('search_clear')}
+            </Link>
+          )}
+        </div>
+      </form>
+
+      {/* Status filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {(['published', 'completed', 'cancelled'] as const).map((s) => (
           <Link
             key={s}
-            href={`/events?status=${s}`}
+            href={`/events?status=${s}${search ? `&search=${encodeURIComponent(search)}` : ''}`}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               (status ?? 'published') === s
                 ? 'bg-green-700 text-white'
@@ -156,7 +178,7 @@ export default async function EventsPage({
         <div className="flex justify-center gap-2 mt-8">
           {page > 1 && (
             <Link
-              href={`/events?status=${status ?? 'published'}&page=${page - 1}`}
+              href={`/events?status=${status ?? 'published'}${search ? `&search=${encodeURIComponent(search)}` : ''}&page=${page - 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
               {t('prev')}
@@ -167,7 +189,7 @@ export default async function EventsPage({
           </span>
           {page < totalPages && (
             <Link
-              href={`/events?status=${status ?? 'published'}&page=${page + 1}`}
+              href={`/events?status=${status ?? 'published'}${search ? `&search=${encodeURIComponent(search)}` : ''}&page=${page + 1}`}
               className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-50"
             >
               {t('next')}

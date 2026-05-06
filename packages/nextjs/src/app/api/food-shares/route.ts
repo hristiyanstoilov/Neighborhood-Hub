@@ -23,11 +23,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { status, ownerId, limit, page } = parsed.data
-    const conditions = buildFoodShareConditions({ status, ownerId })
+    const { status, ownerId, search, limit, page } = parsed.data
+    const conditions = buildFoodShareConditions({ status, ownerId, search })
 
     const [rows, [{ total }]] = await Promise.all([
-      queryFoodShares({ status, ownerId, limit, page }),
+      queryFoodShares({ status, ownerId, search, limit, page }),
       db.select({ total: count() }).from(foodShares).where(and(...conditions)),
     ])
 
