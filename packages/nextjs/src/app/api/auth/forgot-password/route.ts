@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
 import { users } from '@/db/schema'
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       // Always 200 — don't leak whether an email format was invalid vs not found

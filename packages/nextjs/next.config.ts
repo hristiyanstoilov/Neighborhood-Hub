@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
             // 'unsafe-inline' required by Next.js for hydration scripts
             `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: https:",
+            `img-src 'self' data: blob: ${process.env.CLOUDFLARE_R2_PUBLIC_URL ?? 'https:'}`,
             "font-src 'self'",
             "connect-src 'self' https://eu.i.posthog.com https://us.i.posthog.com https://*.ingest.sentry.io",
             "frame-ancestors 'none'",

@@ -60,6 +60,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
     }
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = updateSkillSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })

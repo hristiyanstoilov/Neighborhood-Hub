@@ -11,17 +11,12 @@ import { isUniqueViolation } from '@/lib/db-errors'
 
 type Ctx = { params: Promise<{ id: string }> }
 
-function extractFoodShareId(url: string): string {
-  const parts = new URL(url).pathname.split('/').filter(Boolean)
-  return parts.at(-2) ?? ''
-}
-
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const foodShareId = extractFoodShareId(req.url)
+    const foodShareId = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
@@ -34,17 +29,18 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
   }
 })
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const foodShareId = extractFoodShareId(req.url)
+    const foodShareId = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_RESERVE_OWN_FOOD' }, { status: 422 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = createFoodReservationSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })

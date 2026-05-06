@@ -38,6 +38,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     if (!pledge) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = updatePledgeSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })

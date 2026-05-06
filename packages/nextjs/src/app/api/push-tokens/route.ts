@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { pushTokens } from '@/db/schema'
 import { eq, and, asc, inArray } from 'drizzle-orm'
@@ -17,6 +17,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     }
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const token = typeof body?.token === 'string' ? body.token.trim() : ''
     const platform = typeof body?.platform === 'string' ? body.platform.toLowerCase().trim() : ''
 
@@ -75,6 +76,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
   try {
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const token = typeof body?.token === 'string' ? body.token.trim() : ''
 
     if (!token) {

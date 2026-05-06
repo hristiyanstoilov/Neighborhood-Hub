@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/db'
 import { userConsents } from '@/db/schema'
@@ -18,6 +18,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })

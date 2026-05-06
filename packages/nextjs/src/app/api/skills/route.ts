@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
 import { eq, and, desc, ilike, count } from 'drizzle-orm'
@@ -65,6 +65,7 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     }
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = createSkillSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })

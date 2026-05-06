@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { tools, categories, locations, profiles } from '@/db/schema'
 import { eq, and, desc, count } from 'drizzle-orm'
@@ -57,6 +57,7 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = createToolSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { notifications } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
@@ -16,6 +16,7 @@ async function markRead(req: NextRequest, userId: string) {
   }
 
   const body = await req.json().catch(() => null)
+  if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
   const singleId = typeof body?.id === 'string' ? body.id : null
 
   const condition = singleId

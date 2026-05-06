@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -89,6 +89,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
   }
 
   const body = await req.json().catch(() => null)
+  if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.flatten() }, { status: 400 })

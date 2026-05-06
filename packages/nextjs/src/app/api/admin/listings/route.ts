@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, tools, events, communityDrives, foodShares } from '@/db/schema'
 import { eq } from 'drizzle-orm'
@@ -21,6 +21,7 @@ export const DELETE = requireAdmin(async (req: NextRequest, { user }) => {
     }
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })

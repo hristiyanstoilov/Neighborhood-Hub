@@ -7,14 +7,9 @@ import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 import { createNotification } from '@/lib/create-notification'
+import { isUniqueViolation } from '@/lib/db-errors'
 
 type Ctx = { params: Promise<{ id: string }> }
-
-// URL: /api/drives/[id]/pledges  → id is second-to-last segment
-function extractDriveId(url: string): string {
-  const parts = new URL(url).pathname.split('/').filter(Boolean)
-  return parts.at(-2) ?? ''
-}
 
 // ─── GET /api/drives/[id]/pledges — public pledge list ──────────────────────
 
@@ -40,12 +35,12 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // ─── POST /api/drives/[id]/pledges — create pledge ──────────────────────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const driveId = extractDriveId(req.url)
+    const driveId = params.id
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, driveId), isNull(communityDrives.deletedAt)),
     })
@@ -54,6 +49,7 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     if (drive.organizerId === user.sub) return NextResponse.json({ error: 'CANNOT_PLEDGE_OWN_DRIVE' }, { status: 422 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = createPledgeSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
@@ -84,9 +80,7 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
       }).returning()
       pledge = inserted
     } catch (insertErr) {
-      const code = (insertErr as { code?: string })?.code
-        ?? ((insertErr as { cause?: { code?: string } })?.cause?.code)
-      if (code === '23505') {
+      if (isUniqueViolation(insertErr)) {
         // Race: another request inserted first — return whatever exists now
         const raceExisting = await queryUserPledge(driveId, user.sub)
         if (raceExisting) return NextResponse.json({ data: raceExisting })
