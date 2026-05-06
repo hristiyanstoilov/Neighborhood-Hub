@@ -28,6 +28,28 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   })
 }
 
+export async function sendContactEmail(params: {
+  senderName: string
+  senderEmail: string
+  subject: string
+  message: string
+}): Promise<void> {
+  const to = process.env.CONTACT_EMAIL ?? FROM
+  await resend.emails.send({
+    from: FROM,
+    to,
+    replyTo: params.senderEmail,
+    subject: `[Contact] ${params.subject}`,
+    html: `
+      <h2>New contact message</h2>
+      <p><strong>From:</strong> ${params.senderName} &lt;${params.senderEmail}&gt;</p>
+      <p><strong>Subject:</strong> ${params.subject}</p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;" />
+      <p style="white-space:pre-wrap;">${params.message}</p>
+    `,
+  })
+}
+
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
   const link = `${APP_URL}/reset-password?token=${token}`
 

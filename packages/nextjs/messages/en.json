@@ -884,6 +884,21 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service"
   },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question or feedback? We'd love to hear from you.",
+    "field_name": "Your name",
+    "field_email": "Your email",
+    "field_subject": "Subject",
+    "field_message": "Message",
+    "placeholder_message": "Tell us how we can help…",
+    "submit": "Send message",
+    "success_title": "Message sent!",
+    "success_body": "Thanks for reaching out. We'll get back to you as soon as possible.",
+    "error_required": "All fields are required.",
+    "error_email": "Please enter a valid email address.",
+    "error_failed": "Failed to send message. Please try again."
+  },
   "cookieConsent": {
     "text": "We use analytics cookies to understand how you use the app and improve it. No personal data is shared.",
     "accept": "Accept",
