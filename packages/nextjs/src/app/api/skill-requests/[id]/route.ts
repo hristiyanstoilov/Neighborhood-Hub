@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, notifications, users } from '@/db/schema'
+import { skillRequests, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -85,10 +85,6 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
       }
 
       if (existing.status === 'pending' && !isRequester) {
-        return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
-      }
-
-      if (existing.status === 'accepted' && !isRequester && !isOwner) {
         return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
     }
