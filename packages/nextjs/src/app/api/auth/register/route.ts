@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { db } from '@/db'
-import { users, profiles } from '@/db/schema'
+import { users, profiles, userStats } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { generateSecureToken, verificationTokenExpiresAt } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email'
@@ -58,6 +58,11 @@ export async function POST(req: NextRequest) {
       await db.insert(profiles).values({
         userId: user.id,
         name: name ?? null,
+      })
+      await db.insert(userStats).values({
+        userId: user.id,
+        totalPoints: 0,
+        level: 1,
       })
     } catch (profileErr) {
       await db.delete(users).where(eq(users.id, user.id))
