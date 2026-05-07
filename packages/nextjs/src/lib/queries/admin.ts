@@ -2,6 +2,11 @@ import { db } from '@/db'
 import { users, profiles, auditLog, refreshTokens } from '@/db/schema'
 import { eq, desc, isNull, and, gt } from 'drizzle-orm'
 
+/**
+ * Fetch all admin users with their profile information.
+ * @param limit - Maximum number of users to return (default: 50)
+ * @returns Array of users sorted by creation date (newest first)
+ */
 export async function queryAdminUsers(limit = 50) {
   return db
     .select({
@@ -21,6 +26,11 @@ export async function queryAdminUsers(limit = 50) {
     .limit(limit)
 }
 
+/**
+ * Fetch admin audit log entries to track system actions.
+ * @param limit - Maximum number of log entries to return (default: 30)
+ * @returns Array of audit log entries sorted by creation date (newest first)
+ */
 export async function queryAuditLog(limit = 30) {
   return db
     .select({
@@ -38,6 +48,12 @@ export async function queryAuditLog(limit = 30) {
     .limit(limit)
 }
 
+/**
+ * Fetch user associated with a valid refresh token.
+ * Validates that the token is not revoked, not expired, and user is not deleted.
+ * @param token - The refresh token to validate
+ * @returns User object with id, role, and email, or null if token is invalid
+ */
 export async function queryUserByRefreshToken(token: string) {
   const now = new Date()
   const [row] = await db
