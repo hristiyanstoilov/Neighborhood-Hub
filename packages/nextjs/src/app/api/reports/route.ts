@@ -18,13 +18,18 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
     }
 
     const { targetType, targetId, reason, details } = parsed.data
+
+    if (targetType === 'user' && targetId === user.sub) {
+      return NextResponse.json({ error: 'CANNOT_REPORT_SELF' }, { status: 400 })
+    }
 
     // Prevent duplicate reports from the same user on the same target
     const existing = await db

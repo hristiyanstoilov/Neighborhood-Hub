@@ -12,6 +12,9 @@ function isParticipant(conversation: { participantA: string; participantB: strin
 
 export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const conversationId = params.id
 
     if (!conversationId) {

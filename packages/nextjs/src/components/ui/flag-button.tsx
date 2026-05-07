@@ -9,7 +9,7 @@ type Reason = 'spam' | 'inappropriate' | 'misleading' | 'dangerous' | 'other'
 const REASONS: Reason[] = ['spam', 'inappropriate', 'misleading', 'dangerous', 'other']
 
 type FlagButtonProps = {
-  entityType: string
+  entityType: 'skill' | 'tool' | 'event' | 'food' | 'drive' | 'user' | 'message'
   entityId: string
 }
 

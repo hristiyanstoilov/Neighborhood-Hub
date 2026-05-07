@@ -16,7 +16,9 @@ export const GET = requireAdmin(async (req: NextRequest, { user }) => {
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const params = Object.fromEntries(new URL(req.url).searchParams)
-    const { status } = filterSchema.parse(params)
+    const parsed = filterSchema.safeParse(params)
+    if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
+    const { status } = parsed.data
 
     const rows = await db
       .select({
@@ -55,15 +57,19 @@ export const PATCH = requireAdmin(async (req: NextRequest, { user }) => {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
 
     const { id, status } = parsed.data
-    await db
+    const [updated] = await db
       .update(reports)
       .set({ status, reviewedById: user.sub, reviewedAt: new Date() })
       .where(eq(reports.id, id))
+      .returning({ id: reports.id })
+
+    if (!updated) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

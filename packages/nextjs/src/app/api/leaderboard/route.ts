@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       })
       .from(userStats)
       .innerJoin(users, and(eq(users.id, userStats.userId), isNull(users.deletedAt)))
-      .leftJoin(profiles, eq(profiles.userId, userStats.userId))
+      .innerJoin(profiles, and(eq(profiles.userId, userStats.userId), eq(profiles.isPublic, true)))
       .orderBy(desc(userStats.totalPoints))
       .limit(100)
 

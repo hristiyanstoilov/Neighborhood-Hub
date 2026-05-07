@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { userBlocks } from '@/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { userBlocks, users } from '@/db/schema'
+import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { uuidSchema } from '@/lib/schemas/skill'
-
-type Params = { params: Promise<{ id: string }> }
 
 export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const targetId = (params as Record<string, string>).id
+    const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
     }
     if (targetId === user.sub) {
       return NextResponse.json({ error: 'CANNOT_BLOCK_SELF' }, { status: 400 })
     }
+
+    const [target] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, targetId), isNull(users.deletedAt)))
+      .limit(1)
+
+    if (!target) return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
 
     await db
       .insert(userBlocks)
@@ -38,7 +44,7 @@ export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => 
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const targetId = (params as Record<string, string>).id
+    const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
     }

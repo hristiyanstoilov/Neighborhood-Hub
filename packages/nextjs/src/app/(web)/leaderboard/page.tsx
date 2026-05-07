@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 
-const LEVEL_COLORS = ['', '#6b7280', '#15803d', '#1d4ed8', '#7c3aed', '#b45309']
+const LEVEL_COLORS = ['', '#6b7280', '#15803d', '#1d4ed8', '#7c3aed', '#b45309', '#dc2626']
 const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 type Entry = {
@@ -50,7 +50,7 @@ export default function LeaderboardPage() {
 
     Promise.all(fetches).finally(() => setLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading])
+  }, [authLoading, user])
 
   const percentile =
     myStats?.rank != null && myStats.totalUsers > 0
@@ -110,9 +110,9 @@ export default function LeaderboardPage() {
             const color = LEVEL_COLORS[e.level] ?? '#6b7280'
             const medal = RANK_MEDAL[rank]
             const initials = (e.name ?? '?')[0].toUpperCase()
-            const levelKey = String(e.level) as '1' | '2' | '3' | '4' | '5'
+            const levelKey = String(Math.min(e.level, 6)) as '1' | '2' | '3' | '4' | '5' | '6'
             return (
-              <li key={i} className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3">
+              <li key={rank} className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3">
                 <span className="w-8 text-center text-sm font-semibold text-gray-500">
                   {medal ?? `#${rank}`}
                 </span>

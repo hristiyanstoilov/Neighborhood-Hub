@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { badges, categories, locations, profiles, skills, userBlocks, users } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, or } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { ErrorState } from '@/components/ui/async-states'
@@ -125,7 +125,10 @@ export default async function PublicProfilePage({ params }: Props) {
       ? db
           .select({ id: userBlocks.id })
           .from(userBlocks)
-          .where(and(eq(userBlocks.blockerId, viewerUser.id), eq(userBlocks.blockedId, id)))
+          .where(or(
+            and(eq(userBlocks.blockerId, viewerUser.id), eq(userBlocks.blockedId, id)),
+            and(eq(userBlocks.blockerId, id), eq(userBlocks.blockedId, viewerUser.id)),
+          ))
           .limit(1)
       : Promise.resolve([] as { id: string }[]),
   ])
@@ -133,7 +136,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const initialBlocked = blockRow.length > 0
 
   const location = row.neighborhood
-    ? `${row.neighborhood}, ${row.city ?? ''}`
+    ? row.city ? `${row.neighborhood}, ${row.city}` : row.neighborhood
     : row.city ?? null
 
   const badgeLabels: Record<BadgeType, string> = {

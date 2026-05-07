@@ -14,10 +14,9 @@ const TERMINAL_STATUSES = ['rejected', 'completed', 'cancelled']
 
 // ─── PATCH /api/skill-requests/[id] — status transition ─────────────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
@@ -143,9 +142,12 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     if (action === 'complete') {
       const SKILL_COMPLETE_POINTS = 10
       try {
+        // Award points first so badge checks read the updated totals
         await Promise.all([
           awardPoints(existing.userFromId, SKILL_COMPLETE_POINTS),
           awardPoints(existing.userToId, SKILL_COMPLETE_POINTS),
+        ])
+        await Promise.all([
           checkAndAwardBadges(existing.userFromId),
           checkAndAwardBadges(existing.userToId),
         ])

@@ -18,7 +18,7 @@ const FROM = process.env.RESEND_FROM
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL
 
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
-  const link = `${APP_URL}/verify-email?token=${token}`
+  const link = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`
 
   await resend.emails.send({
     from: FROM,
@@ -60,7 +60,7 @@ export async function sendContactEmail(params: {
 }
 
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
-  const link = `${APP_URL}/reset-password?token=${token}`
+  const link = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`
 
   await resend.emails.send({
     from: FROM,

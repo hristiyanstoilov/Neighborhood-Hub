@@ -5,10 +5,10 @@ import { sendContactEmail } from '@/lib/email'
 import { z } from 'zod'
 
 const schema = z.object({
-  name:    z.string().min(1).max(100),
-  email:   z.string().email(),
-  subject: z.string().min(1).max(200),
-  message: z.string().min(1).max(2000),
+  name:    z.string().trim().min(1).max(100),
+  email:   z.string().trim().email(),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(2000),
 })
 
 export async function POST(req: NextRequest) {
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     }
 
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })

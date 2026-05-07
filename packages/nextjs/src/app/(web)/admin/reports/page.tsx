@@ -30,24 +30,34 @@ export default function AdminReportsPage() {
 
   async function load(status: typeof filter) {
     setLoading(true)
-    const params = status !== 'all' ? `?status=${status}` : ''
-    const res = await apiFetch(`/api/admin/reports${params}`)
-    const json = await res.json()
-    setReports(Array.isArray(json?.data) ? json.data : [])
-    setLoading(false)
+    try {
+      const params = status !== 'all' ? `?status=${status}` : ''
+      const res = await apiFetch(`/api/admin/reports${params}`)
+      if (!res.ok) throw new Error()
+      const json = await res.json()
+      setReports(Array.isArray(json?.data) ? json.data : [])
+    } catch {
+      setReports([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { void load(filter) }, [filter])
 
   async function handleAction(id: string, status: 'reviewed' | 'dismissed') {
     setActionLoading(id)
-    await apiFetch('/api/admin/reports', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status }),
-    })
-    setActionLoading(null)
-    void load(filter)
+    try {
+      const res = await apiFetch('/api/admin/reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      })
+      if (!res.ok) throw new Error()
+      void load(filter)
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   return (
