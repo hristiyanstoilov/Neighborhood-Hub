@@ -11,10 +11,15 @@ const dateOrDatetime = z.string().refine(
   { message: 'Expected a valid date (YYYY-MM-DD) or datetime string' },
 )
 
+const futureDateOrDatetime = dateOrDatetime.refine(
+  (v) => new Date(v) >= new Date(),
+  { message: 'startDate must not be in the past' },
+)
+
 export const createToolReservationSchema = z
   .object({
     toolId:    z.string().uuid(),
-    startDate: dateOrDatetime,
+    startDate: futureDateOrDatetime,
     endDate:   dateOrDatetime,
     notes:     z.string().trim().max(1000).optional(),
   })

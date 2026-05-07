@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const createSkillRequestSchema = z
   .object({
     skillId: z.string().uuid(),
-    scheduledStart: z.string().datetime(),
+    scheduledStart: z.string().datetime().refine((v) => new Date(v) > new Date(), 'scheduledStart must be in the future'),
     scheduledEnd: z.string().datetime(),
     meetingType: z.enum(['in_person', 'online', 'hybrid']),
     meetingUrl: z.string().url().max(2048).optional(),

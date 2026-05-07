@@ -5,14 +5,13 @@ import { eq, and, isNull, asc } from 'drizzle-orm'
 import { requireAuth } from '@/lib/middleware'
 import { apiRatelimit } from '@/lib/ratelimit'
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   const { success } = await apiRatelimit.limit(user.sub)
   if (!success) {
     return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
   }
 
-  const url = new URL(req.url)
-  const id = url.pathname.split('/').at(-1)!
+  const id = params.id
 
   const [conv] = await db
     .select({ id: aiConversations.id, title: aiConversations.title })
@@ -42,14 +41,13 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
   return NextResponse.json({ data: { conversation: conv, messages } })
 })
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   const { success } = await apiRatelimit.limit(user.sub)
   if (!success) {
     return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
   }
 
-  const url = new URL(req.url)
-  const id = url.pathname.split('/').at(-1)!
+  const id = params.id
 
   const [conv] = await db
     .select({ id: aiConversations.id })

@@ -2,9 +2,9 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { foodReservations, profiles, ratings, skillRequests, toolReservations } from '@/db/schema'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { apiRatelimit, searchPublicRatelimit } from '@/lib/ratelimit'
 import { createRatingSchema, listRatingsQuerySchema, type RatingContextType } from '@/lib/schemas/rating'
-import { requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuth } from '@/lib/middleware'
 import { isUniqueViolation } from '@/lib/db-errors'
 
 type ContextParticipantInfo = {
@@ -124,6 +124,10 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const { success: rlOk } = await searchPublicRatelimit.limit(ip)
+    if (!rlOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const parsed = listRatingsQuerySchema.safeParse(
       Object.fromEntries(new URL(req.url).searchParams)
     )

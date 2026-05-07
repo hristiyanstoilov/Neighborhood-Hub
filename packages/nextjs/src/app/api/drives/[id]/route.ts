@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -10,10 +10,6 @@ import { queryDriveById } from '@/lib/queries/drives'
 import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
-
-function extractId(url: string): string {
-  return new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? ''
-}
 
 // ─── GET /api/drives/[id] — public detail ───────────────────────────────────
 
@@ -35,13 +31,13 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // ─── PATCH /api/drives/[id] — organizer edit / status change ─────────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, id), isNull(communityDrives.deletedAt)),
     })
@@ -88,13 +84,13 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── DELETE /api/drives/[id] — soft delete ───────────────────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, id), isNull(communityDrives.deletedAt)),
     })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, notifications } from '@/db/schema'
+import { events, eventAttendees } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -10,10 +10,6 @@ import { queryEventById } from '@/lib/queries/events'
 import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
-
-function extractId(url: string): string {
-  return new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? ''
-}
 
 // ─── GET /api/events/[id] — public detail ───────────────────────────────────
 
@@ -35,13 +31,13 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // ─── PATCH /api/events/[id] — organizer edit / status change ────────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const event = await db.query.events.findFirst({ where: and(eq(events.id, id), isNull(events.deletedAt)) })
     if (!event) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (event.organizerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
@@ -93,16 +89,30 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── DELETE /api/events/[id] — soft delete ───────────────────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const event = await db.query.events.findFirst({ where: and(eq(events.id, id), isNull(events.deletedAt)) })
     if (!event) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (event.organizerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+
+    const attendees = await db
+      .select({ userId: eventAttendees.userId })
+      .from(eventAttendees)
+      .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
+
+    for (const a of attendees) {
+      void createNotification({
+        userId: a.userId,
+        type: 'event_cancelled',
+        entityType: 'event',
+        entityId: id,
+      }).catch(() => {})
+    }
 
     await db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, id))
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'events', entityId: id, ipAddress: ip })

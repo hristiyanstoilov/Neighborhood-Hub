@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, notifications, users } from '@/db/schema'
+import { toolReservations, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
@@ -13,10 +13,9 @@ const TERMINAL = ['rejected', 'returned', 'cancelled']
 
 // ─── PATCH /api/tool-reservations/[id] — state machine ──────────────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }

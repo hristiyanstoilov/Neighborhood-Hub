@@ -8,24 +8,18 @@ import { writeAuditLog } from '@/lib/audit'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
 import { createNotification } from '@/lib/create-notification'
 
-// URL: /api/drives/[id]/pledges/[pledgeId]
-// parts: ['api', 'drives', '{id}', 'pledges', '{pledgeId}']
-function extractIds(url: string): { driveId: string; pledgeId: string } {
-  const parts = new URL(url).pathname.split('/').filter(Boolean)
-  return { driveId: parts.at(-3) ?? '', pledgeId: parts.at(-1) ?? '' }
-}
-
 // ─── PATCH /api/drives/[id]/pledges/[pledgeId] ──────────────────────────────
 // Organizer: mark fulfilled
 // Pledger:   cancel
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const { driveId, pledgeId } = extractIds(req.url)
+    const driveId = params.id
+    const pledgeId = params.pledgeId
 
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, driveId), isNull(communityDrives.deletedAt)),

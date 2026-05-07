@@ -14,10 +14,9 @@ const patchSchema = z.object({
 
 // ─── PATCH /api/admin/users/[id] — perform admin action on a user ─────────────
 
-export const PATCH = requireAdmin(async (req: NextRequest, { user }) => {
+export const PATCH = requireAdmin(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }

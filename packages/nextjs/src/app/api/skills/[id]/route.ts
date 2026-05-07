@@ -10,11 +10,6 @@ import { skillSelect } from '@/lib/queries/skills'
 
 type Params = { params: Promise<{ id: string }> }
 
-function extractId(params: Params['params'] | undefined, url: string): string {
-  // For requireAuth handlers params is not passed through; extract from URL safely.
-  return new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? ''
-}
-
 // ─── GET /api/skills/[id] — public detail ────────────────────────────────────
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -46,9 +41,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 // ─── PUT /api/skills/[id] — update (owner only) ───────────────────────────────
 
-export const PUT = requireAuth(async (req: NextRequest, { user }) => {
+export const PUT = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const id = extractId(undefined, req.url)
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
@@ -108,9 +103,9 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── DELETE /api/skills/[id] — soft delete (owner only) ──────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const id = extractId(undefined, req.url)
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }

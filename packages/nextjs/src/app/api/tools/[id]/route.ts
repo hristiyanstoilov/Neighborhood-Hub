@@ -30,10 +30,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // ─── PUT /api/tools/[id] — update (owner only) ──────────────────────────────
 
-export const PUT = requireAuth(async (req: NextRequest, { user }) => {
+export const PUT = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
@@ -89,10 +88,9 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── DELETE /api/tools/[id] — soft delete (owner only) ──────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-1)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }

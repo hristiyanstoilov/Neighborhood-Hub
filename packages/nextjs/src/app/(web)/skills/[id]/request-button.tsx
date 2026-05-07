@@ -195,6 +195,7 @@ export default function RequestButton({ skill }: Props) {
                         name="scheduledStart"
                         type="datetime-local"
                         required
+                        min={new Date().toISOString().slice(0, 16)}
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                     </div>
@@ -207,6 +208,7 @@ export default function RequestButton({ skill }: Props) {
                         name="scheduledEnd"
                         type="datetime-local"
                         required
+                        min={new Date().toISOString().slice(0, 16)}
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                     </div>

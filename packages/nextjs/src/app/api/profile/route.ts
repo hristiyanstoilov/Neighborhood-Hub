@@ -87,23 +87,19 @@ export const PUT = requireAuth(async (req: NextRequest, { user }) => {
       bio:        bio ?? null,
       avatarUrl:  avatarUrl || null,
       locationId: locationId || null,
-      isPublic:   isPublic ?? true,
       updatedAt:  new Date(),
     }
 
+    const conflictSet: Record<string, unknown> = { ...values }
+    // Only update isPublic when the caller explicitly sends it
+    if (isPublic !== undefined) conflictSet.isPublic = isPublic
+
     const [profile] = await db
       .insert(profiles)
-      .values({ ...values, createdAt: new Date() })
+      .values({ ...values, isPublic: isPublic ?? true, createdAt: new Date() })
       .onConflictDoUpdate({
         target: profiles.userId,
-        set: {
-          name:       values.name,
-          bio:        values.bio,
-          avatarUrl:  values.avatarUrl,
-          locationId: values.locationId,
-          isPublic:   values.isPublic,
-          updatedAt:  values.updatedAt,
-        },
+        set: conflictSet,
       })
       .returning()
 

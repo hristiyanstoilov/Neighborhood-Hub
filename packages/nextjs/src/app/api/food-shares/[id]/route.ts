@@ -10,10 +10,6 @@ import { queryFoodShareById } from '@/lib/queries/food'
 
 type Ctx = { params: Promise<{ id: string }> }
 
-function extractId(url: string): string {
-  return new URL(url).pathname.split('/').filter(Boolean).at(-1) ?? ''
-}
-
 export async function GET(req: NextRequest, { params }: Ctx) {
   try {
     const ip = getClientIp(req)
@@ -30,19 +26,18 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   }
 }
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, id), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
-    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = updateFoodShareSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
@@ -64,13 +59,13 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
   }
 })
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const id = extractId(req.url)
+    const id = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, id), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })

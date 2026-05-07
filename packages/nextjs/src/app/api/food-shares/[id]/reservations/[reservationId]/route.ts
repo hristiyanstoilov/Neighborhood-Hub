@@ -11,14 +11,6 @@ import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string; reservationId: string }> }
 
-function extractIds(url: string): { foodShareId: string; reservationId: string } {
-  const parts = new URL(url).pathname.split('/').filter(Boolean)
-  return {
-    foodShareId: parts.at(-3) ?? '',
-    reservationId: parts.at(-1) ?? '',
-  }
-}
-
 async function syncFoodShareStatus(foodShareId: string, quantity: number) {
   const { activeCount, pickedUpCount } = await queryFoodReservationUsage(foodShareId)
 
@@ -34,13 +26,14 @@ async function syncFoodShareStatus(foodShareId: string, quantity: number) {
   await db.update(foodShares).set({ status: nextStatus, updatedAt: new Date() }).where(eq(foodShares.id, foodShareId))
 }
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
     const { success } = await apiRatelimit.limit(user.sub)
     if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
-    const { foodShareId, reservationId } = extractIds(req.url)
+    const foodShareId = params.id
+    const reservationId = params.reservationId
     const [foodShare, reservation, dbUser] = await Promise.all([
       db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) }),
       db.query.foodReservations.findFirst({ where: and(eq(foodReservations.id, reservationId), eq(foodReservations.foodShareId, foodShareId)) }),
@@ -53,6 +46,11 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
     const isOwner = foodShare.ownerId === user.sub
     const isRequester = reservation.requesterId === user.sub
     if (!isOwner && !isRequester) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+
+    const TERMINAL_STATUSES = ['picked_up', 'rejected', 'cancelled']
+    if (TERMINAL_STATUSES.includes(reservation.status)) {
+      return NextResponse.json({ error: 'RESERVATION_ALREADY_TERMINAL' }, { status: 422 })
+    }
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

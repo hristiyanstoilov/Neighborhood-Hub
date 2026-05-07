@@ -1,7 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, skills } from '@/db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { skillRequests, skills, userBlocks } from '@/db/schema'
+import { eq, and, inArray, or } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -64,6 +64,19 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     }
     if (skill.ownerId === user.sub) {
       return NextResponse.json({ error: 'CANNOT_REQUEST_OWN_SKILL' }, { status: 422 })
+    }
+
+    // Block check — reject if either party has blocked the other
+    const [blockRow] = await db
+      .select({ id: userBlocks.id })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, skill.ownerId)),
+        and(eq(userBlocks.blockerId, skill.ownerId), eq(userBlocks.blockedId, user.sub)),
+      ))
+      .limit(1)
+    if (blockRow) {
+      return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 
     // Duplicate check — one active request per user+skill

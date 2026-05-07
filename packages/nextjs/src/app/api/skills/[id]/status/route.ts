@@ -9,10 +9,9 @@ import { skillStatusSchema, uuidSchema } from '@/lib/schemas/skill'
 
 // ─── PATCH /api/skills/[id]/status — change status (owner only) ──────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
-    const url = new URL(req.url)
-    const id = url.pathname.split('/').at(-2)!
+    const id = params.id
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
