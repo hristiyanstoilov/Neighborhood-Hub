@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations, users } from '@/db/schema'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -114,6 +114,29 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
     if (!updated) {
       // Concurrent approval consumed the last slot between our read and write
       return NextResponse.json({ error: 'FOOD_NOT_AVAILABLE' }, { status: 422 })
+    }
+
+    // Post-approve compensation: under READ COMMITTED two concurrent approvals can
+    // both pass the WHERE-clause subquery before either commits. Re-count after
+    // our commit and roll back if we pushed reserved count over capacity.
+    if (parsed.data.action === 'approve') {
+      const [{ reservedCount }] = await db
+        .select({ reservedCount: sql<number>`COUNT(*)::int` })
+        .from(foodReservations)
+        .where(and(
+          eq(foodReservations.foodShareId, foodShareId),
+          inArray(foodReservations.status, ['reserved', 'picked_up']),
+        ))
+
+      if (reservedCount > foodShare.quantity) {
+        // Guard on status='reserved' so a concurrent cancel in the same window
+        // is not accidentally un-done by this rollback (0-row UPDATE is safe).
+        await db
+          .update(foodReservations)
+          .set({ status: 'pending', updatedAt: new Date() })
+          .where(and(eq(foodReservations.id, reservationId), eq(foodReservations.status, 'reserved')))
+        return NextResponse.json({ error: 'FOOD_NOT_AVAILABLE' }, { status: 422 })
+      }
     }
 
     await syncFoodShareStatus(foodShareId, foodShare.quantity)
