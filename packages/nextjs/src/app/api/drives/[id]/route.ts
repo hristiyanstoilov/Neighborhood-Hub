@@ -56,8 +56,9 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
 
     const [updated] = await db.update(communityDrives).set(updates).where(eq(communityDrives.id, id)).returning()
 
-    // Notify pledgers if drive is completed
-    if (parsed.data.status === 'completed') {
+    // Notify pledgers if drive is completed or cancelled
+    if (parsed.data.status === 'completed' || parsed.data.status === 'cancelled') {
+      const notifType = parsed.data.status === 'completed' ? 'drive_completed' : 'drive_cancelled'
       const pledgers = await db
         .select({ userId: drivePledges.userId })
         .from(drivePledges)
@@ -66,7 +67,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
       for (const p of pledgers) {
         void createNotification({
           userId: p.userId,
-          type: 'drive_completed',
+          type: notifType,
           entityType: 'community_drive',
           entityId: id,
         }).catch(() => {})

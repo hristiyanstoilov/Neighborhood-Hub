@@ -56,13 +56,13 @@ export function requireVerifiedAuth(
 }
 
 export function requireAdmin(
-  handler: (req: NextRequest, context: { user: JwtPayload }) => Promise<NextResponse>
+  handler: (req: NextRequest, context: { user: JwtPayload; params: Record<string, string> }) => Promise<NextResponse>
 ) {
-  return requireAuth(async (req, { user }) => {
+  return requireAuth(async (req, { user, params }) => {
     if (user.role !== 'admin') {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
     }
-    return handler(req, { user })
+    return handler(req, { user, params })
   })
 }
 

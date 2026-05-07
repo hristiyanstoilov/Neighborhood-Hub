@@ -134,6 +134,13 @@
       "when": 1778125454574,
       "tag": "0018_freezing_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778163113837,
+      "tag": "0019_fast_titanium_man",
+      "breakpoints": true
     }
   ]
 }

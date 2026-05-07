@@ -39,6 +39,7 @@ const DEFAULT_PUSH: Partial<Record<string, { title: string; body: string }>> = {
   drive_pledge_fulfilled:     { title: 'Pledge fulfilled',           body: 'Your drive pledge was marked complete.' },
   drive_pledge_cancelled:     { title: 'Pledge cancelled',           body: 'A pledge to your drive was cancelled.' },
   drive_completed:            { title: 'Drive completed',            body: 'A drive you pledged to was completed.' },
+  drive_cancelled:            { title: 'Drive cancelled',            body: 'A drive you pledged to was cancelled.' },
   drive_deleted:              { title: 'Drive removed',              body: 'A drive you pledged to has been removed.' },
   // Food shares
   food_share_deleted:         { title: 'Food share removed',         body: 'A food share you reserved has been removed.' },
