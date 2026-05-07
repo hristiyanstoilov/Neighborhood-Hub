@@ -70,8 +70,6 @@ All 5 core modules complete and deployed.
 | Event edit page (web) | `/events/[id]/edit` does not exist. Event creators can only delete, never update after creation. |
 | Cookie banner "Reject All" | GDPR requires equally prominent reject option. Add "Reject All" that writes `analytics=false` to `userConsents`. Current banner has Accept only. |
 | Time-credit balance ("time wallet") | Show hours given/received on profile, derived from completed skill requests. Makes the time-banking value proposition visible and motivating. |
-| Bound `queryDrivePledges` | No `.limit()` — returns all pledge rows. OOM crash risk at scale. Add `limit(100)` + page param; expose via `?page=` on `/api/drives/[id]/pledges`. |
-| Bound `queryFoodReservations` | No `.limit()` — same crash risk. Add pagination. |
 | Infrastructure cost model | Document free tier limits and projected cost at 1k/10k users for: Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2. Required before any partner conversation. |
 
 ---
@@ -175,15 +173,6 @@ All 5 core modules complete and deployed.
 ## Technical Backlog
 
 > Engineering-focused items — architecture, refactor, and backend correctness. Use this when choosing the next technical task without scanning the full product backlog.
-
-### P2
-
-| Item | Domain | Description |
-|------|--------|-------------|
-| `requireVerifiedAuth` rollout | Backend | `requireVerifiedAuth()` wrapper exists in `lib/middleware.ts` but the inline email verification check (`!dbUser?.emailVerifiedAt → UNVERIFIED_EMAIL`) is still copy-pasted in 8+ create routes. Migrate all create routes to use the wrapper. |
-| `requireAuthWithRateLimit` middleware | Backend | Rate-limit boilerplate (`apiRatelimit.limit(user.sub) → 429`) duplicated in 40+ routes. Extract into a reusable middleware wrapper. |
-| Feed event: HTTP fetch → direct call | Backend | 5 create routes call `fetch('/api/feed', ...)` internally — unnecessary HTTP round-trip, fire-and-forget swallows failures. Replace with direct function invocation. |
-| Extract shared `isUniqueViolation` | Backend | Identical helper duplicated in `tool-reservations/route.ts` and `food-shares/[id]/reservations/route.ts`. Extract to `lib/db-errors.ts`. |
 
 ### P3
 

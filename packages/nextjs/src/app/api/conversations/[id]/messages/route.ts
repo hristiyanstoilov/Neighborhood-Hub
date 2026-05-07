@@ -2,19 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, desc, eq, inArray, isNull, lt, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, userBlocks } from '@/db/schema'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { createMessageSchema, listMessagesSchema } from '@/lib/schemas/dm'
 
 function isParticipant(conversation: { participantA: string; participantB: string }, userId: string) {
   return conversation.participantA === userId || conversation.participantB === userId
 }
 
-export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const conversationId = params.id
 
     if (!conversationId) {
@@ -82,11 +78,8 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   }
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const conversationId = params.id
 
     if (!conversationId) {

@@ -105,7 +105,8 @@ export async function queryUserPledges(userId: string) {
     .orderBy(desc(drivePledges.createdAt))
 }
 
-export async function queryDrivePledges(driveId: string) {
+export async function queryDrivePledges(driveId: string, opts: { limit?: number; offset?: number } = {}) {
+  const { limit = 100, offset = 0 } = opts
   return db
     .select({
       id:                drivePledges.id,
@@ -119,5 +120,6 @@ export async function queryDrivePledges(driveId: string) {
     .leftJoin(profiles, eq(profiles.userId, drivePledges.userId))
     .where(eq(drivePledges.driveId, driveId))
     .orderBy(desc(drivePledges.createdAt))
-    .limit(200)
+    .limit(limit)
+    .offset(offset)
 }

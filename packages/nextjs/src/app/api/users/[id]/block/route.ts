@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { userBlocks, users } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { uuidSchema } from '@/lib/schemas/skill'
 
-export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
@@ -36,11 +32,8 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   }
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
@@ -69,11 +62,8 @@ export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
   }
 })
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })

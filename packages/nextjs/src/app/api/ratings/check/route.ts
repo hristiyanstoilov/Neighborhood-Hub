@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { ratings } from '@/db/schema'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { checkRatingQuerySchema } from '@/lib/schemas/rating'
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const parsed = checkRatingQuerySchema.safeParse(
       Object.fromEntries(new URL(req.url).searchParams)
     )

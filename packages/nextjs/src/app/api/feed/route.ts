@@ -2,8 +2,8 @@
 import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
-import { getClientIp, requireAuth } from '@/lib/middleware'
-import { apiRatelimit, feedPublicRatelimit } from '@/lib/ratelimit'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
+import { feedPublicRatelimit } from '@/lib/ratelimit'
 import { createFeedSchema, listFeedSchema } from '@/lib/schemas/feed'
 
 export async function GET(req: NextRequest) {
@@ -46,11 +46,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = createFeedSchema.safeParse(body)

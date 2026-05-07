@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { foodShares } from '@/db/schema'
 import { and, count, isNull } from 'drizzle-orm'
 import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { checkAndAwardBadges } from '@/lib/badges'
 import { createFoodShareSchema, listFoodSharesSchema } from '@/lib/schemas/food'
@@ -38,11 +38,9 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     const { success: createOk } = await createRatelimit.limit(user.sub)
     if (!createOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 

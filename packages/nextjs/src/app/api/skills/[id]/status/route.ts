@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { skillStatusSchema, uuidSchema } from '@/lib/schemas/skill'
 
 // ─── PATCH /api/skills/[id]/status — change status (owner only) ──────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const id = params.id
     if (!uuidSchema.safeParse(id).success) {
@@ -17,10 +16,6 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
     }
 
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

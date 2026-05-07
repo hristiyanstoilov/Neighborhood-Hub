@@ -2,8 +2,7 @@
 import { db } from '@/db'
 import { toolReservations, tools, userBlocks } from '@/db/schema'
 import { eq, and, isNull, or } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { z } from 'zod'
@@ -12,11 +11,8 @@ import { isUniqueViolation } from '@/lib/db-errors'
 
 // ─── GET /api/tool-reservations — my reservations ───────────────────────────
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const { searchParams } = new URL(req.url)
     const role = searchParams.get('role') === 'owner' ? 'owner' : 'borrower'
 
@@ -30,11 +26,9 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── POST /api/tool-reservations — create ───────────────────────────────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

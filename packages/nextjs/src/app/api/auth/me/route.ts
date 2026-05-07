@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { profiles, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
-export const GET = requireAuth(async (_req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const [dbUser, profile] = await Promise.all([
       db.query.users.findFirst({ where: eq(users.id, user.sub) }),
       db.query.profiles.findFirst({ where: eq(profiles.userId, user.sub) }),

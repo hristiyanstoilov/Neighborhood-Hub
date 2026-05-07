@@ -2,20 +2,14 @@
 import { db } from '@/db'
 import { pushTokens } from '@/db/schema'
 import { eq, and, asc, inArray } from 'drizzle-orm'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 const EXPO_TOKEN_RE = /^ExponentPushToken\[.+\]$/
 
 // ─── POST /api/push-tokens — register or refresh a push token ────────────────
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const token = typeof body?.token === 'string' ? body.token.trim() : ''
@@ -73,7 +67,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── DELETE /api/push-tokens — remove token on logout ────────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

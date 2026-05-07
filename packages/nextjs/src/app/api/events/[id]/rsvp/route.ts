@@ -2,19 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { events, eventAttendees, userBlocks } from '@/db/schema'
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
 import { createNotification } from '@/lib/create-notification'
 
 // ─── POST /api/events/[id]/rsvp — attend ────────────────────────────────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const eventId = params.id
     const event = await db.query.events.findFirst({ where: and(eq(events.id, eventId), isNull(events.deletedAt)) })
     if (!event) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -87,11 +83,9 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params 
 
 // ─── DELETE /api/events/[id]/rsvp — cancel RSVP ─────────────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const eventId = params.id
     const [existing, event] = await Promise.all([

@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { communityDrives, drivePledges, userBlocks } from '@/db/schema'
 import { and, eq, isNull, or } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 import { createNotification } from '@/lib/create-notification'
@@ -25,7 +25,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     })
     if (!drive) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
-    const pledges = await queryDrivePledges(id)
+    const page = Math.max(1, Number(req.nextUrl.searchParams.get('page')) || 1)
+    const pledges = await queryDrivePledges(id, { limit: 100, offset: (page - 1) * 100 })
     return NextResponse.json({ data: pledges })
   } catch (err) {
     console.error('[GET /api/drives/[id]/pledges]', err)
@@ -35,11 +36,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // ─── POST /api/drives/[id]/pledges — create pledge ──────────────────────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const driveId = params.id
     const drive = await db.query.communityDrives.findFirst({
       where: and(eq(communityDrives.id, driveId), isNull(communityDrives.deletedAt)),

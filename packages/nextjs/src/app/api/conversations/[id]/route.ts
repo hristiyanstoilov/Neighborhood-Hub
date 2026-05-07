@@ -2,17 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, count, desc, eq, isNull, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, profiles, users } from '@/db/schema'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
-export const GET = requireAuth(async (
+export const GET = requireAuthWithRateLimit(async (
   req: NextRequest,
   { params, user }
 ) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const conversationId = params.id as string
 
     // Fetch conversation with both participants

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, categories, locations } from '@/db/schema'
 import { eq, and, isNull, desc, count } from 'drizzle-orm'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { z } from 'zod'
 
 const querySchema = z.object({
@@ -11,13 +10,8 @@ const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const { searchParams } = new URL(req.url)
     const parsed = querySchema.safeParse(Object.fromEntries(searchParams))
     if (!parsed.success) {

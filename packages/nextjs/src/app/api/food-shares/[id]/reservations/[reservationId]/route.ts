@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations, users } from '@/db/schema'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth, getClientIp } from '@/lib/middleware'
+import { requireAuthWithRateLimit, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
@@ -26,11 +25,9 @@ async function syncFoodShareStatus(foodShareId: string, quantity: number) {
   await db.update(foodShares).set({ status: nextStatus, updatedAt: new Date() }).where(eq(foodShares.id, foodShareId))
 }
 
-export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const foodShareId = params.id
     const reservationId = params.reservationId

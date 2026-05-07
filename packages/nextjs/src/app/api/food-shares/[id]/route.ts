@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { foodShares, foodReservations } from '@/db/schema'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodShareSchema } from '@/lib/schemas/food'
 import { queryFoodShareById } from '@/lib/queries/food'
@@ -27,11 +27,9 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   }
 }
 
-export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const id = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, id), isNull(foodShares.deletedAt)) })
@@ -61,11 +59,9 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
   }
 })
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const id = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, id), isNull(foodShares.deletedAt)) })

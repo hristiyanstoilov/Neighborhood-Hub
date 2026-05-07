@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { events, eventAttendees } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateEventSchema } from '@/lib/schemas/event'
 import { queryEventById } from '@/lib/queries/events'
@@ -31,11 +31,9 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // ─── PATCH /api/events/[id] — organizer edit / status change ────────────────
 
-export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const id = params.id
     const event = await db.query.events.findFirst({ where: and(eq(events.id, id), isNull(events.deletedAt)) })
@@ -89,11 +87,9 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
 
 // ─── DELETE /api/events/[id] — soft delete ───────────────────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const id = params.id
     const event = await db.query.events.findFirst({ where: and(eq(events.id, id), isNull(events.deletedAt)) })

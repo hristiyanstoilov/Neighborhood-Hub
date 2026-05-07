@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations, userBlocks } from '@/db/schema'
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservations } from '@/lib/queries/food'
 import { createNotification } from '@/lib/create-notification'
@@ -11,17 +10,16 @@ import { isUniqueViolation } from '@/lib/db-errors'
 
 type Ctx = { params: Promise<{ id: string }> }
 
-export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const foodShareId = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
+    const page = Math.max(1, Number(req.nextUrl.searchParams.get('page')) || 1)
+    const limit = 100
     const canSeeAll = foodShare.ownerId === user.sub
-    const rows = await queryFoodReservations(foodShareId)
+    const rows = await queryFoodReservations(foodShareId, { limit, offset: (page - 1) * limit })
     return NextResponse.json({ data: canSeeAll ? rows : rows.filter((row) => row.requesterId === user.sub) })
   } catch (err) {
     console.error('[GET /api/food-shares/[id]/reservations]', err)
@@ -29,11 +27,8 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   }
 })
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const foodShareId = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })

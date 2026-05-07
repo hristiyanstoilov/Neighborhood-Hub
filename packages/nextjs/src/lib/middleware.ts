@@ -3,6 +3,7 @@ import { verifyAccessToken, JwtPayload } from './auth'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { apiRatelimit } from './ratelimit'
 
 const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
 
@@ -51,6 +52,26 @@ export function requireVerifiedAuth(
     if (!dbUser?.emailVerifiedAt) {
       return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
     }
+    return handler(req, context)
+  })
+}
+
+export function requireAuthWithRateLimit(
+  handler: (req: NextRequest, context: { user: JwtPayload; params: Record<string, string> }) => Promise<NextResponse>
+) {
+  return requireAuth(async (req, context) => {
+    const { success } = await apiRatelimit.limit(context.user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    return handler(req, context)
+  })
+}
+
+export function requireVerifiedAuthWithRateLimit(
+  handler: (req: NextRequest, context: { user: JwtPayload; params: Record<string, string> }) => Promise<NextResponse>
+) {
+  return requireVerifiedAuth(async (req, context) => {
+    const { success } = await apiRatelimit.limit(context.user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     return handler(req, context)
   })
 }

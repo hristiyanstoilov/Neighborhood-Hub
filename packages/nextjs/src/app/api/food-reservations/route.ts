@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { listFoodReservationsSchema } from '@/lib/schemas/food'
 import { queryFoodReservationsForUser } from '@/lib/queries/food'
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const { searchParams } = new URL(req.url)
     const parsed = listFoodReservationsSchema.safeParse(Object.fromEntries(searchParams))
     if (!parsed.success) {

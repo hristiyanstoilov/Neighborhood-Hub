@@ -2,8 +2,7 @@
 import { z } from 'zod'
 import { db } from '@/db'
 import { userConsents } from '@/db/schema'
-import { getClientIp, requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 
 const schema = z.object({
   consentType: z.enum(['analytics', 'terms', 'marketing', 'ai_data']),
@@ -11,11 +10,9 @@ const schema = z.object({
   version: z.string().max(20).default('1.0'),
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

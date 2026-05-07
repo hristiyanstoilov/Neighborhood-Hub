@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
@@ -20,13 +19,8 @@ const s3 = new S3Client({
   },
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const formData = await req.formData().catch(() => null)
     if (!formData) {
       return NextResponse.json({ error: 'INVALID_FORM_DATA' }, { status: 400 })

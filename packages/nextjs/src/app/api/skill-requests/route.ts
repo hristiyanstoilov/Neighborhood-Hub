@@ -2,8 +2,7 @@
 import { db } from '@/db'
 import { skillRequests, skills, userBlocks } from '@/db/schema'
 import { eq, and, inArray, or } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
 import { querySkillRequestsByUser, countSkillRequestsByUser } from '@/lib/queries/skill-requests'
@@ -11,13 +10,8 @@ import { createNotification } from '@/lib/create-notification'
 
 // ─── GET /api/skill-requests — list requests visible to the current user ─────
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const { searchParams } = new URL(req.url)
     const parsed = listSkillRequestsSchema.safeParse(Object.fromEntries(searchParams))
     if (!parsed.success) {
@@ -37,13 +31,9 @@ export const GET = requireAuth(async (req: NextRequest, { user }) => {
 
 // ─── POST /api/skill-requests — create a request ─────────────────────────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

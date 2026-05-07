@@ -120,7 +120,8 @@ export async function queryUserFoodReservation(foodShareId: string, userId: stri
   return row ?? null
 }
 
-export async function queryFoodReservations(foodShareId: string) {
+export async function queryFoodReservations(foodShareId: string, opts: { limit?: number; offset?: number } = {}) {
+  const { limit = 100, offset = 0 } = opts
   return db
     .select({
       id: foodReservations.id,
@@ -138,6 +139,8 @@ export async function queryFoodReservations(foodShareId: string) {
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
     .where(eq(foodReservations.foodShareId, foodShareId))
     .orderBy(desc(foodReservations.createdAt))
+    .limit(limit)
+    .offset(offset)
 }
 
 export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner') {

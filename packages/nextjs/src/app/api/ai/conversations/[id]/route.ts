@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { aiConversations, aiMessages } from '@/db/schema'
 import { eq, and, isNull, asc } from 'drizzle-orm'
-import { requireAuth } from '@/lib/middleware'
-import { apiRatelimit } from '@/lib/ratelimit'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
-export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
-  const { success } = await apiRatelimit.limit(user.sub)
-  if (!success) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   const id = params.id
 
   const [conv] = await db
@@ -41,12 +35,7 @@ export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   return NextResponse.json({ data: { conversation: conv, messages } })
 })
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
-  const { success } = await apiRatelimit.limit(user.sub)
-  if (!success) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   const id = params.id
 
   const [conv] = await db

@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
 import { eq, and, desc, ilike, count } from 'drizzle-orm'
 import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
+import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { checkAndAwardBadges } from '@/lib/badges'
 import { listSkillsSchema, createSkillSchema } from '@/lib/schemas/skill'
@@ -56,11 +56,9 @@ export async function GET(req: NextRequest) {
 
 // ─── POST /api/skills — create (auth required, email must be verified) ────────
 
-export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
     const { success: createOk } = await createRatelimit.limit(user.sub)
     if (!createOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 

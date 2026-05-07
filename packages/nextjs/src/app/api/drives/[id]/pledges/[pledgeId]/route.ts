@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
 import { createNotification } from '@/lib/create-notification'
@@ -12,11 +11,9 @@ import { createNotification } from '@/lib/create-notification'
 // Organizer: mark fulfilled
 // Pledger:   cancel
 
-export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const driveId = params.id
     const pledgeId = params.pledgeId

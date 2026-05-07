@@ -2,21 +2,14 @@
 import { db } from '@/db'
 import { notifications } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 // ─── PATCH /api/notifications/read — mark notifications as read ───────────────
 // Body: { id: string } — marks one notification
 // No body / no id — marks all unread notifications for the current user
 
 async function markRead(req: NextRequest, userId: string) {
-  const { success } = await apiRatelimit.limit(userId)
-  if (!success) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
   const body = await req.json().catch(() => null)
-  if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
   const singleId = typeof body?.id === 'string' ? body.id : null
 
   const condition = singleId
@@ -28,7 +21,7 @@ async function markRead(req: NextRequest, userId: string) {
   return NextResponse.json({ data: { ok: true } })
 }
 
-export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
+export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     return await markRead(req, user.sub)
   } catch (err) {
@@ -37,7 +30,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user }) => {
   }
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
+export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     return await markRead(req, user.sub)
   } catch (err) {

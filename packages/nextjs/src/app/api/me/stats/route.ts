@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { userStats, users } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-
     const [statsRow, rankRow, countRow] = await Promise.all([
       db
         .select({ totalPoints: userStats.totalPoints, level: userStats.level })

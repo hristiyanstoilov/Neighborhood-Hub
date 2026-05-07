@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { notifications } from '@/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { requireAuth } from '@/lib/middleware'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 // ─── GET /api/notifications — list notifications for current user ─────────────
 
-export const GET = requireAuth(async (req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   try {
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
-
     const rows = await db
       .select({
         id:         notifications.id,

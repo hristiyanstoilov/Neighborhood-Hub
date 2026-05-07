@@ -3,18 +3,12 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { profiles, locations, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 
 // ─── GET /api/profile — get current user's profile with location ──────────────
 
-export const GET = requireAuth(async (_req: NextRequest, { user }) => {
-  const { success } = await apiRatelimit.limit(user.sub)
-  if (!success) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
+export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   const [dbUser, profile] = await Promise.all([
     db.query.users.findFirst({ where: eq(users.id, user.sub) }),
     db.query.profiles.findFirst({ where: eq(profiles.userId, user.sub) }),
@@ -58,13 +52,9 @@ const updateProfileSchema = z.object({
 
 // ─── PUT /api/profile — upsert the current user's profile ────────────────────
 
-export const PUT = requireAuth(async (req: NextRequest, { user }) => {
+export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

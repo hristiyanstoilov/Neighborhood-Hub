@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
-import { getClientIp, requireAuth } from '@/lib/middleware'
+import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateSkillSchema, uuidSchema } from '@/lib/schemas/skill'
 import { skillSelect } from '@/lib/queries/skills'
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 // ─── PUT /api/skills/[id] — update (owner only) ───────────────────────────────
 
-export const PUT = requireAuth(async (req: NextRequest, { user, params }) => {
+export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const id = params.id
     if (!uuidSchema.safeParse(id).success) {
@@ -53,10 +53,6 @@ export const PUT = requireAuth(async (req: NextRequest, { user, params }) => {
     }
 
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
@@ -107,7 +103,7 @@ export const PUT = requireAuth(async (req: NextRequest, { user, params }) => {
 
 // ─── DELETE /api/skills/[id] — soft delete (owner only) ──────────────────────
 
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const id = params.id
     if (!uuidSchema.safeParse(id).success) {
@@ -115,10 +111,6 @@ export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => 
     }
 
     const ip = getClientIp(req)
-    const { success } = await apiRatelimit.limit(user.sub)
-    if (!success) {
-      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-    }
 
     const existing = await db.query.skills.findFirst({
       where: and(eq(skills.id, id), eq(skills.ownerId, user.sub), isNull(skills.deletedAt)),
