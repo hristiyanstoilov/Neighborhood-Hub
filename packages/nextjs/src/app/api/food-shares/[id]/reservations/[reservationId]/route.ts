@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations, notifications, users } from '@/db/schema'
+import { foodShares, foodReservations, users } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth, getClientIp } from '@/lib/middleware'

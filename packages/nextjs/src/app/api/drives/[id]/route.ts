@@ -97,7 +97,22 @@ export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => 
     if (!drive) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (drive.organizerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
+    const pledgers = await db
+      .select({ userId: drivePledges.userId })
+      .from(drivePledges)
+      .where(and(eq(drivePledges.driveId, id), eq(drivePledges.status, 'pledged')))
+
     await db.update(communityDrives).set({ deletedAt: new Date() }).where(eq(communityDrives.id, id))
+
+    for (const p of pledgers) {
+      void createNotification({
+        userId: p.userId,
+        type: 'drive_deleted',
+        entityType: 'community_drive',
+        entityId: id,
+      }).catch(() => {})
+    }
+
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'community_drives', entityId: id, ipAddress: ip })
 
     return NextResponse.json({ data: { success: true } })

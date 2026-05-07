@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations } from '@/db/schema'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateFoodShareSchema } from '@/lib/schemas/food'
 import { queryFoodShareById } from '@/lib/queries/food'
+import { createNotification } from '@/lib/create-notification'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -38,6 +39,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
     if (foodShare.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = updateFoodShareSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
@@ -70,7 +72,25 @@ export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => 
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId !== user.sub) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
 
+    const activeReservations = await db
+      .select({ requesterId: foodReservations.requesterId })
+      .from(foodReservations)
+      .where(and(
+        eq(foodReservations.foodShareId, id),
+        inArray(foodReservations.status, ['pending', 'reserved']),
+      ))
+
     await db.update(foodShares).set({ deletedAt: new Date() }).where(eq(foodShares.id, id))
+
+    for (const r of activeReservations) {
+      void createNotification({
+        userId: r.requesterId,
+        type: 'food_share_deleted',
+        entityType: 'food_reservation',
+        entityId: id,
+      }).catch(() => {})
+    }
+
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'food_shares', entityId: id, ipAddress: ip })
 
     return NextResponse.json({ data: { success: true } })

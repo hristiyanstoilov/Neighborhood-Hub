@@ -127,6 +127,13 @@
       "when": 1778124881397,
       "tag": "0017_slim_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778125454574,
+      "tag": "0018_freezing_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

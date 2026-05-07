@@ -16,7 +16,7 @@ export const updateEventSchema = z.object({
   description: z.string().trim().max(5000).nullable().optional(),
   locationId:  z.string().uuid().nullable().optional(),
   address:     z.string().trim().max(300).nullable().optional(),
-  startsAt:    z.string().datetime().optional(),
+  startsAt:    z.string().datetime().refine((v) => new Date(v) > new Date(), 'startsAt must be in the future').optional(),
   endsAt:      z.string().datetime().nullable().optional(),
   maxCapacity: z.coerce.number().int().min(1).nullable().optional(),
   imageUrl:    z.string().url().max(2048).nullable().optional(),

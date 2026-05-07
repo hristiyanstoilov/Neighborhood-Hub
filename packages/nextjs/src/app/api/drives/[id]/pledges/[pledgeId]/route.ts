@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, notifications } from '@/db/schema'
+import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth } from '@/lib/middleware'

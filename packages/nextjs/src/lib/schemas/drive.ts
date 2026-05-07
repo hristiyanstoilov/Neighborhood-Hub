@@ -16,7 +16,7 @@ export const updateDriveSchema = z.object({
   driveType:        z.enum(['items', 'money', 'food', 'other']).optional(),
   goalDescription:  z.string().trim().max(500).nullable().optional(),
   dropOffAddress:   z.string().trim().max(300).nullable().optional(),
-  deadline:         z.string().datetime().nullable().optional(),
+  deadline:         z.string().datetime().refine((v) => new Date(v) > new Date(), 'deadline must be in the future').nullable().optional(),
   imageUrl:         z.string().url().max(2048).nullable().optional(),
   status:           z.enum(['open', 'completed', 'cancelled']).optional(),
 })
