@@ -6,6 +6,33 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth } from '@/lib/middleware'
 import { uuidSchema } from '@/lib/schemas/skill'
 
+export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
+  try {
+    const targetId = params.id
+    if (!uuidSchema.safeParse(targetId).success) {
+      return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
+    }
+
+    const [byMe, byThem] = await Promise.all([
+      db
+        .select({ id: userBlocks.id })
+        .from(userBlocks)
+        .where(and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, targetId)))
+        .limit(1),
+      db
+        .select({ id: userBlocks.id })
+        .from(userBlocks)
+        .where(and(eq(userBlocks.blockerId, targetId), eq(userBlocks.blockedId, user.sub)))
+        .limit(1),
+    ])
+
+    return NextResponse.json({ data: { blockedByMe: byMe.length > 0, blockedByThem: byThem.length > 0 } })
+  } catch (err) {
+    console.error('[GET /api/users/[id]/block]', err)
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
+  }
+})
+
 export const POST = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
     const { success } = await apiRatelimit.limit(user.sub)

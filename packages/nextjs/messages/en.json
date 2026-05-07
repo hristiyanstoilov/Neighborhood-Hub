@@ -359,6 +359,7 @@
     "block_confirm_title": "Block this user?",
     "block_confirm_desc": "They won't be able to message you and their content may be hidden.",
     "block_confirm_btn": "Block",
+    "block_error": "Could not complete the action. Please try again.",
     "report_title": "Report this content",
     "report_reason": "Reason",
     "report_details": "Additional details (optional)",

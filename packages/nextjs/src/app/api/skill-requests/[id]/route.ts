@@ -114,7 +114,7 @@ export const PATCH = requireAuth(async (req: NextRequest, { user, params }) => {
       updates.completedAt = now
       notificationType = 'request_completed'
       // Notify the other party
-      notificationRecipient = isOwner ? existing.userFromId : existing.userToId
+      notificationRecipient = existing.userToId
     } else {
       // cancel
       updates.status = 'cancelled'

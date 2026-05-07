@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/contexts/auth'
 
-const LEVEL_COLORS = ['', '#6b7280', '#15803d', '#1d4ed8', '#7c3aed', '#b45309', '#dc2626']
+const LEVEL_COLORS = ['#6b7280', '#6b7280', '#15803d', '#1d4ed8', '#7c3aed', '#b45309', '#dc2626']
 const RANK_MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 type Entry = {
+  userId:      string
   totalPoints: number
   level:       number
   name:        string | null
@@ -112,7 +114,8 @@ export default function LeaderboardPage() {
             const initials = (e.name ?? '?')[0].toUpperCase()
             const levelKey = String(Math.min(e.level, 6)) as '1' | '2' | '3' | '4' | '5' | '6'
             return (
-              <li key={rank} className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3">
+              <li key={rank} className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3 hover:border-green-300 transition-colors">
+                <Link href={`/users/${e.userId}`} className="contents">
                 <span className="w-8 text-center text-sm font-semibold text-gray-500">
                   {medal ?? `#${rank}`}
                 </span>
@@ -131,6 +134,7 @@ export default function LeaderboardPage() {
                   <p className="text-sm font-bold text-gray-900">{e.totalPoints}</p>
                   <p className="text-xs text-gray-400">{t('pts')}</p>
                 </div>
+                </Link>
               </li>
             )
           })}

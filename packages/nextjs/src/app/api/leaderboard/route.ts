@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
 
     const rows = await db
       .select({
+        userId:      userStats.userId,
         totalPoints: userStats.totalPoints,
         level:       userStats.level,
         name:        profiles.name,

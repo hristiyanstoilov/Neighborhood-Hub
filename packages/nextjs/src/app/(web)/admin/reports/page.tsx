@@ -27,6 +27,7 @@ export default function AdminReportsPage() {
   const [filter, setFilter] = useState<'pending' | 'reviewed' | 'dismissed' | 'all'>('pending')
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   async function load(status: typeof filter) {
     setLoading(true)
@@ -47,6 +48,7 @@ export default function AdminReportsPage() {
 
   async function handleAction(id: string, status: 'reviewed' | 'dismissed') {
     setActionLoading(id)
+    setActionError(null)
     try {
       const res = await apiFetch('/api/admin/reports', {
         method: 'PATCH',
@@ -55,6 +57,8 @@ export default function AdminReportsPage() {
       })
       if (!res.ok) throw new Error()
       void load(filter)
+    } catch {
+      setActionError('Action failed. Please try again.')
     } finally {
       setActionLoading(null)
     }
@@ -89,6 +93,8 @@ export default function AdminReportsPage() {
           ))}
         </div>
       )}
+
+      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
       {!loading && reports.length === 0 && (
         <p className="text-sm text-gray-500">No reports found.</p>

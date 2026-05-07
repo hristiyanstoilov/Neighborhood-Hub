@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const listMessagesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(30),
-  before: z.string().datetime().optional(),
+  before: z.string().datetime().refine((v) => new Date(v) <= new Date(), 'before must not be in the future').optional(),
 })
 
 export const createConversationSchema = z.object({

@@ -145,7 +145,8 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
       where: and(eq(conversations.participantA, participantA), eq(conversations.participantB, participantB)),
     })
 
-    return NextResponse.json({ data: { conversationId: existing!.id } })
+    if (!existing) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
+    return NextResponse.json({ data: { conversationId: existing.id } })
   } catch (err) {
     console.error('[POST /api/conversations]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

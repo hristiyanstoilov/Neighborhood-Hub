@@ -1,4 +1,4 @@
-import { and, count, eq, or, sql } from 'drizzle-orm'
+import { and, count, eq, isNull, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { badges, foodShares, ratings, skillRequests, skills, tools, userStats } from '@/db/schema'
 
@@ -56,9 +56,9 @@ type BadgeCandidate = {
 
 export async function checkAndAwardBadges(userId: string, database = db): Promise<void> {
   const [skillCount, toolCount, foodCount, pointsRow, completedRequests, fiveStarRatings] = await Promise.all([
-    database.select({ total: count() }).from(skills).where(eq(skills.ownerId, userId)),
-    database.select({ total: count() }).from(tools).where(eq(tools.ownerId, userId)),
-    database.select({ total: count() }).from(foodShares).where(eq(foodShares.ownerId, userId)),
+    database.select({ total: count() }).from(skills).where(and(eq(skills.ownerId, userId), isNull(skills.deletedAt))),
+    database.select({ total: count() }).from(tools).where(and(eq(tools.ownerId, userId), isNull(tools.deletedAt))),
+    database.select({ total: count() }).from(foodShares).where(and(eq(foodShares.ownerId, userId), isNull(foodShares.deletedAt))),
     database.select({ totalPoints: userStats.totalPoints }).from(userStats).where(eq(userStats.userId, userId)).limit(1),
     database
       .select({ total: count() })
