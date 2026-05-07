@@ -20,14 +20,14 @@ export function BlockButton({ userId }: BlockButtonProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!user || user.sub === userId) return
+    if (!user || user.id === userId) return
     apiFetch(`/api/users/${userId}/block`)
       .then((r) => r.json())
       .then((j) => { if (j?.data) setState(j.data) })
       .catch(() => { /* silent — button simply won't render */ })
   }, [user, userId])
 
-  if (!user || user.sub === userId) return null
+  if (!user || user.id === userId) return null
   if (state === null) return null
   // Don't reveal to the viewer that they've been blocked
   if (state.blockedByThem && !state.blockedByMe) return null

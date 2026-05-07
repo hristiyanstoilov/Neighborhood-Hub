@@ -3,7 +3,6 @@ import { Resend } from 'resend'
 if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY env var is required')
 if (!process.env.RESEND_FROM) throw new Error('RESEND_FROM env var is required')
 if (!process.env.NEXT_PUBLIC_APP_URL) throw new Error('NEXT_PUBLIC_APP_URL env var is required')
-if (!process.env.CONTACT_EMAIL) throw new Error('CONTACT_EMAIL env var is required')
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 

@@ -78,6 +78,8 @@ export async function queryFoodShareById(id: string) {
   const [row] = await db
     .select({
       ...foodShareSelect,
+      ownerAvgRating:   profiles.avgRating,
+      ownerRatingCount: profiles.ratingCount,
       reservationCount: sql<number>`(
         SELECT count(*)::int FROM food_reservations
         WHERE food_share_id = ${foodShares.id} AND status IN ('pending', 'reserved', 'picked_up')
