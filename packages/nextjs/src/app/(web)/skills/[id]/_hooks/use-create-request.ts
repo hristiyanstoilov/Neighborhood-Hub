@@ -13,11 +13,14 @@ export interface CreateRequestBody {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  UNVERIFIED_EMAIL:       'Please verify your email before requesting a skill.',
-  SKILL_NOT_AVAILABLE:    'This skill is no longer available.',
-  REQUEST_ALREADY_EXISTS: 'You already have a pending or accepted request for this skill.',
-  TOO_MANY_REQUESTS:      'Too many requests. Please wait and try again.',
-  VALIDATION_ERROR:       'Please check the form and try again.',
+  UNVERIFIED_EMAIL:          'Please verify your email before requesting a skill.',
+  SKILL_NOT_AVAILABLE:       'This skill is no longer available.',
+  SKILL_NOT_FOUND:           'This skill no longer exists.',
+  CANNOT_REQUEST_OWN_SKILL:  'You cannot request your own skill.',
+  REQUEST_ALREADY_EXISTS:    'You already have a pending or accepted request for this skill.',
+  BLOCKED:                   'You cannot interact with this user.',
+  TOO_MANY_REQUESTS:         'Too many requests. Please wait and try again.',
+  VALIDATION_ERROR:          'Please check the form and try again.',
 }
 
 export function useCreateRequest() {

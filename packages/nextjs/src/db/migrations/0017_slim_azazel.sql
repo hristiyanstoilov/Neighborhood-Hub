@@ -1,0 +1,3 @@
+CREATE INDEX "conversations_participant_b_idx" ON "conversations" USING btree ("participant_b");--> statement-breakpoint
+CREATE INDEX "event_attendees_attending_idx" ON "event_attendees" USING btree ("event_id","status") WHERE "event_attendees"."status" = 'attending';--> statement-breakpoint
+CREATE INDEX "messages_unread_idx" ON "messages" USING btree ("conversation_id","sender_id","read_at") WHERE "messages"."read_at" IS NULL;

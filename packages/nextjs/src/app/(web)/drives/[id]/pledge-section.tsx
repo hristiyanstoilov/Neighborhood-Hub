@@ -55,6 +55,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
         const msg: Record<string, string> = {
           DRIVE_NOT_OPEN:          t('errors.drive_not_open'),
           CANNOT_PLEDGE_OWN_DRIVE: t('errors.cannot_pledge_own'),
+          BLOCKED:                 t('errors.blocked'),
           TOO_MANY_REQUESTS:       t('errors.too_many_requests'),
         }
         setFormError(msg[json.error] ?? t('errors.unexpected'))

@@ -635,6 +635,7 @@
       "not_found": "Event not found.",
       "event_full": "This event is full.",
       "event_not_open": "This event is no longer accepting RSVPs.",
+      "blocked": "You cannot interact with this user.",
       "network": "Network error. Please check your connection.",
       "unexpected": "Something went wrong. Please try again."
     }
@@ -712,6 +713,7 @@
       "description_required": "Please describe what you are pledging.",
       "drive_not_open": "This drive is no longer accepting pledges.",
       "cannot_pledge_own": "You cannot pledge to your own drive.",
+      "blocked": "You cannot interact with this user.",
       "too_many_requests": "Too many attempts. Please wait.",
       "unverified_email": "Please verify your email before starting a drive.",
       "validation": "Please check your inputs.",

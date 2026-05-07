@@ -56,6 +56,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
         const msg: Record<string, string> = {
           EVENT_FULL:        t('errors.event_full'),
           EVENT_NOT_OPEN:    t('errors.event_not_open'),
+          BLOCKED:           t('errors.blocked'),
           TOO_MANY_REQUESTS: t('errors.too_many_requests'),
         }
         showToast({ variant: 'error', title: t('rsvp_failed_title'), message: msg[json.error] ?? t('errors.unexpected') })

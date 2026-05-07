@@ -446,6 +446,7 @@ export const eventAttendees = pgTable(
     uniqueIndex('event_attendees_event_user_idx').on(t.eventId, t.userId),
     index('event_attendees_event_id_idx').on(t.eventId),
     index('event_attendees_user_id_idx').on(t.userId),
+    index('event_attendees_attending_idx').on(t.eventId, t.status).where(sql`${t.status} = 'attending'`),
     check('event_attendees_status_check', sql`${t.status} IN ('attending', 'cancelled')`),
   ]
 )
@@ -703,6 +704,7 @@ export const conversations = pgTable(
   (t) => [
     uniqueIndex('conversations_pair_idx').on(t.participantA, t.participantB),
     index('conversations_updated_at_idx').on(t.updatedAt),
+    index('conversations_participant_b_idx').on(t.participantB),
     check('conversations_no_self_check', sql`${t.participantA} != ${t.participantB}`),
   ]
 )
@@ -727,6 +729,7 @@ export const messages = pgTable(
   },
   (t) => [
     index('messages_conversation_idx').on(t.conversationId, t.createdAt),
+    index('messages_unread_idx').on(t.conversationId, t.senderId, t.readAt).where(sql`${t.readAt} IS NULL`),
     check('messages_body_not_empty_check', sql`char_length(trim(${t.body})) > 0`),
   ]
 )
