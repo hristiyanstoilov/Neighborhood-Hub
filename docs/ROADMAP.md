@@ -2,6 +2,8 @@
 
 A community platform for neighborhood sharing in Bulgaria.
 
+> Daily contribution marker: 2026-05-04.
+
 ---
 
 ## IMPORTANT: MVP Boundary
@@ -311,6 +313,31 @@ Status: ✅ Done.
 1. One domain at a time (no broad rewrites).
 2. Small commits with reversible scope.
 3. Keep this track in top technical debt priority until Waves B and C are completed.
+
+---
+
+## Technical Sync (2026-05-05)
+
+> Small roadmap refresh to keep the technical backlog visible on the default branch.
+
+### Current Priority Focus
+
+1. Fix atomic reservation flows for events and food.
+2. Wire ratings UI so the existing API becomes visible to users.
+3. Keep mobile navigation reachable on phones after any nav refactor.
+4. Add the first round of technical debt items to the prioritized backlog.
+
+---
+
+## Technical Sync (2026-05-06)
+
+> Daily sync to keep default-branch engineering priorities visible.
+
+### Current Priority Focus
+
+1. Confirm Playwright status: browser smoke exists, full E2E suite still pending.
+2. Prioritize ratings end-to-end delivery (API wiring + web/mobile UI + seed alignment).
+3. Keep race-condition fixes (events/food reservations) at the top of backend safety work.
 
 ---
 
