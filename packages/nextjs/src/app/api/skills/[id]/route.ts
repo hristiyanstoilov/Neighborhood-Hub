@@ -12,8 +12,12 @@ type Params = { params: Promise<{ id: string }> }
 
 // ─── GET /api/skills/[id] — public detail ────────────────────────────────────
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const { id } = await params
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })

@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { toolReservations, tools, profiles } from '@/db/schema'
-import { eq, or, and, desc } from 'drizzle-orm'
+import { eq, or, and, desc, isNull } from 'drizzle-orm'
 
 export const toolReservationSelect = {
   id:                 toolReservations.id,
@@ -36,7 +36,7 @@ export async function queryToolReservationsForUser(userId: string, role: 'borrow
     })
     .from(toolReservations)
     .leftJoin(tools, eq(tools.id, toolReservations.toolId))
-    .where(eq(filterCol, userId))
+    .where(and(eq(filterCol, userId), isNull(tools.deletedAt)))
     .orderBy(desc(toolReservations.createdAt))
     .limit(50)
 }

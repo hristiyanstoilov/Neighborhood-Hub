@@ -8,6 +8,9 @@ import { uuidSchema } from '@/lib/schemas/skill'
 
 export const GET = requireAuth(async (req: NextRequest, { user, params }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
