@@ -1,7 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, tools } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { toolReservations, tools, userBlocks } from '@/db/schema'
+import { eq, and, isNull, or } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
@@ -51,6 +51,16 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
     if (!tool) return NextResponse.json({ error: 'TOOL_NOT_FOUND' }, { status: 404 })
     if (tool.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_RESERVE_OWN_TOOL' }, { status: 422 })
     if (tool.status !== 'available') return NextResponse.json({ error: 'TOOL_NOT_AVAILABLE' }, { status: 422 })
+
+    const [blockRow] = await db
+      .select({ id: userBlocks.id })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, tool.ownerId)),
+        and(eq(userBlocks.blockerId, tool.ownerId), eq(userBlocks.blockedId, user.sub)),
+      ))
+      .limit(1)
+    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const start = new Date(startDate)
     const end = new Date(endDate)

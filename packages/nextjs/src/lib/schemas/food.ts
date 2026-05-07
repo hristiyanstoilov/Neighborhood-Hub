@@ -7,7 +7,7 @@ export const createFoodShareSchema = z.object({
   description: z.string().max(5000).optional(),
   quantity: z.coerce.number().int().min(1).max(1000),
   locationId: z.string().uuid().optional(),
-  availableUntil: z.string().datetime().optional(),
+  availableUntil: z.string().datetime().refine((v) => new Date(v) > new Date(), 'availableUntil must be in the future').optional(),
   pickupInstructions: z.string().max(500).optional(),
   imageUrl: z.string().url().max(2048).optional(),
 })
@@ -26,6 +26,7 @@ export const updateFoodShareSchema = z.object({
 export const listFoodSharesSchema = z.object({
   status: z.enum(['available', 'reserved', 'picked_up']).optional(),
   ownerId: z.string().uuid().optional(),
+  search: z.string().trim().max(100).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   page: z.coerce.number().int().min(1).default(1),
 })

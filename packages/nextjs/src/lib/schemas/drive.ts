@@ -6,7 +6,7 @@ export const createDriveSchema = z.object({
   driveType:        z.enum(['items', 'money', 'food', 'other']),
   goalDescription:  z.string().trim().max(500).optional(),
   dropOffAddress:   z.string().trim().max(300).optional(),
-  deadline:         z.string().datetime().optional(),
+  deadline:         z.string().datetime().refine((v) => new Date(v) > new Date(), 'deadline must be in the future').optional(),
   imageUrl:         z.string().url().max(2048).optional(),
 })
 

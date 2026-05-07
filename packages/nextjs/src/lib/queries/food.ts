@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { foodShares, foodReservations, profiles, locations } from '@/db/schema'
-import { and, count, desc, eq, gte, ilike, isNull, sql, SQL } from 'drizzle-orm'
+import { and, count, desc, eq, gte, ilike, isNull, or, sql, SQL } from 'drizzle-orm'
 
 export const foodShareSelect = {
   id: foodShares.id,
@@ -41,7 +41,9 @@ export function buildFoodShareConditions(opts: FoodFilterOpts): SQL[] {
   const conditions: SQL[] = [isNull(foodShares.deletedAt)]
   if (opts.status) conditions.push(eq(foodShares.status, opts.status))
   if (opts.ownerId) conditions.push(eq(foodShares.ownerId, opts.ownerId))
-  if (opts.search)  conditions.push(ilike(foodShares.title, `%${opts.search}%`))
+  if (opts.search) conditions.push(
+    or(ilike(foodShares.title, `%${opts.search}%`), ilike(foodShares.description, `%${opts.search}%`))!
+  )
   return conditions
 }
 
@@ -76,8 +78,6 @@ export async function queryFoodShareById(id: string) {
   const [row] = await db
     .select({
       ...foodShareSelect,
-      ownerAvgRating: profiles.avgRating,
-      ownerRatingCount: profiles.ratingCount,
       reservationCount: sql<number>`(
         SELECT count(*)::int FROM food_reservations
         WHERE food_share_id = ${foodShares.id} AND status IN ('pending', 'reserved', 'picked_up')
@@ -93,18 +93,15 @@ export async function queryFoodShareById(id: string) {
 }
 
 export async function queryFoodReservationUsage(foodShareId: string) {
-  const [row] = await db
-    .select({
-      activeCount:   sql<number>`count(*) filter (where status in ('reserved', 'picked_up'))::int`,
-      pickedUpCount: sql<number>`count(*) filter (where status = 'picked_up')::int`,
-    })
+  const reservations = await db
+    .select({ status: foodReservations.status })
     .from(foodReservations)
     .where(eq(foodReservations.foodShareId, foodShareId))
 
-  return {
-    activeCount:   row?.activeCount  ?? 0,
-    pickedUpCount: row?.pickedUpCount ?? 0,
-  }
+  const activeCount = reservations.filter((reservation) => reservation.status === 'reserved' || reservation.status === 'picked_up').length
+  const pickedUpCount = reservations.filter((reservation) => reservation.status === 'picked_up').length
+
+  return { activeCount, pickedUpCount }
 }
 
 export async function queryUserFoodReservation(foodShareId: string, userId: string) {
@@ -141,7 +138,6 @@ export async function queryFoodReservations(foodShareId: string) {
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
     .where(eq(foodReservations.foodShareId, foodShareId))
     .orderBy(desc(foodReservations.createdAt))
-    .limit(200)
 }
 
 export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner') {
@@ -166,7 +162,7 @@ export async function queryFoodReservationsForUser(userId: string, role: 'reques
     .from(foodReservations)
     .leftJoin(foodShares, eq(foodShares.id, foodReservations.foodShareId))
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
-    .where(and(eq(filterCol, userId), isNull(foodShares.deletedAt)))
+    .where(eq(filterCol, userId))
     .orderBy(desc(foodReservations.createdAt))
     .limit(50)
 }

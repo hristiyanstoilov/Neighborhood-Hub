@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations } from '@/db/schema'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { foodShares, foodReservations, userBlocks } from '@/db/schema'
+import { and, eq, isNull, or, sql } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { requireAuth, requireVerifiedAuth } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
@@ -38,6 +38,16 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user, params 
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_RESERVE_OWN_FOOD' }, { status: 422 })
+
+    const [blockRow] = await db
+      .select({ id: userBlocks.id })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, foodShare.ownerId)),
+        and(eq(userBlocks.blockerId, foodShare.ownerId), eq(userBlocks.blockedId, user.sub)),
+      ))
+      .limit(1)
+    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

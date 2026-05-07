@@ -5,7 +5,7 @@ export const createEventSchema = z.object({
   description: z.string().trim().max(5000).optional(),
   locationId:  z.string().uuid().optional(),
   address:     z.string().trim().max(300).optional(),
-  startsAt:    z.string().datetime(),
+  startsAt:    z.string().datetime().refine((v) => new Date(v) > new Date(), 'startsAt must be in the future'),
   endsAt:      z.string().datetime().optional(),
   maxCapacity: z.coerce.number().int().min(1).optional(),
   imageUrl:    z.string().url().max(2048).optional(),
