@@ -30,6 +30,12 @@ export type SkillFilterOpts = {
   ownerId?: string
 }
 
+/**
+ * Build Drizzle ORM WHERE conditions for skill queries.
+ * Always includes soft-delete filter (deletedAt IS NULL).
+ * @param opts - Filter options (status, search, categoryId, locationId, ownerId)
+ * @returns Array of SQL conditions to be combined with AND
+ */
 export function buildSkillConditions(opts: SkillFilterOpts): SQL[] {
   const conditions: SQL[] = [isNull(skills.deletedAt)]
   if (opts.status) conditions.push(eq(skills.status, opts.status))
@@ -40,6 +46,12 @@ export function buildSkillConditions(opts: SkillFilterOpts): SQL[] {
   return conditions
 }
 
+/**
+ * Fetch paginated skill listings with owner, category, and location data.
+ * Includes left joins to get optional profile, category, and location info.
+ * @param opts - Filter options plus limit (default 20) and page (default 1)
+ * @returns Array of skill records with enriched owner/category/location details
+ */
 export async function querySkills(opts: SkillFilterOpts & { limit?: number; page?: number }) {
   const { limit = 20, page = 1, ...filterOpts } = opts
   const conditions = buildSkillConditions(filterOpts)
@@ -56,6 +68,12 @@ export async function querySkills(opts: SkillFilterOpts & { limit?: number; page
     .orderBy(desc(skills.createdAt))
 }
 
+/**
+ * Fetch paginated skill listings AND total count for the given filters.
+ * Executes two queries in parallel: one for paginated results, one for total count.
+ * @param opts - Filter options plus limit (default 20) and page (default 1)
+ * @returns Object with skills array and total count across all pages
+ */
 export async function querySkillsPage(opts: SkillFilterOpts & {
   limit?: number
   page?: number
@@ -71,6 +89,11 @@ export async function querySkillsPage(opts: SkillFilterOpts & {
   return { skills: rows, total }
 }
 
+/**
+ * Fetch a single skill by ID with full enrichment: owner profile (including ratings), category, and location.
+ * @param id - Skill UUID
+ * @returns Skill record with owner avgRating and ratingCount, or null if not found/deleted
+ */
 export async function querySkillById(id: string) {
   const [row] = await db
     .select({
