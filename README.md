@@ -15,6 +15,9 @@ A multi-platform full-stack app for Bulgarian neighborhoods — skill sharing, t
 
 ---
 
+## Daily contribution marker: 2026-05-08
+
+
 ## What It Does
 
 Neighbors can:
