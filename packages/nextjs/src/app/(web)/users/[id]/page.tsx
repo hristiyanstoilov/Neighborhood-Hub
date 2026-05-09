@@ -4,6 +4,7 @@ import { badges, categories, locations, profiles, skills, users } from '@/db/sch
 import { eq, and, isNull } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { ErrorState } from '@/components/ui/async-states'
 import { AchievementBadges } from '@/components/achievement-badges'
 import type { Achievement } from '@/components/achievement-badges'
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       .where(and(eq(users.id, id), isNull(users.deletedAt)))
       .limit(1)
     if (!r) return {}
-    const name = r.name ?? 'Neighbor'
+    const name = r.name ?? DEFAULT_PROFILE_NAME
     return {
       title: `${name}'s Profile`,
       description: r.bio ?? `View ${name}'s skills and profile on Neighborhood Hub.`,

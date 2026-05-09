@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 
 interface FeedEventInput {
   actorId:    string
@@ -18,7 +19,7 @@ export async function createFeedEvent(input: FeedEventInput): Promise<void> {
 
   await db.insert(feedEvents).values({
     actorId:     input.actorId,
-    actorName:   actorProfile?.name ?? 'Neighbor',
+    actorName:   actorProfile?.name ?? DEFAULT_PROFILE_NAME,
     eventType:   input.eventType,
     targetId:    input.targetId,
     targetTitle: input.targetTitle,

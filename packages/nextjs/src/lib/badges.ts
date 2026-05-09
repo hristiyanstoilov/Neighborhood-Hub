@@ -81,7 +81,7 @@ export async function checkAndAwardBadges(userId: string, database = db): Promis
   if (totalPoints >= 10) candidates.push({ userId, type: 'ten_points' })
   if (totalPoints >= 50) candidates.push({ userId, type: 'fifty_points' })
   if ((fiveStarRatings[0]?.total ?? 0) > 0) candidates.push({ userId, type: 'five_star_giver' })
-  if ((completedRequests[0]?.total ?? 0) >= 10) candidates.push({ userId, type: 'community_hero' })
+  if ((completedRequests[0]?.total ?? 0) >= 3) candidates.push({ userId, type: 'community_hero' })
 
   if (candidates.length === 0) return
 

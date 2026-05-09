@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 
 type PublicProfileHeaderProps = {
   name: string | null
@@ -19,6 +20,8 @@ export function PublicProfileHeader({
 }: PublicProfileHeaderProps) {
   const hasRatings = ratingCount > 0 && avgRating !== null
 
+  
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start gap-4">
@@ -29,7 +32,7 @@ export function PublicProfileHeader({
           }
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-gray-900">{name ?? 'Neighbor'}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{name ?? DEFAULT_PROFILE_NAME}</h1>
           {location && <p className="text-sm text-gray-500 mt-0.5">📍 {location}</p>}
           {hasRatings && (
             <p className="text-sm text-amber-700 mt-1 font-medium">

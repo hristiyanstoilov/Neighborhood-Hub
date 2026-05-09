@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { driveStatusClass, eventStatusClass, formatDate, formatDateTime, humanizeValue } from '@/lib/format'
 
 export type SkillSearchResult = {
@@ -76,7 +77,7 @@ export function SearchResultCard(props: SearchResultCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="font-semibold text-gray-900">{props.item.title}</h3>
-            <p className="mt-1 text-sm text-gray-600">{props.item.ownerName ?? 'Neighbor'}</p>
+            <p className="mt-1 text-sm text-gray-600">{props.item.ownerName ?? DEFAULT_PROFILE_NAME}</p>
           </div>
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">{humanizeValue(props.item.status)}</span>
         </div>
@@ -94,7 +95,7 @@ export function SearchResultCard(props: SearchResultCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="font-semibold text-gray-900">{props.item.title}</h3>
-            <p className="mt-1 text-sm text-gray-600">{props.item.ownerName ?? 'Neighbor'}</p>
+            <p className="mt-1 text-sm text-gray-600">{props.item.ownerName ?? DEFAULT_PROFILE_NAME}</p>
           </div>
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">{humanizeValue(props.item.condition)}</span>
         </div>

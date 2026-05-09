@@ -4,6 +4,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
 import { formatDate } from '@/lib/format'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 
 type RatingRow = {
   id: string
@@ -65,7 +66,7 @@ export function PublicProfileRatings({ userId }: { userId: string }) {
           {rows.map((row) => (
             <article key={row.id} className="border border-gray-200 rounded-lg p-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-gray-900">{row.raterName ?? 'Neighbor'}</p>
+                <p className="text-sm font-semibold text-gray-900">{row.raterName ?? DEFAULT_PROFILE_NAME}</p>
                 <p className="text-xs text-amber-700 font-medium">{'★'.repeat(Math.max(0, Math.min(5, row.score)))}</p>
               </div>
               {row.comment && <p className="text-sm text-gray-700 mt-2">{row.comment}</p>}

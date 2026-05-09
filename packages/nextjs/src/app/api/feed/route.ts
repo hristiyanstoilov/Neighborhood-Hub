@@ -3,6 +3,7 @@ import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { feedPublicRatelimit } from '@/lib/ratelimit'
 import { createFeedSchema, listFeedSchema } from '@/lib/schemas/feed'
 
@@ -60,7 +61,7 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) 
       columns: { name: true, isPublic: true },
     })
 
-    const actorName = actorProfile?.name ?? 'Neighbor'
+    const actorName = actorProfile?.name ?? DEFAULT_PROFILE_NAME
 
     const [event] = await db
       .insert(feedEvents)

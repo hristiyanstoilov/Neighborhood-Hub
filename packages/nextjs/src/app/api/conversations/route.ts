@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, profiles, users, userBlocks } from '@/db/schema'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { createConversationSchema } from '@/lib/schemas/dm'
 
 function normalizePair(a: string, b: string): { participantA: string; participantB: string } {
@@ -75,7 +76,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
       return {
         id: row.id,
         otherUserId,
-        otherUserName: profileByUserId.get(otherUserId) ?? 'Neighbor',
+          otherUserName: profileByUserId.get(otherUserId) ?? DEFAULT_PROFILE_NAME,
         lastMessage: lastMessageByConversation.get(row.id) ?? null,
         unreadCount: unreadByConversation.get(row.id) ?? 0,
       }

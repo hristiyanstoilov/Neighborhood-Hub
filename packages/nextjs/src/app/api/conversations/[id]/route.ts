@@ -3,6 +3,7 @@ import { and, count, desc, eq, isNull, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages, profiles, users } from '@/db/schema'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 
 export const GET = requireAuthWithRateLimit(async (
   req: NextRequest,
@@ -74,7 +75,7 @@ export const GET = requireAuthWithRateLimit(async (
       data: {
         id: convo.id,
         otherUserId,
-        otherUserName: otherProfile?.name ?? 'Neighbor',
+        otherUserName: otherProfile?.name ?? DEFAULT_PROFILE_NAME,
         otherUserAvatarUrl: otherProfile?.avatarUrl ?? null,
         lastMessage: lastMessage ? {
           body: lastMessage.body,
