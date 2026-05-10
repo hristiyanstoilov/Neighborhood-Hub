@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
+import { SKILL_COMPLETE_POINTS } from '@/lib/constants'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
@@ -131,9 +132,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
 
     let pointsAwarded = 0
     if (action === 'complete') {
-      const SKILL_COMPLETE_POINTS = 10
       try {
-        // Award points first so badge checks read the updated totals
         await Promise.all([
           awardPoints(existing.userFromId, SKILL_COMPLETE_POINTS),
           awardPoints(existing.userToId, SKILL_COMPLETE_POINTS),
@@ -142,10 +141,10 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           checkAndAwardBadges(existing.userFromId),
           checkAndAwardBadges(existing.userToId),
         ])
+        pointsAwarded = SKILL_COMPLETE_POINTS
       } catch (err) {
         console.error('[skill-requests complete] points/badges award failed', err)
       }
-      pointsAwarded = SKILL_COMPLETE_POINTS
     }
 
     await writeAuditLog({

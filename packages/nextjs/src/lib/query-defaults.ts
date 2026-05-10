@@ -15,9 +15,6 @@ export const PAGINATION_DEFAULTS = {
   defaultPage: 1,
 } as const
 
-export const DEFAULT_PAGE = 1
-export const DEFAULT_LIMIT = 20
-
 export function readQueryErrorCode(json: unknown): string {
   if (json && typeof json === 'object' && 'error' in json && typeof (json as { error?: unknown }).error === 'string') {
     return (json as { error: string }).error
