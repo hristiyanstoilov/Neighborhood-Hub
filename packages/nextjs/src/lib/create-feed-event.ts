@@ -14,12 +14,14 @@ interface FeedEventInput {
 export async function createFeedEvent(input: FeedEventInput): Promise<void> {
   const actorProfile = await db.query.profiles.findFirst({
     where: eq(profiles.userId, input.actorId),
-    columns: { name: true },
+    columns: { name: true, isPublic: true },
   })
+
+  if (!actorProfile?.isPublic) return
 
   await db.insert(feedEvents).values({
     actorId:     input.actorId,
-    actorName:   actorProfile?.name ?? DEFAULT_PROFILE_NAME,
+    actorName:   actorProfile.name ?? DEFAULT_PROFILE_NAME,
     eventType:   input.eventType,
     targetId:    input.targetId,
     targetTitle: input.targetTitle,

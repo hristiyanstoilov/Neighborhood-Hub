@@ -20,8 +20,6 @@ export function PublicProfileHeader({
 }: PublicProfileHeaderProps) {
   const hasRatings = ratingCount > 0 && avgRating !== null
 
-  
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start gap-4">

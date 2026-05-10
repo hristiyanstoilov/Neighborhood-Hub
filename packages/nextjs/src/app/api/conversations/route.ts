@@ -76,7 +76,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
       return {
         id: row.id,
         otherUserId,
-          otherUserName: profileByUserId.get(otherUserId) ?? DEFAULT_PROFILE_NAME,
+        otherUserName: profileByUserId.get(otherUserId) ?? DEFAULT_PROFILE_NAME,
         lastMessage: lastMessageByConversation.get(row.id) ?? null,
         unreadCount: unreadByConversation.get(row.id) ?? 0,
       }

@@ -61,7 +61,11 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) 
       columns: { name: true, isPublic: true },
     })
 
-    const actorName = actorProfile?.name ?? DEFAULT_PROFILE_NAME
+    if (!actorProfile?.isPublic) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+    }
+
+    const actorName = actorProfile.name ?? DEFAULT_PROFILE_NAME
 
     const [event] = await db
       .insert(feedEvents)
