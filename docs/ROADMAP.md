@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-11
+> Last updated: 2026-05-11 (batch 5)
 
 ---
 
@@ -56,8 +56,6 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
-| Nav information architecture | 11 top-level links at equal visual weight. Restructure: keep 5 core modules (Skills, Tools, Events, Drives, Food) visible; move Feed/Map/Radar/Leaderboard into a "Discover" dropdown; move Messages/AI Chat/Notifications/Profile into a right-side icon cluster with icons instead of text. |
-| GDPR hard purge | Art. 17: scheduled hard purge of soft-deleted accounts after 30 days. (`GET /api/profile/export` ✅ done) |
 | Infrastructure cost model | Document free tier limits and projected cost at 1k/10k users for: Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2. Required before any partner conversation. |
 
 ---
@@ -144,7 +142,6 @@ All 5 core modules complete and deployed.
 | Item | Domain | Description |
 |------|--------|-------------|
 | Integration tests — Neon test branch | QA | Create `TEST_DATABASE_URL` pointing to a dedicated Neon branch → migrate → TRUNCATE before each suite → seed deterministic data → call route handlers via Vitest. Priority targets: register, POST /api/skills, PATCH /api/skill-requests/[id] state machine. |
-| Coverage threshold in CI | QA | Add `--coverage.thresholds.lines=70` for `src/lib/` to `npm run test:web`. Prevents silent coverage regression. |
 | Contract tests expansion | QA | Skills + skill-requests have contract tests. Add for: tools, food, events, drives, auth. |
 | E2E — full skill exchange cycle | QA | Playwright: create skill → request → accept → complete → rate. Full happy path across 5 API calls. |
 | E2E — tool + food cycles | QA | Tool: create → reserve → approve → return. Food: create → reserve → mark picked_up. |

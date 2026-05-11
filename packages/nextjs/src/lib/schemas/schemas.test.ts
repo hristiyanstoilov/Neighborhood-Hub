@@ -40,7 +40,7 @@ const makeFutureIso = () => new Date(Date.now() + 60 * 60 * 1000).toISOString()
 const makeFarFutureIso = () => new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
 
 function expectIssuePath(
-  result: { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } },
+  result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[] }> } },
   fieldName: string
 ) {
   expect(result.success).toBe(false)
