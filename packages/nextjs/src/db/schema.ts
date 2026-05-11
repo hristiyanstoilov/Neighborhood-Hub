@@ -710,6 +710,7 @@ export const conversations = pgTable(
     uniqueIndex('conversations_pair_idx').on(t.participantA, t.participantB),
     index('conversations_updated_at_idx').on(t.updatedAt),
     index('conversations_participant_b_idx').on(t.participantB),
+    check('conversations_participants_ordered_check', sql`${t.participantA} < ${t.participantB}`),
     check('conversations_no_self_check', sql`${t.participantA} != ${t.participantB}`),
   ]
 )

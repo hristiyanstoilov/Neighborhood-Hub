@@ -1,0 +1,1 @@
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_participants_ordered_check" CHECK ("conversations"."participant_a" < "conversations"."participant_b");
