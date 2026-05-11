@@ -19,11 +19,25 @@ import {
   updateFoodReservationSchema,
   updateFoodShareSchema,
 } from './food'
+import {
+  createSkillRequestSchema,
+  patchSkillRequestSchema,
+  listSkillRequestsSchema,
+} from './skill-request'
+import { createRatingSchema } from './rating'
+import {
+  createDriveSchema,
+  listDrivesSchema,
+  createPledgeSchema,
+} from './drive'
+import { createEventSchema, listEventsSchema } from './event'
+import { createToolReservationSchema, patchToolReservationSchema } from './tool-reservation'
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000'
 
 const makeString = (length: number) => 'a'.repeat(length)
 const makeFutureIso = () => new Date(Date.now() + 60 * 60 * 1000).toISOString()
+const makeFarFutureIso = () => new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
 
 function expectIssuePath(
   result: { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } },
@@ -555,5 +569,277 @@ describe('listFoodReservationsSchema', () => {
     })
 
     expect(result.success).toBe(true)
+  })
+})
+
+describe('createSkillRequestSchema', () => {
+  it('accepts an in_person payload without meetingUrl', () => {
+    const result = createSkillRequestSchema.safeParse({
+      skillId: VALID_UUID,
+      scheduledStart: makeFutureIso(),
+      scheduledEnd: makeFarFutureIso(),
+      meetingType: 'in_person',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts an online payload with meetingUrl', () => {
+    const result = createSkillRequestSchema.safeParse({
+      skillId: VALID_UUID,
+      scheduledStart: makeFutureIso(),
+      scheduledEnd: makeFarFutureIso(),
+      meetingType: 'online',
+      meetingUrl: 'https://meet.example.com/room',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects online type without meetingUrl', () => {
+    const result = createSkillRequestSchema.safeParse({
+      skillId: VALID_UUID,
+      scheduledStart: makeFutureIso(),
+      scheduledEnd: makeFarFutureIso(),
+      meetingType: 'online',
+    })
+    expectIssuePath(result, 'meetingUrl')
+  })
+
+  it('rejects scheduledEnd before scheduledStart', () => {
+    const result = createSkillRequestSchema.safeParse({
+      skillId: VALID_UUID,
+      scheduledStart: makeFarFutureIso(),
+      scheduledEnd: makeFutureIso(),
+      meetingType: 'in_person',
+    })
+    expectIssuePath(result, 'scheduledEnd')
+  })
+
+  it('rejects scheduledStart in the past', () => {
+    const result = createSkillRequestSchema.safeParse({
+      skillId: VALID_UUID,
+      scheduledStart: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      scheduledEnd: makeFutureIso(),
+      meetingType: 'in_person',
+    })
+    expectIssuePath(result, 'scheduledStart')
+  })
+})
+
+describe('patchSkillRequestSchema', () => {
+  it('accepts accept action without cancellationReason', () => {
+    expect(patchSkillRequestSchema.safeParse({ action: 'accept' }).success).toBe(true)
+  })
+
+  it('rejects cancel action without cancellationReason', () => {
+    const result = patchSkillRequestSchema.safeParse({ action: 'cancel' })
+    expectIssuePath(result, 'cancellationReason')
+  })
+
+  it('accepts cancel action with cancellationReason', () => {
+    expect(patchSkillRequestSchema.safeParse({ action: 'cancel', cancellationReason: 'Changed plans.' }).success).toBe(true)
+  })
+
+  it('rejects an invalid action value', () => {
+    const result = patchSkillRequestSchema.safeParse({ action: 'archive' })
+    expectIssuePath(result, 'action')
+  })
+})
+
+describe('listSkillRequestsSchema', () => {
+  it('accepts an empty payload', () => {
+    expect(listSkillRequestsSchema.safeParse({}).success).toBe(true)
+  })
+
+  it('rejects a page value below the minimum', () => {
+    const result = listSkillRequestsSchema.safeParse({ page: 0 })
+    expectIssuePath(result, 'page')
+  })
+
+  it('rejects an invalid status value', () => {
+    const result = listSkillRequestsSchema.safeParse({ status: 'unknown' })
+    expectIssuePath(result, 'status')
+  })
+})
+
+describe('createRatingSchema', () => {
+  it('accepts a valid full payload', () => {
+    const result = createRatingSchema.safeParse({
+      contextType: 'skill_request',
+      contextId: VALID_UUID,
+      ratedUserId: VALID_UUID,
+      score: 5,
+      comment: 'Excellent help!',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a score below 1', () => {
+    const result = createRatingSchema.safeParse({
+      contextType: 'skill_request',
+      contextId: VALID_UUID,
+      ratedUserId: VALID_UUID,
+      score: 0,
+    })
+    expectIssuePath(result, 'score')
+  })
+
+  it('rejects a score above 5', () => {
+    const result = createRatingSchema.safeParse({
+      contextType: 'skill_request',
+      contextId: VALID_UUID,
+      ratedUserId: VALID_UUID,
+      score: 6,
+    })
+    expectIssuePath(result, 'score')
+  })
+
+  it('rejects an invalid contextType', () => {
+    const result = createRatingSchema.safeParse({
+      contextType: 'event_attendance',
+      contextId: VALID_UUID,
+      ratedUserId: VALID_UUID,
+      score: 4,
+    })
+    expectIssuePath(result, 'contextType')
+  })
+})
+
+describe('createDriveSchema', () => {
+  it('accepts a valid payload', () => {
+    expect(createDriveSchema.safeParse({ title: 'Winter Clothes Drive', driveType: 'items' }).success).toBe(true)
+  })
+
+  it('rejects a title that is too short', () => {
+    const result = createDriveSchema.safeParse({ title: 'ab', driveType: 'items' })
+    expectIssuePath(result, 'title')
+  })
+
+  it('rejects an invalid driveType', () => {
+    const result = createDriveSchema.safeParse({ title: 'Valid Title', driveType: 'electronics' })
+    expectIssuePath(result, 'driveType')
+  })
+
+  it('rejects a deadline in the past', () => {
+    const result = createDriveSchema.safeParse({
+      title: 'Valid Title',
+      driveType: 'food',
+      deadline: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    })
+    expectIssuePath(result, 'deadline')
+  })
+})
+
+describe('listDrivesSchema', () => {
+  it('accepts an empty payload', () => {
+    expect(listDrivesSchema.safeParse({}).success).toBe(true)
+  })
+
+  it('rejects an invalid status value', () => {
+    const result = listDrivesSchema.safeParse({ status: 'paused' })
+    expectIssuePath(result, 'status')
+  })
+
+  it('rejects an invalid driveType value', () => {
+    const result = listDrivesSchema.safeParse({ driveType: 'electronics' })
+    expectIssuePath(result, 'driveType')
+  })
+})
+
+describe('createPledgeSchema', () => {
+  it('accepts a valid payload', () => {
+    expect(createPledgeSchema.safeParse({ pledgeDescription: 'I will bring warm blankets.' }).success).toBe(true)
+  })
+
+  it('rejects a missing required field', () => {
+    const result = createPledgeSchema.safeParse({})
+    expectIssuePath(result, 'pledgeDescription')
+  })
+
+  it('rejects an empty pledge description', () => {
+    const result = createPledgeSchema.safeParse({ pledgeDescription: '   ' })
+    expectIssuePath(result, 'pledgeDescription')
+  })
+})
+
+describe('createEventSchema', () => {
+  it('accepts a valid payload', () => {
+    expect(createEventSchema.safeParse({ title: 'Neighborhood Meetup', startsAt: makeFutureIso() }).success).toBe(true)
+  })
+
+  it('rejects a title that is too short', () => {
+    const result = createEventSchema.safeParse({ title: 'ab', startsAt: makeFutureIso() })
+    expectIssuePath(result, 'title')
+  })
+
+  it('rejects a startsAt in the past', () => {
+    const result = createEventSchema.safeParse({
+      title: 'Valid Title',
+      startsAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    })
+    expectIssuePath(result, 'startsAt')
+  })
+
+  it('rejects maxCapacity below 1', () => {
+    const result = createEventSchema.safeParse({
+      title: 'Valid Title',
+      startsAt: makeFutureIso(),
+      maxCapacity: 0,
+    })
+    expectIssuePath(result, 'maxCapacity')
+  })
+})
+
+describe('listEventsSchema', () => {
+  it('accepts an empty payload', () => {
+    expect(listEventsSchema.safeParse({}).success).toBe(true)
+  })
+
+  it('rejects an invalid status value', () => {
+    const result = listEventsSchema.safeParse({ status: 'draft' })
+    expectIssuePath(result, 'status')
+  })
+})
+
+describe('createToolReservationSchema', () => {
+  it('accepts a valid payload', () => {
+    const result = createToolReservationSchema.safeParse({
+      toolId: VALID_UUID,
+      startDate: makeFutureIso(),
+      endDate: makeFarFutureIso(),
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects endDate before startDate', () => {
+    const result = createToolReservationSchema.safeParse({
+      toolId: VALID_UUID,
+      startDate: makeFarFutureIso(),
+      endDate: makeFutureIso(),
+    })
+    expectIssuePath(result, 'endDate')
+  })
+
+  it('rejects a missing toolId', () => {
+    const result = createToolReservationSchema.safeParse({
+      startDate: makeFutureIso(),
+      endDate: makeFarFutureIso(),
+    })
+    expectIssuePath(result, 'toolId')
+  })
+})
+
+describe('patchToolReservationSchema', () => {
+  it('accepts a valid action', () => {
+    expect(patchToolReservationSchema.safeParse({ action: 'approve' }).success).toBe(true)
+  })
+
+  it('rejects a missing action', () => {
+    const result = patchToolReservationSchema.safeParse({})
+    expectIssuePath(result, 'action')
+  })
+
+  it('rejects an invalid action value', () => {
+    const result = patchToolReservationSchema.safeParse({ action: 'archive' })
+    expectIssuePath(result, 'action')
   })
 })

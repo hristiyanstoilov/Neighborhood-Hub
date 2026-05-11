@@ -145,7 +145,7 @@ export async function queryFoodReservations(foodShareId: string, opts: { limit?:
     .offset(offset)
 }
 
-export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner') {
+export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner', limit = 20, offset = 0) {
   const filterCol = role === 'requester' ? foodReservations.requesterId : foodReservations.ownerId
 
   return db
@@ -169,5 +169,6 @@ export async function queryFoodReservationsForUser(userId: string, role: 'reques
     .leftJoin(profiles, eq(profiles.userId, foodReservations.requesterId))
     .where(and(eq(filterCol, userId), isNull(foodShares.deletedAt)))
     .orderBy(desc(foodReservations.createdAt))
-    .limit(50)
+    .limit(limit)
+    .offset(offset)
 }

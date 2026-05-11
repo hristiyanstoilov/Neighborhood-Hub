@@ -16,8 +16,13 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
     const { searchParams } = new URL(req.url)
     const role = searchParams.get('role') === 'owner' ? 'owner' : 'borrower'
 
-    const rows = await queryToolReservationsForUser(user.sub, role)
-    return NextResponse.json({ data: rows })
+    const rawLimit = parseInt(searchParams.get('limit') ?? '20', 10)
+    const rawOffset = parseInt(searchParams.get('offset') ?? '0', 10)
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 20
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0
+
+    const rows = await queryToolReservationsForUser(user.sub, role, limit, offset)
+    return NextResponse.json({ data: rows, limit, offset })
   } catch (err) {
     console.error('[GET /api/tool-reservations]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

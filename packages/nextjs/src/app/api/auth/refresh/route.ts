@@ -33,15 +33,17 @@ export async function POST(req: NextRequest) {
     const rawRefreshToken = cookieToken ?? bodyToken
     const isMobileRequest = !cookieToken && !!bodyToken
 
-    // Reject missing token before hitting Redis — keeps the smoke check clean and
-    // avoids a Redis round-trip for requests that will 401 anyway.
-    if (!rawRefreshToken) {
-      return NextResponse.json({ error: 'MISSING_REFRESH_TOKEN' }, { status: 401 })
-    }
+    const rateLimitKey = rawRefreshToken
+      ? `${ip}:${tokenFingerprint(rawRefreshToken)}`
+      : ip
 
-    const { success } = await refreshRatelimit.limit(`${ip}:${tokenFingerprint(rawRefreshToken)}`)
+    const { success } = await refreshRatelimit.limit(rateLimitKey)
     if (!success) {
       return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
+
+    if (!rawRefreshToken) {
+      return NextResponse.json({ error: 'MISSING_REFRESH_TOKEN' }, { status: 401 })
     }
 
     const stored = await db.query.refreshTokens.findFirst({
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest) {
     response.cookies.set('refresh_token', newRawToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })

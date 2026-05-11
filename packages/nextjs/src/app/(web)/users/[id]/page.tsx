@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
-import { badges, categories, locations, profiles, skills, users } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { badges, categories, foodShares, locations, profiles, skillRequests, skills, users } from '@/db/schema'
+import { count, eq, and, isNull, or } from 'drizzle-orm'
 import { getTranslations } from 'next-intl/server'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
@@ -102,7 +102,7 @@ export default async function PublicProfilePage({ params }: Props) {
     )
   }
 
-  const [userSkills, badgeRows] = await Promise.all([
+  const [userSkills, badgeRows, completedExchangeRows, foodShareRows] = await Promise.all([
     db
       .select({
         id: skills.id,
@@ -122,7 +122,23 @@ export default async function PublicProfilePage({ params }: Props) {
       .from(badges)
       .where(eq(badges.userId, id))
       .orderBy(badges.awardedAt),
+    db
+      .select({ total: count() })
+      .from(skillRequests)
+      .where(
+        and(
+          or(eq(skillRequests.userFromId, id), eq(skillRequests.userToId, id)),
+          eq(skillRequests.status, 'completed')
+        )
+      ),
+    db
+      .select({ total: count() })
+      .from(foodShares)
+      .where(and(eq(foodShares.ownerId, id), isNull(foodShares.deletedAt))),
   ])
+
+  const completedExchanges = completedExchangeRows[0]?.total ?? 0
+  const foodShareCount = foodShareRows[0]?.total ?? 0
 
   const location = row.neighborhood
     ? row.city ? `${row.neighborhood}, ${row.city}` : row.neighborhood
@@ -159,6 +175,20 @@ export default async function PublicProfilePage({ params }: Props) {
         avgRating={row.avgRating}
         ratingCount={row.ratingCount}
       />
+      {(completedExchanges > 0 || foodShareCount > 0) && (
+        <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 flex gap-6 text-sm text-gray-600">
+          {completedExchanges > 0 && (
+            <span>
+              <strong className="text-gray-900">{completedExchanges}</strong> completed exchange{completedExchanges !== 1 ? 's' : ''}
+            </span>
+          )}
+          {foodShareCount > 0 && (
+            <span>
+              <strong className="text-gray-900">{foodShareCount}</strong> food share{foodShareCount !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      )}
       <AchievementBadges
         badges={badgeRows as Achievement[]}
         labels={badgeLabels}

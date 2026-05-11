@@ -17,7 +17,7 @@ export const toolReservationSelect = {
   cancellationReason: toolReservations.cancellationReason,
 } as const
 
-export async function queryToolReservationsForUser(userId: string, role: 'borrower' | 'owner') {
+export async function queryToolReservationsForUser(userId: string, role: 'borrower' | 'owner', limit = 20, offset = 0) {
   const filterCol = role === 'borrower' ? toolReservations.borrowerId : toolReservations.ownerId
 
   return db
@@ -38,5 +38,6 @@ export async function queryToolReservationsForUser(userId: string, role: 'borrow
     .leftJoin(tools, eq(tools.id, toolReservations.toolId))
     .where(and(eq(filterCol, userId), isNull(tools.deletedAt)))
     .orderBy(desc(toolReservations.createdAt))
-    .limit(50)
+    .limit(limit)
+    .offset(offset)
 }
