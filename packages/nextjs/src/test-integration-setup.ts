@@ -1,6 +1,18 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { users, profiles, locations, categories, skills, tools, skillRequests } from '@/db/schema'
+import {
+  users,
+  profiles,
+  locations,
+  categories,
+  skills,
+  tools,
+  skillRequests,
+  foodShares,
+  foodReservations,
+  communityDrives,
+} from '@/db/schema'
+import { beforeAll } from 'vitest'
 
 // Fixed UUIDs so test files can reference seed data without querying
 export const seed = {
@@ -12,6 +24,9 @@ export const seed = {
   deletedSkillId:  '10000000-0000-0000-0000-000000000099',
   toolId:          '10000000-0000-0000-0000-000000000021',
   skillRequestId:  '10000000-0000-0000-0000-000000000030',
+  foodShareId:       '10000000-0000-0000-0000-000000000040',
+  foodReservationId: '10000000-0000-0000-0000-000000000041',
+  driveId:           '10000000-0000-0000-0000-000000000050',
 }
 
 beforeAll(async () => {
@@ -75,6 +90,35 @@ beforeAll(async () => {
     ownerId: seed.ownerUserId,
     categoryId: seed.categoryId,
     locationId: seed.locationId,
+  })
+
+  await db.insert(foodShares).values({
+    id: seed.foodShareId,
+    ownerId: seed.ownerUserId,
+    title: 'Fresh Tomatoes',
+    description: 'Garden tomatoes',
+    quantity: 5,
+    locationId: seed.locationId,
+    status: 'available',
+  })
+
+  const pickupAt = new Date(Date.now() + 26 * 3600 * 1000)
+  await db.insert(foodReservations).values({
+    id: seed.foodReservationId,
+    foodShareId: seed.foodShareId,
+    requesterId: seed.requesterUserId,
+    ownerId: seed.ownerUserId,
+    pickupAt,
+    status: 'pending',
+  })
+
+  await db.insert(communityDrives).values({
+    id: seed.driveId,
+    organizerId: seed.ownerUserId,
+    title: 'Winter Clothes Drive',
+    description: 'Collecting warm clothes for families in need',
+    driveType: 'items',
+    status: 'open',
   })
 
   const start = new Date(Date.now() + 24 * 3600 * 1000)

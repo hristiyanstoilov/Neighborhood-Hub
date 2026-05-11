@@ -9,6 +9,7 @@ import { checkAndAwardBadges } from '@/lib/badges'
 import { createToolSchema, listToolsSchema } from '@/lib/schemas/tool'
 import { buildToolConditions, toolSelect } from '@/lib/queries/tools'
 import { createFeedEvent } from '@/lib/create-feed-event'
+import { validateForeignKey } from '@/lib/db-helpers'
 
 // ─── GET /api/tools — public listing ────────────────────────────────────────
 
@@ -68,14 +69,11 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
 
     const { title, description, categoryId, locationId, condition, imageUrl } = parsed.data
 
-    if (categoryId) {
-      const cat = await db.query.categories.findFirst({ where: eq(categories.id, categoryId) })
-      if (!cat) return NextResponse.json({ error: 'CATEGORY_NOT_FOUND' }, { status: 400 })
-    }
-    if (locationId) {
-      const loc = await db.query.locations.findFirst({ where: eq(locations.id, locationId) })
-      if (!loc) return NextResponse.json({ error: 'LOCATION_NOT_FOUND' }, { status: 400 })
-    }
+    const catErr = await validateForeignKey(categories, categoryId, 'CATEGORY_NOT_FOUND')
+    if (catErr) return NextResponse.json({ error: catErr.error }, { status: catErr.status })
+
+    const locErr = await validateForeignKey(locations, locationId, 'LOCATION_NOT_FOUND')
+    if (locErr) return NextResponse.json({ error: locErr.error }, { status: locErr.status })
 
     const [tool] = await db.insert(tools).values({
       ownerId:     user.sub,

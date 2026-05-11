@@ -6,11 +6,17 @@ import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
 import { SKILL_COMPLETE_POINTS } from '@/lib/constants'
+import { SkillRequestStatus } from '@/lib/constants/statuses'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
 
-const TERMINAL_STATUSES = ['rejected', 'completed', 'cancelled']
+const TERMINAL_STATUSES: readonly string[] = [
+  SkillRequestStatus.REJECTED,
+  SkillRequestStatus.COMPLETED,
+  SkillRequestStatus.CANCELLED,
+] as const
+const CANCELLABLE_STATUSES: readonly string[] = [SkillRequestStatus.PENDING, SkillRequestStatus.ACCEPTED] as const
 
 // ─── PATCH /api/skill-requests/[id] — status transition ─────────────────────
 
@@ -61,7 +67,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       if (!isOwner) {
         return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
-      if (existing.status !== 'pending') {
+      if (existing.status !== SkillRequestStatus.PENDING) {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
       }
     }
@@ -70,17 +76,17 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       if (!isRequester) {
         return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
-      if (existing.status !== 'accepted') {
+      if (existing.status !== SkillRequestStatus.ACCEPTED) {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
       }
     }
 
     if (action === 'cancel') {
-      if (!['pending', 'accepted'].includes(existing.status)) {
+      if (!CANCELLABLE_STATUSES.includes(existing.status)) {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
       }
 
-      if (existing.status === 'pending' && !isRequester) {
+      if (existing.status === SkillRequestStatus.PENDING && !isRequester) {
         return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
     }
@@ -94,22 +100,22 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
     let notificationRecipient: string
 
     if (action === 'accept') {
-      updates.status = 'accepted'
+      updates.status = SkillRequestStatus.ACCEPTED
       notificationType = 'request_accepted'
       notificationRecipient = existing.userFromId
     } else if (action === 'reject') {
-      updates.status = 'rejected'
+      updates.status = SkillRequestStatus.REJECTED
       notificationType = 'request_rejected'
       notificationRecipient = existing.userFromId
     } else if (action === 'complete') {
-      updates.status = 'completed'
+      updates.status = SkillRequestStatus.COMPLETED
       updates.completedAt = now
       notificationType = 'request_completed'
       // Notify the other party
       notificationRecipient = existing.userToId
     } else {
       // cancel
-      updates.status = 'cancelled'
+      updates.status = SkillRequestStatus.CANCELLED
       updates.cancellationReason = cancellationReason ?? null
       updates.cancelledById = user.sub
       notificationType = 'request_cancelled'

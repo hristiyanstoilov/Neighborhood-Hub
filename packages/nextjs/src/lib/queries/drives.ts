@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { communityDrives, drivePledges, profiles } from '@/db/schema'
-import { and, count, desc, eq, isNull, sql, SQL } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, isNull, or, sql, SQL } from 'drizzle-orm'
 
 export const driveSelect = {
   id:              communityDrives.id,
@@ -22,6 +22,7 @@ export type DriveFilterOpts = {
   status?:    string
   driveType?: string
   ownerId?:   string
+  search?:    string
 }
 
 export function buildDriveConditions(opts: DriveFilterOpts): SQL[] {
@@ -29,6 +30,14 @@ export function buildDriveConditions(opts: DriveFilterOpts): SQL[] {
   if (opts.status)    conditions.push(eq(communityDrives.status, opts.status))
   if (opts.driveType) conditions.push(eq(communityDrives.driveType, opts.driveType))
   if (opts.ownerId)   conditions.push(eq(communityDrives.organizerId, opts.ownerId))
+  if (opts.search) {
+    conditions.push(
+      or(
+        ilike(communityDrives.title, `%${opts.search}%`),
+        ilike(communityDrives.description, `%${opts.search}%`)
+      )!
+    )
+  }
   return conditions
 }
 
