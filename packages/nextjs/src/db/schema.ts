@@ -418,6 +418,7 @@ export const events = pgTable(
   (t) => [
     index('events_organizer_id_idx').on(t.organizerId),
     index('events_status_starts_at_idx').on(t.status, t.startsAt).where(sql`${t.deletedAt} IS NULL`),
+    index('events_starts_at_idx').on(t.startsAt),
     check('events_status_check', sql`${t.status} IN ('published', 'cancelled', 'completed')`),
     check('events_title_length_check', sql`char_length(${t.title}) >= 3`),
     check('events_capacity_check', sql`${t.maxCapacity} IS NULL OR ${t.maxCapacity} > 0`),
@@ -441,6 +442,7 @@ export const eventAttendees = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     status: varchar('status', { length: 20 }).default('attending').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     uniqueIndex('event_attendees_event_user_idx').on(t.eventId, t.userId),
@@ -477,6 +479,7 @@ export const communityDrives = pgTable(
   (t) => [
     index('community_drives_organizer_id_idx').on(t.organizerId),
     index('community_drives_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
+    index('community_drives_deadline_idx').on(t.deadline),
     check('community_drives_status_check', sql`${t.status} IN ('open', 'completed', 'cancelled')`),
     check('community_drives_type_check', sql`${t.driveType} IN ('items', 'money', 'food', 'other')`),
     check('community_drives_title_length_check', sql`char_length(${t.title}) >= 3`),
@@ -500,6 +503,7 @@ export const drivePledges = pgTable(
     pledgeDescription: varchar('pledge_description', { length: 500 }).notNull(),
     status: varchar('status', { length: 20 }).default('pledged').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     uniqueIndex('drive_pledges_drive_user_idx').on(t.driveId, t.userId),
@@ -536,6 +540,7 @@ export const foodShares = pgTable(
     index('food_shares_owner_id_idx').on(t.ownerId),
     index('food_shares_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
     index('food_shares_location_id_idx').on(t.locationId).where(sql`${t.deletedAt} IS NULL`),
+    index('food_shares_available_until_idx').on(t.availableUntil),
     check('food_shares_status_check', sql`${t.status} IN ('available', 'reserved', 'picked_up')`),
     check('food_shares_quantity_check', sql`${t.quantity} > 0`),
     check('food_shares_title_length_check', sql`char_length(${t.title}) >= 3`),

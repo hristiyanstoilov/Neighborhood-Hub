@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-07
+> Last updated: 2026-05-10
 
 ---
 
@@ -57,19 +57,7 @@ All 5 core modules complete and deployed.
 | Item | Description |
 |------|-------------|
 | Nav information architecture | 11 top-level links at equal visual weight. Restructure: keep 5 core modules (Skills, Tools, Events, Drives, Food) visible; move Feed/Map/Radar/Leaderboard into a "Discover" dropdown; move Messages/AI Chat/Notifications/Profile into a right-side icon cluster with icons instead of text. |
-| Reports / content flagging | `reports` table + admin moderation queue in `/admin`. Without this a single bad actor can post unlimited inappropriate listings with no removal path. |
-| User blocking | Users coordinate physical meetups. Without blocking, harassment victims have no safe exit. Requires `blocks` table + enforcement in DM and listing APIs. |
-| GDPR data export + hard purge | Art. 15/20: machine-readable JSON export of user's own data at `GET /api/account/export`. Art. 17: scheduled hard purge of soft-deleted accounts after 30 days. |
-| Contact / support form | No contact path for disputes, bugs, or account issues. `/contact` page using Resend (already integrated). ~30 min implementation. |
-| Onboarding flow | Users land on blank dashboard after registration with no guidance. Add first-login "what to do first" nudge or welcome email with suggested actions. |
-| Points reinforcement feedback | Users earn points when requests complete but receive no in-moment signal. Add "+10 points!" toast at the reward moment. Closes broken reinforcement loop. |
-| Leaderboard personal progress view | Absolute rank discourages users outside top 20%. Show "You are in the top 40% of your neighborhood this week" instead of "#47 of 50". Same data, better psychology. |
-| Badge criteria visible to users | 7 badges with no visible criteria or progress. Add locked badge outlines + "Earn this by: completing 10 requests" text. Turns hidden achievements into visible goals. |
-| AI chat timeout guard | Netlify free tier functions timeout at 10s. AI chat streaming can exceed this. Add `AbortController` (9s timeout) + `max_tokens` cap server-side. |
-| Food safety acknowledgment | Checkbox at food share creation: "I confirm this food is safe for consumption." Frontend-only change. Closes both trust and liability gap. |
-| Event edit page (web) | `/events/[id]/edit` does not exist. Event creators can only delete, never update after creation. |
-| Cookie banner "Reject All" | GDPR requires equally prominent reject option. Add "Reject All" that writes `analytics=false` to `userConsents`. Current banner has Accept only. |
-| Time-credit balance ("time wallet") | Show hours given/received on profile, derived from completed skill requests. Makes the time-banking value proposition visible and motivating. |
+| GDPR hard purge | Art. 17: scheduled hard purge of soft-deleted accounts after 30 days. (`GET /api/profile/export` ✅ done) |
 | Infrastructure cost model | Document free tier limits and projected cost at 1k/10k users for: Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2. Required before any partner conversation. |
 
 ---
@@ -78,24 +66,16 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
-| SEO meta tags on listing pages | `generateMetadata()` on `/skills/[id]`, `/tools/[id]`, `/events/[id]`, `/food/[id]` — unique `<title>` and `<meta description>` per listing. |
-| Open Graph tags | `og:title`, `og:description`, `og:image` in same metadata pass. Sharing any listing on Viber/Messenger currently shows no preview. |
-| sitemap.xml | `app/sitemap.ts` generating URLs for all public listing pages. ~1 hour in Next.js App Router. |
-| robots.txt | `app/robots.ts` disallowing `/admin/**`, `/api/**`, `/profile/**` from indexing. |
-| Hero section improvement | Logged-out hero is three lines of text + two buttons. Add 3-column social proof row (N skills · N users · N neighborhoods) below the CTAs. Stats already fetched. |
-| Max-width to 7xl | Change `max-w-5xl` to `max-w-7xl` in `layout.tsx`. Single character. Breathing room on large monitors. |
 | Dashboard section visual separation | "Browse" and "My Activity" icon grids are visually identical. Add subtle background difference or labeled divider. |
-| Community guidelines page | Static `/guidelines` page defining acceptable use. Required for defensible moderation decisions. Link from footer and listing creation forms. |
 | Referral / invite system | "Invite your neighbor" — unique link per user, `referrals` table, points awarded on successful registration. Highest-ROI growth mechanic for community apps. |
 | Municipality partnership page | Static `/for-municipalities` landing page. Required before any government outreach. |
 | Streak / re-engagement mechanics | "You haven't shared in 3 weeks" notification or streak counter for dormant users. |
-| `community_hero` badge threshold reduction | Requires 10 completed requests — too high for a new platform. Reduce to 3. First milestone should be reachable within 2–3 interactions. |
-| Web badges grid on profile | Show earned badges on own profile page. `checkAndAwardBadges` exists and runs — web UI not yet wired. |
+| `community_hero` badge threshold reduction | ✅ Done — threshold already at 3 in `lib/badges.ts`. |
+| Web badges grid on profile | ✅ Done — `AchievementBadges` component shown on `/profile` page with earned + locked states. |
 | Mobile: Ratings flow | `RatingModal` component + trigger from completed request/reservation cards + public profile reviews section. Same data as web, mobile-specific flow. |
 | i18n remaining web pages | Auth pages (login, register, forgot-password, reset-password, verify-email) and all module pages (skills, tools, events, drives, food, profile, notifications, leaderboard). next-intl infrastructure is done — just needs `useTranslations()` wired per page. Translation keys already exist in `en.json` / `bg.json`. |
 | Mobile i18n full implementation | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG message files. Read locale from `Localization.locale`. |
 | DB indexes on date-filtered columns | `food_shares.available_until`, `events.starts_at`, `community_drives.deadline` — new Drizzle migration, pure performance. |
-| `updatedAt` on junction tables | `event_attendees` and `drive_pledges` missing `updatedAt`. Add via migration for future audit/analytics. |
 | Notification table cleanup | No cleanup mechanism — grows unbounded. Add soft-delete + 90-day archive/purge job. |
 | Email notifications for key events | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Push is done; email is not. |
 | Mobile: Create + Edit Tool screens | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist. Mobile users can browse and reserve tools but cannot list their own. |
@@ -106,7 +86,8 @@ All 5 core modules complete and deployed.
 | Mobile map: wire live API | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Data breach incident response plan | Document KZLD 72-hour notification procedure (GDPR Art. 33). Private ops runbook. |
 | `pg_trgm` GIN search indexes | Trigram indexes on `title` columns for skills, tools, events, food_shares. Drizzle migration. Cuts search latency 10x at 100k+ rows. |
-| Cache-Control on public list endpoints | Add `Cache-Control: public, max-age=30, stale-while-revalidate=60` to `/api/skills`, `/api/tools`, `/api/events`, `/api/food-shares`. |
+| `updatedAt` on junction tables | `event_attendees` and `drive_pledges` missing `updatedAt`. Add via migration for future audit/analytics. |
+| Cache-Control on public list endpoints | Add `Cache-Control: public, max-age=30, stale-while-revalidate=60` to `/api/skills`, `/api/tools`, `/api/events`, `/api/food-shares`. (`/api/locations` + `/api/categories` ✅ done) |
 | Orphan cleanup job | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where referenced entity no longer exists. |
 | Profile rating stats recalculation | `profiles.avgRating` + `profiles.ratingCount` can drift if a rating write fails. Add scheduled recalculation endpoint or Postgres trigger. |
 | FK validation helper | Extract repeated category/location existence checks into `validateForeignKey()` in `lib/db-helpers.ts`. Removes ~50 duplicate lines. |
@@ -114,9 +95,9 @@ All 5 core modules complete and deployed.
 | `queryFoodReservationsForUser` pagination | Hardcoded `.limit(50)` — users with 50+ food reservations get a silently truncated list. Add `limit` + `offset` params. |
 | Food module UX polish | Add `showToast(...)` after successful mutations in `new-food-form.tsx` and `reservation-section.tsx`. Add `ConfirmDialog` for approve/reject/picked_up/cancel actions. |
 | Analytics event tracking | Wire PostHog to key events: `skill_request_created`, `tool_reserved`, `food_share_created`, `drive_pledged`. No PII in event properties. `posthog-js` already in `package.json`. |
-| Make / Remove Admin in Admin Panel | Verify promote/demote admin buttons exist in `/admin/users`. Add if missing. |
-| Personal activity stats on profile | "N swaps, N hours helped, N food shares" on public profile. Derived from existing data. |
-| Image upload — remaining forms | `<ImageUpload>` component exists but not wired to: `tools/new`, `tools/[id]/edit`, `events/new`, `drives/new`. Pattern exists — add import + field. |
+| Make / Remove Admin in Admin Panel | ✅ Done — promote/demote/lock/unlock/delete actions exist in `/api/admin/users/[id]` + `/admin/users` UI. |
+| Personal activity stats on public profile | "N swaps, N hours helped, N food shares" on public profile page. Derived from existing data. |
+| Image upload — edit forms | `<ImageUpload>` wired to all new forms ✅. Still missing on: `tools/[id]/edit`, `events/[id]/edit` (page doesn't exist yet — see P2). |
 
 ---
 
@@ -124,7 +105,7 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
-| Brand typography | No custom font — system font renders differently per device. Add `Inter` or `Plus Jakarta Sans` via `next/font/google`. One import, immediate brand elevation. |
+| Brand typography | ✅ Done — Inter font via `next/font/google` with latin + cyrillic subsets. |
 | CTA color differentiation | `green-700` used for nav hovers AND primary CTA buttons — no visual hierarchy. Change CTA buttons to `emerald-600`; introduce `amber-600` for secondary-action affordances. |
 | Accessibility pass (WCAG 2.1 AA) | Systematic `aria-label`, `aria-expanded`, focus management audit. EN 301 549 EU standard applies in Bulgaria. |
 | App Store submission materials | Screenshots EN + BG, descriptions, content rating forms, Google Play Data Safety form. Hard blocker for store submission. |
@@ -143,11 +124,9 @@ All 5 core modules complete and deployed.
 | `conversations` DB CHECK constraint | Add `CHECK(participant_a < participant_b)` — defense-in-depth. App layer via `normalizePair()` already handles this. |
 | `SameSite=Strict` on refresh cookie | Minor hardening only — `SameSite=Lax` already blocks CSRF. `Strict` also blocks navigation-link cross-origin sends. |
 | Mobile load-more race guard | Add `isLoadingMore` guard flag in `food/index.tsx` + `tools/index.tsx` — tapping "load more" twice triggers duplicate fetches. |
-| Remove dead `isFetchingRef` | `food/index.tsx:57` — a `useRef` created but never read. Remove dead code. |
 | Pagination variable standardization | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach. |
 | Hardcoded pagination defaults → constant | Each query file declares `limit = 20`, `page = 1` independently. Extract to `lib/query-defaults.ts`. |
 | Select objects DRY in query files | `skillSelect`, `toolSelect` etc. partially re-spread in per-function selects. Use the constant everywhere. |
-| Default profile name constant | `'Neighbor'` hardcoded in multiple files. Extract to `lib/constants.ts`. |
 
 ---
 

@@ -48,33 +48,25 @@ neighborhood-hub/
 │   │   │   │   │   ├── drives/          # CRUD community drives + pledges
 │   │   │   │   │   ├── food-shares/     # CRUD food listings + reservations state machine
 │   │   │   │   │   ├── food-reservations/ # list user reservations across all food shares
-│   │   │   │   │   ├── ratings/         # POST create rating, GET list by user, GET check
-│   │   │   │   │   ├── search/          # GET unified cross-module full-text search
 │   │   │   │   │   ├── admin/           # admin users, audit log, dashboard
-│   │   │   │   │   ├── ai/              # AI chat + conversation history
-│   │   │   │   │   ├── feed/            # GET neighborhood activity feed (paginated)
-│   │   │   │   │   ├── conversations/   # GET list + POST create DM conversation
-│   │   │   │   │   │   └── [id]/messages/ # GET + POST messages in a conversation
-│   │   │   │   │   └── users/           # GET /users/search?q= user search by email/name
+│   │   │   │   │   └── ai/              # AI chat + conversation history
 │   │   │   │   └── (web)/       # Web pages (server + client components)
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (26 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (20 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
-│   │   │   │   ├── seed.ts      # Seed: locations, categories, demo users, skills, tools, food, events, drives, ratings
+│   │   │   │   ├── seed.ts      # Seed locations, categories, demo users, skills/requests, tools/reservations
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify + token helpers
 │   │   │       ├── middleware.ts # requireAuth / requireAdmin
-│   │   │       ├── ratelimit.ts # Upstash rate limiters (login, register, AI, API, search)
+│   │   │       ├── ratelimit.ts # Upstash rate limiters
 │   │   │       ├── email.ts     # Resend email templates (green brand)
 │   │   │       ├── audit.ts     # Audit log writer
 │   │   │       ├── api.ts       # Client fetch helper (auto Content-Type, token refresh)
-│   │   │       ├── format.ts    # Shared formatters: formatDate, formatDateTime, status classes, humanizeValue
-│   │   │       ├── query-keys.ts # Central TanStack Query key registry (skills, tools, events, drives, food, ratings, search, notifications, profile, chat, feed, directMessages)
 │   │   │       ├── queries/     # Reusable DB query functions
-│   │   │       └── schemas/     # Zod validation schemas (per domain: rating.ts, search.ts, …)
+│   │   │       └── schemas/     # Zod validation schemas
 │   │   └── package.json
 │   └── mobile/                  # React Native mobile app (Expo 54)
 │       ├── app/
@@ -90,26 +82,14 @@ neighborhood-hub/
 
 ---
 
-## Neon MCP Database Access Rules
-
-- **Neon project name**: `dry-forest-93054389`
-- **Neon project ID**: `dry-forest-93054389`
-- **Database name**: `neondb`
-- **Region**: `aws-eu-west-2`
-
-When using Neon MCP, always connect to the project named `dry-forest-93054389`. This is the only Neon project in the account and is the authoritative database for this repository. Never create a new project or connect to a different one.
-
-
----
-
-## 4. Database Schema (27 tables)
+## 4. Database Schema (20 tables)
 
 ### Core tables (all built)
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth only (email, password_hash, role, failed_login_attempts, locked_until, deleted_at) |
-| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public, avg_rating, rating_count) |
+| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public) |
 | `refresh_tokens` | JWT refresh tokens (user_id FK, token, is_revoked, expires_at, ip_address) |
 | `audit_log` | Admin action log (user_id FK, action, entity, entity_id, metadata jsonb, ip_address) |
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
@@ -128,12 +108,6 @@ When using Neon MCP, always connect to the project named `dry-forest-93054389`. 
 | `drive_pledges` | Pledge records (drive_id FK, user_id FK, pledge_description, status) |
 | `food_shares` | Food listings (owner_id FK, title, quantity, location_id FK, available_until, pickup_instructions, image_url, status, deleted_at) |
 | `food_reservations` | Food reservations (food_share_id FK, requester_id FK, pickup_time, notes, status, picked_up_at) |
-| `ratings` | Peer ratings (rater_id FK, rated_user_id FK, context_type, context_id, score 1–5, comment) — one per rater per completed exchange; updates avg_rating/rating_count on profiles |
-| `feed_events` | Activity feed entries (actor_id FK, actor_name, event_type, target_id, target_title, target_url) — types: skill_listed, tool_listed, food_shared, drive_opened, event_created |
-| `conversations` | DM conversation pairs (participant_a FK, participant_b FK, updated_at) — unique pair constraint, no self-messaging |
-| `messages` | DM messages (conversation_id FK, sender_id FK, body text, read_at nullable) |
-
-> **Full-text search:** `skills`, `tools`, `events`, `community_drives`, `food_shares` each have a generated `search_vector tsvector` column (STORED) with a GIN index. Used by `GET /api/search`. Dictionary: `'english'` for all except `food_shares` (`'simple'` — Bulgarian titles).
 
 **Rules:**
 - Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
@@ -258,13 +232,8 @@ Rules:
 | Edit Food Share | `/food/[id]/edit` | ✅ done |
 | My Food Reservations | `/food/reservations` | ✅ done |
 | Notifications | `/notifications` | ✅ done |
-| Neighborhood Feed | `/feed` | ✅ done |
-| My Conversations | `/messages` | ✅ done |
-| Start Conversation | `/messages/new` | ✅ done |
-| Conversation Thread | `/messages/[id]` | ✅ done |
 | My Events (RSVPs) | `/my-events` | ✅ done |
 | My Pledges (Drives) | `/my-drives` | ✅ done |
-| Search (cross-module) | `/search` | ✅ done |
 
 ### Mobile screens (Expo 54)
 
@@ -302,10 +271,6 @@ Rules:
 | My Food Reservations | ✅ done |
 | My Events (RSVPs) | ✅ done |
 | My Pledges (Drives) | ✅ done |
-| Search (cross-module) | ✅ done |
-| Neighborhood Feed | ✅ done |
-| Messages (conversations list) | ✅ done |
-| Message Thread (DM) | ✅ done |
 
 ---
 
@@ -317,7 +282,7 @@ Rules:
 | 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Community Drives (Charity) | ✅ Done |
 | 0.4 | Food Sharing | ✅ Done |
-| 0.5 | Chat / Feed (DMs + Activity Feed) | ✅ Done |
+| 0.5 | Chat / Feed | Later |
 
 > **Community Drives are NOT "charity events"** — they are a separate module with their own tables (`community_drives`, `drive_pledges`), API routes (`/api/drives`), and screens.
 > Events have their own tables (`events`, `event_attendees`), API routes (`/api/events`), and screens.
@@ -349,7 +314,6 @@ Rules:
 - Schema lives in `packages/nextjs/src/db/schema.ts`
 - After schema changes: `npx drizzle-kit generate` → `npx drizzle-kit migrate` → commit SQL files
 - **Never** use `drizzle-kit push` in production – migrations only
-- **Never** edit an existing migration SQL file – always generate a new migration instead. Editing applied migrations breaks the migration hash chain and causes `drizzle-kit migrate` to fail or produce incorrect state.
 - Use `pgEnum` ONLY for stable binary fields: `users.role` ('user'|'admin'), `ai_messages.role` ('user'|'assistant')
 - Use `VARCHAR + CHECK constraint` for all status/type fields that may evolve (skill_requests.status, skills.status, locations.type, meeting_type) – `ALTER TYPE` doesn't work in transactions in Neon
 - Use `.references()` with `onDelete: 'cascade'` for foreign keys
@@ -373,18 +337,8 @@ Rules:
 - Refactors for modularization must preserve existing behavior (structure-only improvement, no hidden logic changes unless explicitly requested).
 - Use `fetch` or `axios` for API calls
 - Responsive design – mobile-first with Tailwind breakpoints
-- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; namespaces: `skills`, `skillRequests`, `tools`, `events`, `drives`, `food`, `ratings`, `search`, `notifications`, `profile`, `chat`, `feed`, `directMessages`; keys are always arrays starting with a domain string; user-scoped keys include `userId`; infinite query keys must NOT include pagination params (page/offset/limit); default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
+- TanStack Query key convention: use `src/lib/query-keys.ts` as the central registry; keys are always arrays starting with a domain string; user-scoped keys include `userId`; default config in `WebUIProvider` (`staleTime: 15_000`, `retry: 1`, `refetchOnWindowFocus: false`)
 - Status formatting: use helpers from `src/lib/format.ts` (`eventStatusClass`, `rsvpStatusClass`, `driveStatusClass`, `pledgeStatusClass`, `formatEventStatus`, `humanizeValue`) — do not add inline status color maps to screens
-
-### Internationalisation (next-intl)
-- Locale files: `packages/nextjs/messages/en.json` and `messages/bg.json` — **all user-visible strings must live here**, no hardcoded English in JSX
-- Cookie-based locale switching (no URL restructuring); `src/i18n/request.ts` reads the `locale` cookie; `src/i18n/routing.ts` declares `locales: ['en', 'bg']`
-- Server components: `const t = await getTranslations('namespace')` (from `next-intl/server`)
-- Client components: `const t = useTranslations('namespace')` hook
-- Module-level constants that call `t()` must be defined **inside** the component/function body after `getTranslations()`/`useTranslations()` — never at module scope
-- Shared status strings live in `common.status.*` — reuse `tCommon('status.cancelled')` etc. rather than duplicating per namespace
-- Parameterised strings use ICU message format: `{count, plural, one {# item} other {# items}}`
-- LanguageSwitcher in nav (EN/БГ toggle) sets cookie and reloads — component at `src/components/language-switcher.tsx`
 
 ### Mobile (Expo 54)
 - Screens in `packages/mobile/app/(app)/` (authenticated) and `packages/mobile/app/(auth)/` (login/register)
@@ -432,21 +386,19 @@ Do not make any changes until you have 95% confidence in what you need to build.
 - Check for SQL injection or security issues
 - Suggest missing indexes on DB tables
 
-### Milestone Review (run after significant sessions)
-Use the `/milestone-review` slash command in Claude Code. Triggers automatically after 5+ commits, before push, or after completing a feature module.
-
-Roles covered: Senior Architect → Senior Tech Lead → Senior QA → Docs Sync.
-
-Output: structured summary + automatic updates to `docs/ROADMAP.md` Improvement Backlog.
-
-**Two-level review system:**
-- **Feature Quality Gate** — after every individual change (quick, focused on changed files only)
-- **Milestone Review** — after significant sessions (deep, full codebase, multi-role)
-
 ### Documentation
 - Update README.md with new screens or API endpoints
 - Keep AGENTS.md in sync when architecture changes
 - Generate JSDoc comments for complex functions
+
+### ROADMAP Maintenance Protocol
+After every batch of completed tasks (or at the start of a session involving code review), verify `docs/ROADMAP.md` against the actual codebase:
+1. **Spot-check P1/P2 items** — `grep` or `find` for the feature file/route. If it exists and works, mark it done or remove it.
+2. **Remove completed items** — delete rows from backlog tables once confirmed done. Do not accumulate ✅ markers forever; clean rows that are clearly done.
+3. **Correct wrong descriptions** — fix items that describe something as missing when it's actually implemented.
+4. **Update the `Last updated` date** at the top.
+
+Trigger: after every 5+ file changes in a session, or before generating new junior-agent prompts, or when the user asks to "check the roadmap".
 
 ### What Claude should NOT do
 - Change the tech stack without being asked
@@ -454,6 +406,7 @@ Output: structured summary + automatic updates to `docs/ROADMAP.md` Improvement 
 - Use Prisma instead of Drizzle
 - Use class components in React
 - Skip Drizzle migrations when changing DB schema
+- Add ratings/reviews to MVP (separate UX flow, out of scope)
 - Store exact user lat/lng – only neighborhood centroids in `locations` (GDPR)
 - Skip `notifications` table – status changes on requests must create notification rows
 - Skip `ai_conversations`/`ai_messages` – AI chat must be persisted, not stateless

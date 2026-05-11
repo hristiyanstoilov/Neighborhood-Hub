@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth'
 import { Footer } from '@/components/footer'
@@ -6,6 +7,8 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import PostHogProviderWrapper from '@/components/analytics/posthog-provider'
 import CookieConsentBanner from '@/components/analytics/cookie-consent-banner'
+
+const inter = Inter({ subsets: ['latin', 'cyrillic'] })
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+      <body className={`${inter.className} min-h-full flex flex-col bg-gray-50 text-gray-900`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <PostHogProviderWrapper>
             <AuthProvider>{children}</AuthProvider>

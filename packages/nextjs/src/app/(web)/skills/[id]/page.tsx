@@ -21,6 +21,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: skill.title,
       description: skill.description ?? `${skill.ownerName ?? 'A neighbor'} is offering this skill on Neighborhood Hub.`,
+      openGraph: {
+        title: skill.title,
+        description: skill.description ?? `${skill.ownerName ?? 'A neighbor'} is offering this skill on Neighborhood Hub.`,
+        type: 'website',
+        images: skill.imageUrl ? [{ url: skill.imageUrl }] : [],
+      },
     }
   } catch { return {} }
 }

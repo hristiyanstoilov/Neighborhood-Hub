@@ -30,9 +30,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       .limit(1)
     if (!r) return {}
     const name = r.name ?? DEFAULT_PROFILE_NAME
+    const description = r.bio ?? `View ${name}'s skills and profile on Neighborhood Hub.`
     return {
       title: `${name}'s Profile`,
-      description: r.bio ?? `View ${name}'s skills and profile on Neighborhood Hub.`,
+      description,
+      openGraph: {
+        title: `${name}'s Profile`,
+        description,
+        type: 'profile',
+      },
     }
   } catch { return {} }
 }

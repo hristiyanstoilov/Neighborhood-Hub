@@ -9,7 +9,10 @@ export async function GET() {
       .select({ id: categories.id, slug: categories.slug, label: categories.label })
       .from(categories)
       .orderBy(asc(categories.label))
-    return NextResponse.json({ data: rows })
+    return NextResponse.json(
+      { data: rows },
+      { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=60' } }
+    )
   } catch (err) {
     console.error('[GET /api/categories]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

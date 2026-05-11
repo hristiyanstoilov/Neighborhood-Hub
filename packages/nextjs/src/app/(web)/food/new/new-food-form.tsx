@@ -31,7 +31,7 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!safetyConfirmed) {
-      setError(t('safety_acknowledgment_required'))
+      setError('You must confirm the food safety acknowledgment before submitting.')
       return
     }
     setSaving(true)
@@ -108,10 +108,11 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
             type="checkbox"
             checked={safetyConfirmed}
             onChange={(e) => setSafetyConfirmed(e.target.checked)}
+            required
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-green-700"
           />
           <label htmlFor="safety-confirmed" className="text-sm text-amber-900 leading-snug cursor-pointer">
-            {t('safety_acknowledgment')}
+            I confirm this food is safe for human consumption and has been stored correctly.
           </label>
         </div>
 
@@ -119,7 +120,7 @@ export default function NewFoodForm({ locations }: { locations: LocationOption[]
 
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={() => router.push('/food')} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-md text-sm hover:bg-gray-50 transition-colors">{tCommon('cancel')}</button>
-          <button type="submit" disabled={saving} className="flex-1 bg-green-700 text-white py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors disabled:opacity-50">{saving ? t('form_saving') : t('form_create_btn')}</button>
+          <button type="submit" disabled={saving || !safetyConfirmed} className="flex-1 bg-green-700 text-white py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors disabled:opacity-50">{saving ? t('form_saving') : t('form_create_btn')}</button>
         </div>
       </form>
     </div>

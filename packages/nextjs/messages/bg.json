@@ -37,6 +37,8 @@
     "cta_start": "Започнете",
     "cta_browse": "Разгледайте уменията",
     "stats": "{count, plural, one {# умение} other {# умения}} налично в общността",
+    "social_proof_skills": "{count, plural, one {умение} other {умения}}",
+    "social_proof_neighborhoods": "{count, plural, one {квартал} other {квартала}}",
     "recently_added": "Наскоро добавени",
     "view_all": "Виж всички →",
     "by": "от {name}",

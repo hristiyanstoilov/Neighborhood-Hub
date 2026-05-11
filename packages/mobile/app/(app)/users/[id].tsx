@@ -17,6 +17,7 @@ import {
 } from '../../../lib/queries/public-profile'
 import { fetchRatingsByUser, ratingsKeys } from '../../../lib/queries/ratings'
 import { formatDateOnly } from '../../../lib/format'
+import { DEFAULT_PROFILE_NAME } from '../../../lib/constants'
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -95,7 +96,7 @@ export default function PublicProfileScreen() {
             <Text style={styles.avatarInitial}>{initials}</Text>
           </View>
         )}
-        <Text style={styles.name}>{profile.name ?? 'Neighbor'}</Text>
+        <Text style={styles.name}>{profile.name ?? DEFAULT_PROFILE_NAME}</Text>
         {profile.location && <Text style={styles.location}>📍 {profile.location}</Text>}
         {profile.ratingCount > 0 && profile.avgRating && (
           <Text style={styles.ratingSummary}>
@@ -146,7 +147,7 @@ export default function PublicProfileScreen() {
         ratingsQuery.data?.ratings.map((rating) => (
           <View key={rating.id} style={styles.reviewCard}>
             <View style={styles.reviewHeader}>
-              <Text style={styles.reviewName}>{rating.raterName ?? 'Neighbor'}</Text>
+              <Text style={styles.reviewName}>{rating.raterName ?? DEFAULT_PROFILE_NAME}</Text>
               <Text style={styles.reviewStars}>{'★'.repeat(Math.max(0, Math.min(5, rating.score)))}</Text>
             </View>
             {rating.comment ? <Text style={styles.reviewComment}>{rating.comment}</Text> : null}

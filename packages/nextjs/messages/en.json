@@ -37,6 +37,8 @@
     "cta_start": "Get started",
     "cta_browse": "Browse skills",
     "stats": "{count, plural, one {# skill} other {# skills}} available in your community",
+    "social_proof_skills": "{count, plural, one {skill} other {skills}}",
+    "social_proof_neighborhoods": "{count, plural, one {neighborhood} other {neighborhoods}}",
     "recently_added": "Recently added",
     "view_all": "View all →",
     "by": "by {name}",

@@ -20,7 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (!tool) return {}
     return {
       title: tool.title,
-      description: tool.description ?? `Borrow this tool from a neighbor on Neighborhood Hub.`,
+      description: tool.description ?? `A neighbor is offering this tool on Neighborhood Hub.`,
+      openGraph: {
+        title: tool.title,
+        description: tool.description ?? `A neighbor is offering this tool on Neighborhood Hub.`,
+        type: 'website',
+        images: tool.imageUrl ? [{ url: tool.imageUrl }] : [],
+      },
     }
   } catch { return {} }
 }

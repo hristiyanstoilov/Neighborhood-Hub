@@ -18,6 +18,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: event.title,
       description: event.description ?? `Join this community event on Neighborhood Hub.`,
+      openGraph: {
+        title: event.title,
+        description: event.description ?? `Join this community event on Neighborhood Hub.`,
+        type: 'website',
+        images: event.imageUrl ? [{ url: event.imageUrl }] : [],
+      },
     }
   } catch { return {} }
 }

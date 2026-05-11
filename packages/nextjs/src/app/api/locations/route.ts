@@ -31,5 +31,8 @@ export async function GET() {
     )
     .orderBy(locations.city, locations.neighborhood)
 
-  return NextResponse.json({ data: rows })
+  return NextResponse.json(
+    { data: rows },
+    { headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=60' } }
+  )
 }

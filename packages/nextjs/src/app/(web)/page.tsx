@@ -18,6 +18,12 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Neighborhood Hub — Share Skills, Tools & Time',
   description: 'Connect with your neighbors to share skills, borrow tools, join events, share food, and support community drives.',
+  openGraph: {
+    title: 'Neighborhood Hub — Share Skills, Tools & Time',
+    description: 'Connect with your neighbors to share skills, borrow tools, join events, share food, and support community drives.',
+    type: 'website',
+    url: 'https://neighborhoodhub.net',
+  },
 }
 
 type SkillPreview = {
@@ -74,6 +80,12 @@ export default async function HomePage() {
           <div className="flex gap-3 justify-center">
             <Link href="/register" className="bg-green-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-800 transition-colors">{t('cta_start')}</Link>
             <Link href="/skills" className="px-6 py-3 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">{t('cta_browse')}</Link>
+          </div>
+
+          {/* Social proof */}
+          <div className="mt-8 flex justify-center gap-8 text-sm text-gray-500">
+            <span><strong className="text-gray-900 font-semibold">{skillCount}</strong> {t('social_proof_skills', { count: skillCount })}</span>
+            <span><strong className="text-gray-900 font-semibold">{radarLocations.length}</strong> {t('social_proof_neighborhoods', { count: radarLocations.length })}</span>
           </div>
         </div>
 

@@ -2,8 +2,6 @@ import Nav from '@/components/nav'
 import { Footer } from '@/components/footer'
 import { WebUIProvider } from '@/components/web-ui-provider'
 
-export const dynamic = 'force-dynamic'
-
 export default function WebLayout({ children }: { children: React.ReactNode }) {
   return (
     <WebUIProvider>

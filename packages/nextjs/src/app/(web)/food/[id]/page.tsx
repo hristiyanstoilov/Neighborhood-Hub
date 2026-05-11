@@ -17,6 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: foodShare.title,
       description: foodShare.description ?? 'Share surplus food with neighbors on Neighborhood Hub.',
+      openGraph: {
+        title: foodShare.title,
+        description: foodShare.description ?? 'Share surplus food with neighbors on Neighborhood Hub.',
+        type: 'website',
+        images: foodShare.imageUrl ? [{ url: foodShare.imageUrl }] : [],
+      },
     }
   } catch {
     return {}

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { AppScreen } from '../../../components/AppScreen'
 import { mobileTheme } from '../../../lib/theme'
+import { DEFAULT_PROFILE_NAME } from '../../../lib/constants'
 import { humanizeValue, formatDateOnly } from '../../../lib/format'
 import {
   fetchSearchResults,
@@ -40,7 +41,7 @@ function toSkillCard(item: SkillSearchResult): SearchCard {
     id: item.id,
     tab: 'skills',
     title: item.title,
-    subtitle: item.ownerName ?? 'Neighbor',
+    subtitle: item.ownerName ?? DEFAULT_PROFILE_NAME,
     meta: humanizeValue(item.status),
   }
 }
@@ -50,7 +51,7 @@ function toToolCard(item: ToolSearchResult): SearchCard {
     id: item.id,
     tab: 'tools',
     title: item.title,
-    subtitle: item.ownerName ?? 'Neighbor',
+    subtitle: item.ownerName ?? DEFAULT_PROFILE_NAME,
     meta: `${humanizeValue(item.status)} • ${humanizeValue(item.condition)}`,
   }
 }

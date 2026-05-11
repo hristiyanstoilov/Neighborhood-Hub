@@ -1,0 +1,2 @@
+ALTER TABLE "drive_pledges" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
+ALTER TABLE "event_attendees" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;

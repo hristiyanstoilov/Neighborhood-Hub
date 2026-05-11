@@ -32,7 +32,10 @@ export async function GET(req: NextRequest) {
       db.select({ total: count() }).from(events).where(and(...conditions)),
     ])
 
-    return NextResponse.json({ data: rows, page, limit, total })
+    return NextResponse.json(
+      { data: rows, page, limit, total },
+      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } }
+    )
   } catch (err) {
     console.error('[GET /api/events]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
