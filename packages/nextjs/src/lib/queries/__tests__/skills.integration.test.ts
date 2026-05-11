@@ -48,9 +48,8 @@ describe('querySkills', () => {
   })
 
   it('does not return soft-deleted skills', async () => {
-    // All seeded skills have deletedAt = null — verify the base filter works
     const rows = await querySkills({})
-    expect(rows.every((r) => r.id !== null)).toBe(true)
+    expect(rows.some((r) => r.id === seed.deletedSkillId)).toBe(false)
   })
 })
 

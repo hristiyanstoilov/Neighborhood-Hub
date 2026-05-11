@@ -9,6 +9,7 @@ export const seed = {
   ownerUserId:     '10000000-0000-0000-0000-000000000010',
   requesterUserId: '10000000-0000-0000-0000-000000000011',
   skillId:         '10000000-0000-0000-0000-000000000020',
+  deletedSkillId:  '10000000-0000-0000-0000-000000000099',
   toolId:          '10000000-0000-0000-0000-000000000021',
   skillRequestId:  '10000000-0000-0000-0000-000000000030',
 }
@@ -43,16 +44,27 @@ beforeAll(async () => {
     { userId: seed.requesterUserId, name: 'Requester User' },
   ])
 
-  await db.insert(skills).values({
-    id: seed.skillId,
-    title: 'Yoga Classes',
-    description: 'Beginner yoga for all levels',
-    status: 'available',
-    availableHours: 5,
-    ownerId: seed.ownerUserId,
-    categoryId: seed.categoryId,
-    locationId: seed.locationId,
-  })
+  await db.insert(skills).values([
+    {
+      id: seed.skillId,
+      title: 'Yoga Classes',
+      description: 'Beginner yoga for all levels',
+      status: 'available',
+      availableHours: 5,
+      ownerId: seed.ownerUserId,
+      categoryId: seed.categoryId,
+      locationId: seed.locationId,
+    },
+    {
+      id: seed.deletedSkillId,
+      title: 'Deleted Skill',
+      description: 'Should never appear in query results',
+      status: 'available',
+      availableHours: 1,
+      ownerId: seed.ownerUserId,
+      deletedAt: new Date(),
+    },
+  ])
 
   await db.insert(tools).values({
     id: seed.toolId,
