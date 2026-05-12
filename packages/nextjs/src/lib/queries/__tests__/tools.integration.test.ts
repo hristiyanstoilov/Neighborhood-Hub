@@ -13,8 +13,8 @@ describe('queryTools', () => {
     expect(rows.some((r) => r.id === seed.toolId)).toBe(true)
   })
 
-  it('filters by status=borrowed — excludes seeded tool', async () => {
-    const rows = await queryTools({ status: 'borrowed' })
+  it('filters by status=in_use — excludes seeded tool', async () => {
+    const rows = await queryTools({ status: 'in_use' })
     expect(rows.some((r) => r.id === seed.toolId)).toBe(false)
   })
 
@@ -64,8 +64,8 @@ describe('queryToolsPage', () => {
     const available = await queryToolsPage({ status: 'available' })
     expect(available.total).toBeGreaterThanOrEqual(1)
 
-    const borrowed = await queryToolsPage({ status: 'borrowed' })
-    expect(borrowed.total).toBe(0)
+    const inUse = await queryToolsPage({ status: 'in_use' })
+    expect(inUse.total).toBe(0)
   })
 })
 
