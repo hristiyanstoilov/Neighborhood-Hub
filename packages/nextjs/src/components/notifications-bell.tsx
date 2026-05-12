@@ -28,14 +28,14 @@ export default function NotificationsBell() {
     // Throw on failure so TanStack Query retries automatically.
     // The `data = []` default means the bell shows 0 on error — no nav crash.
     queryFn: async () => {
-      const res = await apiFetch('/api/notifications')
+      const res = await apiFetch('/api/notifications?unread=true')
       if (!res.ok) throw new Error('NOTIFICATIONS_FETCH_FAILED')
       const json = await res.json()
       return json.data ?? []
     },
   })
 
-  const unreadCount = items.filter((item) => !item.isRead).length
+  const unreadCount = items.length
 
   return (
     <Link

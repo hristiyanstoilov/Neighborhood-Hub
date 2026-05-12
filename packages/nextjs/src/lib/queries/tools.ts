@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { tools, profiles, categories, locations } from '@/db/schema'
 import { eq, and, isNull, desc, ilike, count, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const toolSelect = {
   id:                   tools.id,
@@ -43,7 +44,7 @@ export function buildToolConditions(opts: ToolFilterOpts): SQL[] {
 export async function queryToolsPage(
   opts: ToolFilterOpts & { limit?: number; page?: number }
 ): Promise<{ tools: Awaited<ReturnType<typeof queryTools>>; total: number }> {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildToolConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([
@@ -55,7 +56,7 @@ export async function queryToolsPage(
 }
 
 export async function queryTools(opts: ToolFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildToolConditions(filterOpts)
 
   return db

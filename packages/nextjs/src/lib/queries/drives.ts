@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { communityDrives, drivePledges, profiles } from '@/db/schema'
 import { and, count, desc, eq, ilike, isNull, or, sql, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const driveSelect = {
   id:              communityDrives.id,
@@ -42,7 +43,7 @@ export function buildDriveConditions(opts: DriveFilterOpts): SQL[] {
 }
 
 export async function queryDrives(opts: DriveFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildDriveConditions(filterOpts)
 
   return db
@@ -56,7 +57,7 @@ export async function queryDrives(opts: DriveFilterOpts & { limit?: number; page
 }
 
 export async function queryDrivesPage(opts: DriveFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildDriveConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([

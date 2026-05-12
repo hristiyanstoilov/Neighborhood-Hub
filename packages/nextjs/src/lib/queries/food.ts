@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { foodShares, foodReservations, profiles, locations } from '@/db/schema'
 import { and, count, desc, eq, gte, ilike, isNull, or, sql, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const foodShareSelect = {
   id: foodShares.id,
@@ -48,7 +49,7 @@ export function buildFoodShareConditions(opts: FoodFilterOpts): SQL[] {
 }
 
 export async function queryFoodShares(opts: FoodFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildFoodShareConditions(filterOpts)
 
   return db
@@ -63,7 +64,7 @@ export async function queryFoodShares(opts: FoodFilterOpts & { limit?: number; p
 }
 
 export async function queryFoodSharesPage(opts: FoodFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildFoodShareConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([
@@ -145,7 +146,12 @@ export async function queryFoodReservations(foodShareId: string, opts: { limit?:
     .offset(offset)
 }
 
-export async function queryFoodReservationsForUser(userId: string, role: 'requester' | 'owner', limit = 20, offset = 0) {
+export async function queryFoodReservationsForUser(
+  userId: string,
+  role: 'requester' | 'owner',
+  limit: number = PAGINATION_DEFAULTS.defaultPageSizeReservations,
+  offset: number = 0
+) {
   const filterCol = role === 'requester' ? foodReservations.requesterId : foodReservations.ownerId
 
   return db

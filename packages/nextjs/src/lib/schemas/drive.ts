@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const createDriveSchema = z.object({
   title:            z.string().trim().min(3).max(200),
@@ -24,8 +25,8 @@ export const updateDriveSchema = z.object({
 export const listDrivesSchema = z.object({
   status:    z.enum(['open', 'completed', 'cancelled']).optional(),
   driveType: z.enum(['items', 'money', 'food', 'other']).optional(),
-  limit:     z.coerce.number().int().min(1).max(50).default(20),
-  page:      z.coerce.number().int().min(1).default(1),
+  limit:     z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
+  page:      z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
 })
 
 export const createPledgeSchema = z.object({

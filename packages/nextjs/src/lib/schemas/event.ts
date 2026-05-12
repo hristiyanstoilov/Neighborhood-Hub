@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const createEventSchema = z.object({
   title:       z.string().trim().min(3).max(200),
@@ -27,6 +28,6 @@ export const listEventsSchema = z.object({
   status:  z.enum(['published', 'cancelled', 'completed']).optional(),
   from:    z.string().datetime().optional(),
   search:  z.string().trim().max(100).optional(),
-  limit:   z.coerce.number().int().min(1).max(50).default(20),
-  page:    z.coerce.number().int().min(1).default(1),
+  limit:   z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
+  page:    z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
 })

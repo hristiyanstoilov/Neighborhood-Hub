@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-11 (batch 5)
+> Last updated: 2026-05-11 (batch 7)
 
 ---
 
@@ -69,7 +69,6 @@ All 5 core modules complete and deployed.
 | Mobile: Ratings flow | `RatingModal` component + trigger from completed request/reservation cards + public profile reviews section. Same data as web, mobile-specific flow. |
 | i18n remaining web pages | Auth pages (login, register, forgot-password, reset-password, verify-email) and all module pages (skills, tools, events, drives, food, profile, notifications, leaderboard). next-intl infrastructure is done — just needs `useTranslations()` wired per page. Translation keys already exist in `en.json` / `bg.json`. |
 | Mobile i18n full implementation | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG message files. Read locale from `Localization.locale`. |
-| Notification table cleanup | No cleanup mechanism — grows unbounded. Add soft-delete + 90-day archive/purge job. |
 | Email notifications for key events | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Push is done; email is not. |
 | Mobile: Create + Edit Tool screens | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist. Mobile users can browse and reserve tools but cannot list their own. |
 | Mobile: Edit Event + Edit Drive screens | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
@@ -78,13 +77,8 @@ All 5 core modules complete and deployed.
 | Mobile leaderboard screen | Web leaderboard exists; mobile has no equivalent. |
 | Mobile map: wire live API | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Data breach incident response plan | Document KZLD 72-hour notification procedure (GDPR Art. 33). Private ops runbook. |
-| `pg_trgm` GIN search indexes | Trigram indexes on `title` columns for skills, tools, events, food_shares. Drizzle migration. Cuts search latency 10x at 100k+ rows. |
 | Orphan cleanup job | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where referenced entity no longer exists. |
 | Profile rating stats recalculation | `profiles.avgRating` + `profiles.ratingCount` can drift if a rating write fails. Add scheduled recalculation endpoint or Postgres trigger. |
-| FK validation helper | Extract repeated category/location existence checks into `validateForeignKey()` in `lib/db-helpers.ts`. Removes ~50 duplicate lines. |
-| Status string constants | Extract all status string literals (`'available'`, `'pending'`, `'pledged'`, etc.) to `lib/constants/statuses.ts`. Typos fail silently — no type error, wrong comparison. |
-| Food module UX polish | Add `showToast(...)` after successful mutations in `new-food-form.tsx` and `reservation-section.tsx`. Add `ConfirmDialog` for approve/reject/picked_up/cancel actions. |
-| Analytics event tracking | Wire PostHog to key events: `skill_request_created`, `tool_reserved`, `food_share_created`, `drive_pledged`. No PII in event properties. `posthog-js` already in `package.json`. |
 
 ---
 
@@ -99,7 +93,6 @@ All 5 core modules complete and deployed.
 | Calendar export | `.ics` / Google Calendar deep-link on event detail and confirmed reservations. Standard UX expectation. |
 | AI chat content guardrails | ✅ Done — "not professional advice" disclaimer added to system prompt; off-topic topics restricted. |
 | Mobile build verification in CI | Add EAS build dry-run or `expo export` step to CI. Currently only typecheck runs — bundling errors not caught. |
-| SSE → polling | `/api/notifications/stream` (SSE) creates long-lived connection incompatible with Netlify's 10s serverless timeout. Replace with `GET /api/notifications?after=<ts>` polling. |
 | JWT key rotation procedure | Document: bump token version counter in DB → force logout all sessions → rotate `JWT_SECRET` env var. |
 | Audit log append-only sink | Critical audit events written to a table a compromised admin could delete. Add separate table with `REVOKE DELETE` or external structured log sink. |
 | Event waitlist | `event_waitlist` table with ordered position + auto-promotion when an attendee cancels. `maxCapacity` currently hard-rejects over-capacity RSVPs. |
@@ -109,7 +102,6 @@ All 5 core modules complete and deployed.
 | User home neighborhood | Add `defaultLocationId` FK to `profiles` for "near you" pre-filter in discovery. |
 | Mobile load-more race guard | Add `isLoadingMore` guard flag in `food/index.tsx` + `tools/index.tsx` — tapping "load more" twice triggers duplicate fetches. |
 | Pagination variable standardization | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach. |
-| Hardcoded pagination defaults → constant | Each query file declares `limit = 20`, `page = 1` independently. Extract to `lib/query-defaults.ts`. |
 | Select objects DRY in query files | `skillSelect`, `toolSelect` etc. partially re-spread in per-function selects. Use the constant everywhere. |
 
 ---

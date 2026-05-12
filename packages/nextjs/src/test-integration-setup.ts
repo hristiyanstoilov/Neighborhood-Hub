@@ -7,10 +7,12 @@ import {
   categories,
   skills,
   tools,
+  toolReservations,
   skillRequests,
   foodShares,
   foodReservations,
   communityDrives,
+  events,
 } from '@/db/schema'
 import { beforeAll } from 'vitest'
 
@@ -23,10 +25,12 @@ export const seed = {
   skillId:         '10000000-0000-0000-0000-000000000020',
   deletedSkillId:  '10000000-0000-0000-0000-000000000099',
   toolId:          '10000000-0000-0000-0000-000000000021',
+  toolReservationId: '10000000-0000-0000-0000-000000000022',
   skillRequestId:  '10000000-0000-0000-0000-000000000030',
   foodShareId:       '10000000-0000-0000-0000-000000000040',
   foodReservationId: '10000000-0000-0000-0000-000000000041',
   driveId:           '10000000-0000-0000-0000-000000000050',
+  eventId:           '10000000-0000-0000-0000-000000000060',
 }
 
 beforeAll(async () => {
@@ -92,6 +96,16 @@ beforeAll(async () => {
     locationId: seed.locationId,
   })
 
+  await db.insert(toolReservations).values({
+    id: seed.toolReservationId,
+    toolId: seed.toolId,
+    borrowerId: seed.requesterUserId,
+    ownerId: seed.ownerUserId,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    status: 'pending',
+  })
+
   await db.insert(foodShares).values({
     id: seed.foodShareId,
     ownerId: seed.ownerUserId,
@@ -119,6 +133,15 @@ beforeAll(async () => {
     description: 'Collecting warm clothes for families in need',
     driveType: 'items',
     status: 'open',
+  })
+
+  await db.insert(events).values({
+    id: seed.eventId,
+    title: 'Community Cleanup',
+    organizerId: seed.ownerUserId,
+    locationId: seed.locationId,
+    startsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    status: 'published',
   })
 
   const start = new Date(Date.now() + 24 * 3600 * 1000)
