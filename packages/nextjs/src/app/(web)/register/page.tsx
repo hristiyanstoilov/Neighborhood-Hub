@@ -28,33 +28,38 @@ export default function RegisterPage() {
     setError(null)
     setLoading(true)
 
-    const form = new FormData(e.currentTarget)
-    const body = {
-      name: form.get('name') as string,
-      email: form.get('email') as string,
-      password: form.get('password') as string,
-    }
-
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    const json = await res.json()
-    setLoading(false)
-
-    if (!res.ok) {
-      const msg: Record<string, string> = {
-        EMAIL_TAKEN: t('errors.email_taken'),
-        TOO_MANY_REQUESTS: t('errors.too_many_requests'),
-        VALIDATION_ERROR: t('errors.unexpected'),
+    try {
+      const form = new FormData(e.currentTarget)
+      const body = {
+        name: form.get('name') as string,
+        email: form.get('email') as string,
+        password: form.get('password') as string,
       }
-      setError(msg[json.error] ?? t('errors.unexpected'))
-      return
-    }
 
-    setSuccess(true)
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        const msg: Record<string, string> = {
+          EMAIL_TAKEN: t('errors.email_taken'),
+          TOO_MANY_REQUESTS: t('errors.too_many_requests'),
+          VALIDATION_ERROR: t('errors.unexpected'),
+        }
+        setError(msg[json.error] ?? t('errors.unexpected'))
+        return
+      }
+
+      setSuccess(true)
+    } catch {
+      setError(t('errors.network_error'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (success) {

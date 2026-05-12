@@ -13,8 +13,8 @@ describe('queryDrives', () => {
     expect(rows.some((r) => r.id === seed.driveId)).toBe(true)
   })
 
-  it('filters by status=closed excludes seeded drive', async () => {
-    const rows = await queryDrives({ status: 'closed' })
+  it('filters by status=completed excludes seeded open drive', async () => {
+    const rows = await queryDrives({ status: 'completed' })
     expect(rows.some((r) => r.id === seed.driveId)).toBe(false)
   })
 
