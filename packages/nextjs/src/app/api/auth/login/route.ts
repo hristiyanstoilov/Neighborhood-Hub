@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => null)
-    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
@@ -135,7 +134,7 @@ export async function POST(req: NextRequest) {
     response.cookies.set('refresh_token', rawRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })

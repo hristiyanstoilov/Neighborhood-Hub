@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { usePostHog } from 'posthog-js/react'
 import { useAuth } from '@/contexts/auth'
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/ui/toast'
-import posthog from 'posthog-js'
 
 interface Pledge {
   id: string
@@ -27,6 +27,7 @@ interface Props {
 
 export default function PledgeSection({ driveId, organizerId, driveStatus, initialPledge, pledges: initialPledges }: Props) {
   const { user, loading } = useAuth()
+  const posthog = usePostHog()
   const { showToast } = useToast()
   const t = useTranslations('drives')
   const [pledge, setPledge] = useState(initialPledge)
@@ -64,11 +65,7 @@ export default function PledgeSection({ driveId, organizerId, driveStatus, initi
       setPledge({ id: json.data.id, status: 'pledged', pledgeDescription: description.trim() })
       setDescription('')
       showToast({ variant: 'success', title: t('pledge_success_title'), message: t('pledge_success_message') })
-      try {
-        posthog.capture('drive_pledged', {})
-      } catch {
-        // ignore analytics errors
-      }
+      posthog?.capture('drive_pledged', {})
     } catch {
       setFormError(t('errors.network'))
     } finally {

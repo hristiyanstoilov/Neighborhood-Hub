@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { usePostHog } from 'posthog-js/react'
 import { useCreateReservation } from './_hooks/use-create-reservation'
-import posthog from 'posthog-js'
 
 type ReserveButtonProps = {
   toolId: string
@@ -22,6 +22,7 @@ export default function ReserveButton({
   isAvailable,
 }: ReserveButtonProps) {
   const router = useRouter()
+  const posthog = usePostHog()
   const t = useTranslations('tools')
   const tCommon = useTranslations('common')
   const [open, setOpen]         = useState(false)
@@ -72,11 +73,7 @@ export default function ReserveButton({
     if (!startDate || !endDate) return
     try {
       await reservation.mutateAsync({ toolId, startDate, endDate, notes: notes || undefined })
-      try {
-        posthog.capture('tool_reserved', {})
-      } catch {
-        // ignore analytics errors
-      }
+      posthog?.capture('tool_reserved', {})
       setOpen(false)
       router.push('/my-reservations')
     } catch {

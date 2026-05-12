@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "vitest run --coverage.enabled=true --coverage.provider=v8 --coverage.include='src/lib/**' --coverage.thresholds.lines=25 --exclude='src/**/*.integration.test.ts'",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "db:seed": "npx tsx src/db/seed.ts"
   },

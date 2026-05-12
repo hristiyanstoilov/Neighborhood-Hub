@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const createToolSchema = z.object({
   title:         z.string().trim().min(3).max(200),
@@ -19,6 +20,6 @@ export const listToolsSchema = z.object({
   locationId: z.string().uuid().optional(),
   status:     z.enum(['available', 'in_use', 'on_loan']).optional(),
   search:     z.string().trim().max(100).optional(),
-  page:       z.coerce.number().int().min(1).default(1),
-  limit:      z.coerce.number().int().min(1).max(50).default(20),
+  page:       z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
+  limit:      z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
 })

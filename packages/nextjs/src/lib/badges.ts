@@ -4,7 +4,7 @@ import { badges, foodShares, ratings, skillRequests, skills, tools, userStats } 
 
 const LEVEL_THRESHOLDS = [0, 10, 30, 60, 100, 200]
 
-function computeLevel(points: number): number {
+export function computeLevel(points: number): number {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
     if (points >= LEVEL_THRESHOLDS[i]) return i + 1
   }

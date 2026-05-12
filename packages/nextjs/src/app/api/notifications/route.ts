@@ -6,8 +6,14 @@ import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 // ─── GET /api/notifications — list notifications for current user ─────────────
 
-export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
+export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
+    const { searchParams } = new URL(req.url)
+    const unreadOnly = searchParams.get('unread') === 'true'
+
+    const conditions = [eq(notifications.userId, user.sub)]
+    if (unreadOnly) conditions.push(eq(notifications.isRead, false))
+
     const rows = await db
       .select({
         id:         notifications.id,
@@ -18,7 +24,7 @@ export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) 
         createdAt:  notifications.createdAt,
       })
       .from(notifications)
-      .where(eq(notifications.userId, user.sub))
+      .where(and(...conditions))
       .orderBy(desc(notifications.createdAt))
       .limit(100)
 

@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { skills, profiles, categories, locations } from '@/db/schema'
 import { eq, and, isNull, desc, ilike, count, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const skillSelect = {
   id: skills.id,
@@ -53,7 +54,7 @@ export function buildSkillConditions(opts: SkillFilterOpts): SQL[] {
  * @returns Array of skill records with enriched owner/category/location details
  */
 export async function querySkills(opts: SkillFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildSkillConditions(filterOpts)
 
   return db
@@ -78,7 +79,7 @@ export async function querySkillsPage(opts: SkillFilterOpts & {
   limit?: number
   page?: number
 }): Promise<{ skills: Awaited<ReturnType<typeof querySkills>>; total: number }> {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildSkillConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([

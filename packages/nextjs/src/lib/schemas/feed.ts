@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const feedEventTypeSchema = z.enum([
   'skill_listed',
@@ -9,7 +10,7 @@ export const feedEventTypeSchema = z.enum([
 ])
 
 export const listFeedSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
   offset: z.coerce.number().int().min(0).default(0),
 })
 

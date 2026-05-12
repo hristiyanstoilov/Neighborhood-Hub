@@ -54,7 +54,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
     response.cookies.set('refresh_token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 0,
     })

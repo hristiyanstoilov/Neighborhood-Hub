@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-10
+> Last updated: 2026-05-11 (batch 7)
 
 ---
 
@@ -56,8 +56,6 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
-| Nav information architecture | 11 top-level links at equal visual weight. Restructure: keep 5 core modules (Skills, Tools, Events, Drives, Food) visible; move Feed/Map/Radar/Leaderboard into a "Discover" dropdown; move Messages/AI Chat/Notifications/Profile into a right-side icon cluster with icons instead of text. |
-| GDPR hard purge | Art. 17: scheduled hard purge of soft-deleted accounts after 30 days. (`GET /api/profile/export` ✅ done) |
 | Infrastructure cost model | Document free tier limits and projected cost at 1k/10k users for: Neon, Netlify, Upstash, Resend, Anthropic, Cloudflare R2. Required before any partner conversation. |
 
 ---
@@ -66,16 +64,11 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
-| Dashboard section visual separation | "Browse" and "My Activity" icon grids are visually identical. Add subtle background difference or labeled divider. |
 | Referral / invite system | "Invite your neighbor" — unique link per user, `referrals` table, points awarded on successful registration. Highest-ROI growth mechanic for community apps. |
-| Municipality partnership page | Static `/for-municipalities` landing page. Required before any government outreach. |
 | Streak / re-engagement mechanics | "You haven't shared in 3 weeks" notification or streak counter for dormant users. |
-| `community_hero` badge threshold reduction | ✅ Done — threshold already at 3 in `lib/badges.ts`. |
-| Web badges grid on profile | ✅ Done — `AchievementBadges` component shown on `/profile` page with earned + locked states. |
 | Mobile: Ratings flow | `RatingModal` component + trigger from completed request/reservation cards + public profile reviews section. Same data as web, mobile-specific flow. |
 | i18n remaining web pages | Auth pages (login, register, forgot-password, reset-password, verify-email) and all module pages (skills, tools, events, drives, food, profile, notifications, leaderboard). next-intl infrastructure is done — just needs `useTranslations()` wired per page. Translation keys already exist in `en.json` / `bg.json`. |
 | Mobile i18n full implementation | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG message files. Read locale from `Localization.locale`. |
-| Notification table cleanup | No cleanup mechanism — grows unbounded. Add soft-delete + 90-day archive/purge job. |
 | Email notifications for key events | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Push is done; email is not. |
 | Mobile: Create + Edit Tool screens | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist. Mobile users can browse and reserve tools but cannot list their own. |
 | Mobile: Edit Event + Edit Drive screens | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
@@ -84,17 +77,8 @@ All 5 core modules complete and deployed.
 | Mobile leaderboard screen | Web leaderboard exists; mobile has no equivalent. |
 | Mobile map: wire live API | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Data breach incident response plan | Document KZLD 72-hour notification procedure (GDPR Art. 33). Private ops runbook. |
-| `pg_trgm` GIN search indexes | Trigram indexes on `title` columns for skills, tools, events, food_shares. Drizzle migration. Cuts search latency 10x at 100k+ rows. |
 | Orphan cleanup job | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where referenced entity no longer exists. |
 | Profile rating stats recalculation | `profiles.avgRating` + `profiles.ratingCount` can drift if a rating write fails. Add scheduled recalculation endpoint or Postgres trigger. |
-| FK validation helper | Extract repeated category/location existence checks into `validateForeignKey()` in `lib/db-helpers.ts`. Removes ~50 duplicate lines. |
-| Status string constants | Extract all status string literals (`'available'`, `'pending'`, `'pledged'`, etc.) to `lib/constants/statuses.ts`. Typos fail silently — no type error, wrong comparison. |
-| `queryFoodReservationsForUser` pagination | Hardcoded `.limit(50)` — users with 50+ food reservations get a silently truncated list. Add `limit` + `offset` params. |
-| Food module UX polish | Add `showToast(...)` after successful mutations in `new-food-form.tsx` and `reservation-section.tsx`. Add `ConfirmDialog` for approve/reject/picked_up/cancel actions. |
-| Analytics event tracking | Wire PostHog to key events: `skill_request_created`, `tool_reserved`, `food_share_created`, `drive_pledged`. No PII in event properties. `posthog-js` already in `package.json`. |
-| Make / Remove Admin in Admin Panel | ✅ Done — promote/demote/lock/unlock/delete actions exist in `/api/admin/users/[id]` + `/admin/users` UI. |
-| Personal activity stats on public profile | "N swaps, N hours helped, N food shares" on public profile page. Derived from existing data. |
-| Image upload — edit forms | `<ImageUpload>` wired to all new forms ✅. Still missing on: `tools/[id]/edit`, `events/[id]/edit` (page doesn't exist yet — see P2). |
 
 ---
 
@@ -107,10 +91,8 @@ All 5 core modules complete and deployed.
 | Accessibility pass (WCAG 2.1 AA) | Systematic `aria-label`, `aria-expanded`, focus management audit. EN 301 549 EU standard applies in Bulgaria. |
 | App Store submission materials | Screenshots EN + BG, descriptions, content rating forms, Google Play Data Safety form. Hard blocker for store submission. |
 | Calendar export | `.ics` / Google Calendar deep-link on event detail and confirmed reservations. Standard UX expectation. |
-| Help center / FAQ page | Static `/help` answering most common new-user questions. No contact link + no FAQ = dead end for any real issue. |
-| AI chat content guardrails | Add "neighborhood discovery only" topic restriction to system prompt + explicit "not professional advice" disclaimer. Reduces EU AI Act high-risk classification risk. |
+| AI chat content guardrails | ✅ Done — "not professional advice" disclaimer added to system prompt; off-topic topics restricted. |
 | Mobile build verification in CI | Add EAS build dry-run or `expo export` step to CI. Currently only typecheck runs — bundling errors not caught. |
-| SSE → polling | `/api/notifications/stream` (SSE) creates long-lived connection incompatible with Netlify's 10s serverless timeout. Replace with `GET /api/notifications?after=<ts>` polling. |
 | JWT key rotation procedure | Document: bump token version counter in DB → force logout all sessions → rotate `JWT_SECRET` env var. |
 | Audit log append-only sink | Critical audit events written to a table a compromised admin could delete. Add separate table with `REVOKE DELETE` or external structured log sink. |
 | Event waitlist | `event_waitlist` table with ordered position + auto-promotion when an attendee cancels. `maxCapacity` currently hard-rejects over-capacity RSVPs. |
@@ -118,11 +100,8 @@ All 5 core modules complete and deployed.
 | Tool return date enforcement | Add `returnBy` column to `tool_reservations` + overdue notification. Loans currently go stale indefinitely. |
 | Skill endorsements | `skill_endorsements` table — neighbors who completed exchanges can vouch for skills. Solves cold-start trust problem. |
 | User home neighborhood | Add `defaultLocationId` FK to `profiles` for "near you" pre-filter in discovery. |
-| `conversations` DB CHECK constraint | Add `CHECK(participant_a < participant_b)` — defense-in-depth. App layer via `normalizePair()` already handles this. |
-| `SameSite=Strict` on refresh cookie | Minor hardening only — `SameSite=Lax` already blocks CSRF. `Strict` also blocks navigation-link cross-origin sends. |
 | Mobile load-more race guard | Add `isLoadingMore` guard flag in `food/index.tsx` + `tools/index.tsx` — tapping "load more" twice triggers duplicate fetches. |
 | Pagination variable standardization | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach. |
-| Hardcoded pagination defaults → constant | Each query file declares `limit = 20`, `page = 1` independently. Extract to `lib/query-defaults.ts`. |
 | Select objects DRY in query files | `skillSelect`, `toolSelect` etc. partially re-spread in per-function selects. Use the constant everywhere. |
 
 ---
@@ -155,10 +134,6 @@ All 5 core modules complete and deployed.
 | Item | Domain | Description |
 |------|--------|-------------|
 | Integration tests — Neon test branch | QA | Create `TEST_DATABASE_URL` pointing to a dedicated Neon branch → migrate → TRUNCATE before each suite → seed deterministic data → call route handlers via Vitest. Priority targets: register, POST /api/skills, PATCH /api/skill-requests/[id] state machine. |
-| Unit tests — `lib/format.ts` | QA | 12 pure functions (`formatDateTime`, `formatDate`, `formatEventStatus`, etc.) — zero DB/network, perfect unit test targets. Edge cases: null, undefined, unknown enum values. |
-| Unit tests — Zod schemas | QA | 11 schema files containing business logic (min/max, enums, URL format). Test: valid payloads pass, invalid fail with correct `.issues`, boundary values. |
-| Unit tests — `lib/badges.ts` | QA | `checkAndAwardBadges` — test each badge at correct threshold, not below, idempotent on repeat call. |
-| Coverage threshold in CI | QA | Add `--coverage.thresholds.lines=70` for `src/lib/` to `npm run test:web`. Prevents silent coverage regression. |
 | Contract tests expansion | QA | Skills + skill-requests have contract tests. Add for: tools, food, events, drives, auth. |
 | E2E — full skill exchange cycle | QA | Playwright: create skill → request → accept → complete → rate. Full happy path across 5 API calls. |
 | E2E — tool + food cycles | QA | Tool: create → reserve → approve → return. Food: create → reserve → mark picked_up. |

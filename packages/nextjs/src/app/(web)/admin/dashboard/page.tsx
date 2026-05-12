@@ -2,6 +2,7 @@ import { db } from '@/db'
 import { users, skills, skillRequests, tools, toolReservations, events, communityDrives, foodShares, foodReservations } from '@/db/schema'
 import { count, eq, gte, isNull, and, sql } from 'drizzle-orm'
 import { AdminPageHeader } from '../_components/admin-page-header'
+import { MaintenancePanel } from './maintenance-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,6 +148,8 @@ export default async function AdminDashboardPage() {
           bars={requestBars.length > 0 ? requestBars : [{ label: 'No data', value: 0, color: 'bg-gray-200' }]}
         />
       </div>
+
+      <MaintenancePanel />
     </div>
   )
 }

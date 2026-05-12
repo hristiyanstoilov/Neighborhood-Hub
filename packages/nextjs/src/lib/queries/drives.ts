@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { communityDrives, drivePledges, profiles } from '@/db/schema'
-import { and, count, desc, eq, isNull, sql, SQL } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, isNull, or, sql, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const driveSelect = {
   id:              communityDrives.id,
@@ -22,6 +23,7 @@ export type DriveFilterOpts = {
   status?:    string
   driveType?: string
   ownerId?:   string
+  search?:    string
 }
 
 export function buildDriveConditions(opts: DriveFilterOpts): SQL[] {
@@ -29,11 +31,19 @@ export function buildDriveConditions(opts: DriveFilterOpts): SQL[] {
   if (opts.status)    conditions.push(eq(communityDrives.status, opts.status))
   if (opts.driveType) conditions.push(eq(communityDrives.driveType, opts.driveType))
   if (opts.ownerId)   conditions.push(eq(communityDrives.organizerId, opts.ownerId))
+  if (opts.search) {
+    conditions.push(
+      or(
+        ilike(communityDrives.title, `%${opts.search}%`),
+        ilike(communityDrives.description, `%${opts.search}%`)
+      )!
+    )
+  }
   return conditions
 }
 
 export async function queryDrives(opts: DriveFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildDriveConditions(filterOpts)
 
   return db
@@ -47,7 +57,7 @@ export async function queryDrives(opts: DriveFilterOpts & { limit?: number; page
 }
 
 export async function queryDrivesPage(opts: DriveFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildDriveConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([

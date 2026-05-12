@@ -1,6 +1,7 @@
 import { db } from '@/db'
 import { events, eventAttendees, profiles, locations } from '@/db/schema'
 import { and, count, desc, eq, gte, ilike, isNull, sql, SQL } from 'drizzle-orm'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const eventSelect = {
   id:                   events.id,
@@ -38,7 +39,7 @@ export function buildEventConditions(opts: EventFilterOpts): SQL[] {
 }
 
 export async function queryEvents(opts: EventFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildEventConditions(filterOpts)
 
   return db
@@ -53,7 +54,7 @@ export async function queryEvents(opts: EventFilterOpts & { limit?: number; page
 }
 
 export async function queryEventsPage(opts: EventFilterOpts & { limit?: number; page?: number }) {
-  const { limit = 20, page = 1, ...filterOpts } = opts
+  const { limit = PAGINATION_DEFAULTS.defaultPageSize, page = PAGINATION_DEFAULTS.defaultPage, ...filterOpts } = opts
   const conditions = buildEventConditions(filterOpts)
 
   const [rows, [{ total }]] = await Promise.all([

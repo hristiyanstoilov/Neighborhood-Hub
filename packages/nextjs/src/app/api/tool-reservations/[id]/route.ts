@@ -4,11 +4,20 @@ import { toolReservations, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { ToolReservationStatus } from '@/lib/constants/statuses'
 import { patchToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
 
-const TERMINAL = ['rejected', 'returned', 'cancelled']
+const TERMINAL: readonly string[] = [
+  ToolReservationStatus.REJECTED,
+  ToolReservationStatus.RETURNED,
+  ToolReservationStatus.CANCELLED,
+] as const
+const CANCELLABLE_STATUSES: readonly string[] = [
+  ToolReservationStatus.PENDING,
+  ToolReservationStatus.APPROVED,
+] as const
 
 // ─── PATCH /api/tool-reservations/[id] — state machine ──────────────────────
 
@@ -49,29 +58,29 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
     // State machine rules
     if (action === 'approve' || action === 'reject') {
       if (!isOwner) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
-      if (existing.status !== 'pending') return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
+      if (existing.status !== ToolReservationStatus.PENDING) return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
     }
 
     if (action === 'return') {
       if (!isBorrower) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
-      if (existing.status !== 'approved') return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
+      if (existing.status !== ToolReservationStatus.APPROVED) return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
     }
 
     if (action === 'cancel') {
-      if (existing.status === 'pending' && !isBorrower) {
+      if (existing.status === ToolReservationStatus.PENDING && !isBorrower) {
         return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
       }
-      if (!['pending', 'approved'].includes(existing.status)) {
+      if (!CANCELLABLE_STATUSES.includes(existing.status)) {
         return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
       }
     }
 
     // Map action → status + notification
     const statusMap: Record<string, string> = {
-      approve: 'approved',
-      reject:  'rejected',
-      return:  'returned',
-      cancel:  'cancelled',
+      approve: ToolReservationStatus.APPROVED,
+      reject:  ToolReservationStatus.REJECTED,
+      return:  ToolReservationStatus.RETURNED,
+      cancel:  ToolReservationStatus.CANCELLED,
     }
     const notifTypeMap: Record<string, string> = {
       approve: 'reservation_approved',

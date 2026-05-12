@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const createSkillRequestSchema = z
   .object({
@@ -44,6 +45,6 @@ export const patchSkillRequestSchema = z
 export const listSkillRequestsSchema = z.object({
   role: z.enum(['requester', 'owner']).optional(),
   status: z.enum(['pending', 'accepted', 'rejected', 'completed', 'cancelled']).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  page: z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
+  limit: z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
 })

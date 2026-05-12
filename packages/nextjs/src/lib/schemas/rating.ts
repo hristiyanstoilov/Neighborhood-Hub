@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
 export const ratingContextTypeSchema = z.enum([
   'skill_request',
@@ -16,7 +17,7 @@ export const createRatingSchema = z.object({
 
 export const listRatingsQuerySchema = z.object({
   userId: z.string().uuid(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
   offset: z.coerce.number().int().min(0).default(0),
 })
 
