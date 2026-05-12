@@ -7,6 +7,7 @@ import { writeAuditLog } from '@/lib/audit'
 import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
 import { createNotification } from '@/lib/create-notification'
+import { sendFoodReservationApproved, sendFoodPickedUp } from '@/lib/email'
 
 type Ctx = { params: Promise<{ id: string; reservationId: string }> }
 
@@ -152,6 +153,34 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       entityType: 'food_reservation',
       entityId: reservationId,
     }).catch(() => {})
+
+    // Send email notifications for key transitions
+    if (parsed.data.action === 'approve') {
+      const requesterUser = await db.query.users.findFirst({
+        where: eq(users.id, reservation.requesterId),
+        columns: { email: true },
+      })
+      if (requesterUser) {
+        void sendFoodReservationApproved({
+          to: requesterUser.email,
+          foodTitle: foodShare.title,
+          pickupAt: reservation.pickupAt,
+        }).catch(() => {})
+      }
+    }
+
+    if (parsed.data.action === 'picked_up') {
+      const requesterUser = await db.query.users.findFirst({
+        where: eq(users.id, reservation.requesterId),
+        columns: { email: true },
+      })
+      if (requesterUser) {
+        void sendFoodPickedUp({
+          to: requesterUser.email,
+          foodTitle: foodShare.title,
+        }).catch(() => {})
+      }
+    }
 
     await writeAuditLog({
       userId: user.sub,

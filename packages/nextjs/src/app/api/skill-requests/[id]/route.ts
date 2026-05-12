@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, users } from '@/db/schema'
+import { skillRequests, users, skills } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -10,6 +10,7 @@ import { SkillRequestStatus } from '@/lib/constants/statuses'
 import { patchSkillRequestSchema } from '@/lib/schemas/skill-request'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
+import { sendSkillRequestAccepted } from '@/lib/email'
 
 const TERMINAL_STATUSES: readonly string[] = [
   SkillRequestStatus.REJECTED,
@@ -135,6 +136,27 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       entityType: 'skill_request',
       entityId: id,
     }).catch(() => {})
+
+    // Send email notifications for key transitions
+    if (updates.status === SkillRequestStatus.ACCEPTED) {
+      const [requesterUser, skill] = await Promise.all([
+        db.query.users.findFirst({
+          where: eq(users.id, existing.userFromId),
+          columns: { email: true },
+        }),
+        db.query.skills.findFirst({
+          where: eq(skills.id, existing.skillId),
+          columns: { title: true },
+        }),
+      ])
+      if (requesterUser && skill) {
+        void sendSkillRequestAccepted({
+          to: requesterUser.email,
+          skillTitle: skill.title ?? 'skill',
+          scheduledStart: existing.scheduledStart,
+        }).catch(() => {})
+      }
+    }
 
     let pointsAwarded = 0
     if (action === 'complete') {

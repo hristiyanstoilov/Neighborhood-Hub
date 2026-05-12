@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '@/contexts/auth'
 import { useTranslations } from 'next-intl'
+import { useAuth } from '@/contexts/auth'
 
 export default function LoginForm() {
   const t = useTranslations('auth')

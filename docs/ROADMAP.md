@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-11 (batch 7)
+> Last updated: 2026-05-12 (batch 8)
 
 ---
 
@@ -67,18 +67,15 @@ All 5 core modules complete and deployed.
 | Referral / invite system | "Invite your neighbor" — unique link per user, `referrals` table, points awarded on successful registration. Highest-ROI growth mechanic for community apps. |
 | Streak / re-engagement mechanics | "You haven't shared in 3 weeks" notification or streak counter for dormant users. |
 | Mobile: Ratings flow | `RatingModal` component + trigger from completed request/reservation cards + public profile reviews section. Same data as web, mobile-specific flow. |
-| i18n remaining web pages | Auth pages (login, register, forgot-password, reset-password, verify-email) and all module pages (skills, tools, events, drives, food, profile, notifications, leaderboard). next-intl infrastructure is done — just needs `useTranslations()` wired per page. Translation keys already exist in `en.json` / `bg.json`. |
+| i18n remaining web pages | All module pages (skills, tools, events, drives, food, profile, notifications, leaderboard). Auth pages done. next-intl infrastructure is done — just needs `useTranslations()` wired per page. Translation keys already exist in `en.json` / `bg.json`. |
 | Mobile i18n full implementation | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG message files. Read locale from `Localization.locale`. |
-| Email notifications for key events | Resend is integrated but no transactional emails exist for: reservation accepted/rejected, skill request accepted, food pickup confirmed. Push is done; email is not. |
 | Mobile: Create + Edit Tool screens | `tools/new.tsx` and `tools/edit/[id].tsx` do not exist. Mobile users can browse and reserve tools but cannot list their own. |
 | Mobile: Edit Event + Edit Drive screens | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
 | Mobile: Achievements / Badges screen | `profile/achievements.tsx` does not exist. Badges and user stats are invisible to mobile users. |
-| Mobile: Map pin → detail navigation | `radar.tsx` shows location density but tapping a pin does not navigate to the listing. Wire tap to detail page. |
 | Mobile leaderboard screen | Web leaderboard exists; mobile has no equivalent. |
 | Mobile map: wire live API | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Data breach incident response plan | Document KZLD 72-hour notification procedure (GDPR Art. 33). Private ops runbook. |
 | Orphan cleanup job | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where referenced entity no longer exists. |
-| Profile rating stats recalculation | `profiles.avgRating` + `profiles.ratingCount` can drift if a rating write fails. Add scheduled recalculation endpoint or Postgres trigger. |
 
 ---
 
@@ -96,13 +93,10 @@ All 5 core modules complete and deployed.
 | JWT key rotation procedure | Document: bump token version counter in DB → force logout all sessions → rotate `JWT_SECRET` env var. |
 | Audit log append-only sink | Critical audit events written to a table a compromised admin could delete. Add separate table with `REVOKE DELETE` or external structured log sink. |
 | Event waitlist | `event_waitlist` table with ordered position + auto-promotion when an attendee cancels. `maxCapacity` currently hard-rejects over-capacity RSVPs. |
-| Drive numeric goals | Add `goalAmount: integer` + `currentAmount: integer` to `community_drives` so drives can show "57 of 100 items collected." Currently `goalDescription` is text-only. |
 | Tool return date enforcement | Add `returnBy` column to `tool_reservations` + overdue notification. Loans currently go stale indefinitely. |
 | Skill endorsements | `skill_endorsements` table — neighbors who completed exchanges can vouch for skills. Solves cold-start trust problem. |
 | User home neighborhood | Add `defaultLocationId` FK to `profiles` for "near you" pre-filter in discovery. |
-| Mobile load-more race guard | Add `isLoadingMore` guard flag in `food/index.tsx` + `tools/index.tsx` — tapping "load more" twice triggers duplicate fetches. |
 | Pagination variable standardization | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach. |
-| Select objects DRY in query files | `skillSelect`, `toolSelect` etc. partially re-spread in per-function selects. Use the constant everywhere. |
 
 ---
 
@@ -133,7 +127,6 @@ All 5 core modules complete and deployed.
 
 | Item | Domain | Description |
 |------|--------|-------------|
-| Integration tests — Neon test branch | QA | Create `TEST_DATABASE_URL` pointing to a dedicated Neon branch → migrate → TRUNCATE before each suite → seed deterministic data → call route handlers via Vitest. Priority targets: register, POST /api/skills, PATCH /api/skill-requests/[id] state machine. |
 | Contract tests expansion | QA | Skills + skill-requests have contract tests. Add for: tools, food, events, drives, auth. |
 | E2E — full skill exchange cycle | QA | Playwright: create skill → request → accept → complete → rate. Full happy path across 5 API calls. |
 | E2E — tool + food cycles | QA | Tool: create → reserve → approve → return. Food: create → reserve → mark picked_up. |

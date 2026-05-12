@@ -16,6 +16,8 @@ export default function NewDriveForm() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [titleLength, setTitleLength] = useState(0)
   const [imageUrl, setImageUrl]       = useState('')
+  const [goalAmount, setGoalAmount]   = useState('')
+  const [currentAmount, setCurrentAmount] = useState('')
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,6 +33,8 @@ export default function NewDriveForm() {
         description:     (form.get('description') as string) || undefined,
         driveType:       form.get('driveType') as string,
         goalDescription: (form.get('goalDescription') as string) || undefined,
+        goalAmount:      goalAmount ? parseInt(goalAmount, 10) : undefined,
+        currentAmount:   currentAmount ? parseInt(currentAmount, 10) : undefined,
         dropOffAddress:  (form.get('dropOffAddress') as string) || undefined,
         deadline:        deadline ? new Date(deadline).toISOString() : undefined,
         imageUrl:        imageUrl || undefined,
@@ -129,6 +133,37 @@ export default function NewDriveForm() {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             placeholder={t('form_goal_placeholder')}
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="drive-goal-amount" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('form_goal_amount_label')} <span className="text-gray-400 font-normal">{t('form_goal_amount_optional')}</span>
+            </label>
+            <input
+              id="drive-goal-amount"
+              type="number"
+              min={1}
+              value={goalAmount}
+              onChange={(e) => setGoalAmount(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder={t('form_goal_amount_placeholder')}
+            />
+          </div>
+          <div>
+            <label htmlFor="drive-current-amount" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('form_current_amount_label')} <span className="text-gray-400 font-normal">{t('form_current_amount_optional')}</span>
+            </label>
+            <input
+              id="drive-current-amount"
+              type="number"
+              min={0}
+              value={currentAmount}
+              onChange={(e) => setCurrentAmount(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder={t('form_current_amount_placeholder')}
+            />
+          </div>
         </div>
 
         <div>
