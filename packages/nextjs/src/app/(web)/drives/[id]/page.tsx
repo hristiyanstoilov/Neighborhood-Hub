@@ -146,6 +146,14 @@ export default async function DriveDetailPage({
                 <dd className="font-medium">{drive!.goalDescription}</dd>
               </div>
             )}
+            {drive!.goalAmount != null && (
+              <div className="col-span-2">
+                <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_progress')}</dt>
+                <dd className="font-medium">
+                  {drive!.currentAmount ?? 0} of {drive!.goalAmount} collected
+                </dd>
+              </div>
+            )}
             {drive!.dropOffAddress && (
               <div className="col-span-2">
                 <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_dropoff')}</dt>

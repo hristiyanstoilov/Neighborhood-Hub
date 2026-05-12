@@ -78,3 +78,62 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
     `,
   })
 }
+
+export async function sendSkillRequestAccepted(params: {
+  to: string
+  skillTitle: string
+  scheduledStart: Date
+}): Promise<void> {
+  const safeTitle = escapeHtml(params.skillTitle)
+  await resend.emails.send({
+    from: FROM,
+    to: params.to,
+    subject: `Your skill request for "${params.skillTitle}" was accepted`,
+    html: `
+      <h2>Request accepted!</h2>
+      <p>Your request for <strong>${safeTitle}</strong> has been accepted.</p>
+      <p>Scheduled: ${params.scheduledStart.toLocaleString('en-GB')}</p>
+      <a href="${APP_URL}/my-requests" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        View your requests
+      </a>
+    `,
+  })
+}
+
+export async function sendFoodReservationApproved(params: {
+  to: string
+  foodTitle: string
+  pickupAt: Date
+}): Promise<void> {
+  const safeTitle = escapeHtml(params.foodTitle)
+  await resend.emails.send({
+    from: FROM,
+    to: params.to,
+    subject: `Your food reservation for "${params.foodTitle}" was approved`,
+    html: `
+      <h2>Reservation approved!</h2>
+      <p>Your reservation for <strong>${safeTitle}</strong> has been approved.</p>
+      <p>Pickup time: ${params.pickupAt.toLocaleString('en-GB')}</p>
+      <a href="${APP_URL}/food/reservations" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        View your reservations
+      </a>
+    `,
+  })
+}
+
+export async function sendFoodPickedUp(params: {
+  to: string
+  foodTitle: string
+}): Promise<void> {
+  const safeTitle = escapeHtml(params.foodTitle)
+  await resend.emails.send({
+    from: FROM,
+    to: params.to,
+    subject: `Food pickup confirmed — "${params.foodTitle}"`,
+    html: `
+      <h2>Pickup confirmed!</h2>
+      <p>The pickup for <strong>${safeTitle}</strong> has been marked as completed.</p>
+      <p>Thank you for using Neighborhood Hub!</p>
+    `,
+  })
+}

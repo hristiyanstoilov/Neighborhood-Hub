@@ -37,7 +37,9 @@ export default function ForgotPasswordPage() {
     return (
       <div className="max-w-md mx-auto text-center py-16">
         <h1 className="text-2xl font-bold mb-3">{t('check_email_title')}</h1>
-        <p className="text-gray-600 mb-6">{t('reset_sent')}</p>
+        <p className="text-gray-600 mb-6">
+          {t('reset_sent')}
+        </p>
         <Link href="/login" className="text-green-700 hover:underline text-sm">
           {t('sign_in')}
         </Link>
@@ -48,7 +50,9 @@ export default function ForgotPasswordPage() {
   return (
     <div className="max-w-md mx-auto py-16">
       <h1 className="text-2xl font-bold mb-2">{t('reset_title')}</h1>
-      <p className="text-gray-500 text-sm mb-6">{t('reset_subtitle')}</p>
+      <p className="text-gray-500 text-sm mb-6">
+        {t('reset_subtitle')}
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

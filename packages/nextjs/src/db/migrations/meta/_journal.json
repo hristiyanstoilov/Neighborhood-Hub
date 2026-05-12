@@ -169,6 +169,13 @@
       "when": 1778493412528,
       "tag": "0023_clammy_captain_midlands",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1778555864006,
+      "tag": "0024_huge_inhumans",
+      "breakpoints": true
     }
   ]
 }

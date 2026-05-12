@@ -471,6 +471,8 @@ export const communityDrives = pgTable(
     description: text('description'),
     driveType: varchar('drive_type', { length: 20 }).notNull(),
     goalDescription: varchar('goal_description', { length: 500 }),
+    goalAmount: integer('goal_amount'),
+    currentAmount: integer('current_amount').default(0),
     dropOffAddress: varchar('drop_off_address', { length: 300 }),
     deadline: timestamp('deadline', { withTimezone: true }),
     imageUrl: varchar('image_url', { length: 2048 }),
