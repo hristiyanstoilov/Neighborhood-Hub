@@ -120,6 +120,8 @@ All 5 core modules complete and deployed.
 | Shared `packages/shared` types | Shared package for `MapMarker`, `FoodShare`, `ToolReservation` between web and mobile. Eliminates drift. |
 | Hourly time slots for tool reservations | Date + time slot (10:00–12:00) for tool handoff coordination. Requires schema change. |
 | Multiple images per listing | `attachments` table for multiple images per skill/tool/food/event listing. |
+| ISR for public pages | List pages read `searchParams` (opts into dynamic) and home reads `cookies()` — ISR doesn't apply without first refactoring filtering to client-side. Revisit if DB load becomes a real issue at scale. |
+| Suspense intra-page streaming | Route-level `loading.tsx` already covers the main UX win. Intra-page `<Suspense>` adds marginal benefit since all data sources are Neon (similar latency). Worth revisiting only if a specific page becomes measurably slow. |
 
 ---
 
@@ -131,8 +133,6 @@ All 5 core modules complete and deployed.
 
 | Item | Domain | Description |
 |------|--------|-------------|
-| ISR for public listing pages | Perf | All public list pages (`/skills`, `/tools`, `/events`, `/food`, `/drives`, `/leaderboard`, home) are currently `force-dynamic` — every request hits DB. Add `export const revalidate = 60` to reduce DB load. Detail pages stay dynamic (personalised content). |
-| Suspense streaming within pages | Perf | Route-level `loading.tsx` exists. Add `<Suspense>` around independent data sections inside pages (e.g. skill detail: endorsements + owner stats can stream separately). Reduces time-to-first-meaningful-paint. |
 | Contract tests expansion | QA | Skills + skill-requests have contract tests. Add for: tools, food, events, drives, auth. |
 | E2E — full skill exchange cycle | QA | Playwright: create skill → request → accept → complete → rate. Full happy path across 5 API calls. |
 | E2E — tool + food cycles | QA | Tool: create → reserve → approve → return. Food: create → reserve → mark picked_up. |
