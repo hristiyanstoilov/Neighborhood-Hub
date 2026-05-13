@@ -36,6 +36,7 @@ export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) 
       avatarUrl: profile?.avatarUrl ?? null,
       isPublic: profile?.isPublic ?? true,
       locationId: profile?.locationId ?? null,
+      defaultLocationId: profile?.defaultLocationId ?? null,
       locationCity,
       locationNeighborhood,
     },
@@ -70,6 +71,12 @@ export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
     if (locationId) {
       const loc = await db.query.locations.findFirst({ where: eq(locations.id, locationId) })
       if (!loc) return NextResponse.json({ error: 'LOCATION_NOT_FOUND' }, { status: 400 })
+    }
+
+    // Validate defaultLocationId FK if provided and non-empty
+    if (defaultLocationId) {
+      const rows = await db.select().from(locations).where(eq(locations.id, defaultLocationId)).limit(1)
+      if (!rows || rows.length === 0) return NextResponse.json({ error: 'LOCATION_NOT_FOUND' }, { status: 400 })
     }
 
     const values = {

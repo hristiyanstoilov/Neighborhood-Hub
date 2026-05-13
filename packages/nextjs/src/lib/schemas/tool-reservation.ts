@@ -32,6 +32,14 @@ export const createToolReservationSchema = z
         message: 'End date must be after start date.',
       })
     }
+
+    if (data.returnBy && new Date(data.returnBy) < new Date(data.endDate)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['returnBy'],
+        message: 'Return date must be on or after the end date',
+      })
+    }
   })
 
 export const patchToolReservationSchema = z.object({

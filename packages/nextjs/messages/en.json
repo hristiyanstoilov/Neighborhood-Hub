@@ -301,6 +301,7 @@
     "unknown_tool": "Unknown tool",
     "field_from": "From",
     "field_until": "Until",
+    "field_return_by": "Return by",
     "reason_prefix": "Reason:",
     "cancel_reason_label": "Reason for cancellation (optional)",
     "cancel_confirm": "Confirm cancel",

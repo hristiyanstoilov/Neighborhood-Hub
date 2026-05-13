@@ -12,6 +12,7 @@ export const toolReservationSelect = {
   ownerId:            toolReservations.ownerId,
   startDate:          toolReservations.startDate,
   endDate:            toolReservations.endDate,
+  returnBy:           toolReservations.returnBy,
   status:             toolReservations.status,
   notes:              toolReservations.notes,
   cancellationReason: toolReservations.cancellationReason,

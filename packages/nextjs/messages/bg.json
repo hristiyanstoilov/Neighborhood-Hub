@@ -301,6 +301,7 @@
     "unknown_tool": "Непознат инструмент",
     "field_from": "От",
     "field_until": "До",
+    "field_return_by": "Върни до",
     "reason_prefix": "Причина:",
     "cancel_reason_label": "Причина за отказ (незадължително)",
     "cancel_confirm": "Потвърди отказ",

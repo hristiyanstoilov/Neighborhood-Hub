@@ -234,6 +234,21 @@ export const skills = pgTable(
 )
 
 // ─────────────────────────────────────────────
+// SKILL ENDORSEMENTS
+// ─────────────────────────────────────────────
+
+export const skillEndorsements = pgTable(
+  'skill_endorsements',
+  {
+    id:          uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    skillId:     uuid('skill_id').notNull().references(() => skills.id, { onDelete: 'cascade' }),
+    endorserId:  uuid('endorser_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('skill_endorsements_skill_endorser_idx').on(t.skillId, t.endorserId)],
+)
+
+// ─────────────────────────────────────────────
 // 9. SKILL REQUESTS
 // ─────────────────────────────────────────────
 

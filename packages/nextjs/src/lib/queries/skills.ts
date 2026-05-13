@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { skills, profiles, categories, locations } from '@/db/schema'
+import { skills, profiles, categories, locations, skillEndorsements } from '@/db/schema'
 import { eq, and, isNull, desc, ilike, count, SQL } from 'drizzle-orm'
 import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 
@@ -101,6 +101,7 @@ export async function querySkillById(id: string) {
       ...skillSelect,
       ownerAvgRating: profiles.avgRating,
       ownerRatingCount: profiles.ratingCount,
+      endorsementCount: db.$count(skillEndorsements, eq(skillEndorsements.skillId, skills.id)),
     })
     .from(skills)
     .leftJoin(profiles, eq(profiles.userId, skills.ownerId))

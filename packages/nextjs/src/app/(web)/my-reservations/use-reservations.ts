@@ -15,6 +15,7 @@ export interface ReservationRow {
   ownerId: string
   startDate: string
   endDate: string
+  returnBy: string | null
   status: string
   notes: string | null
   cancellationReason: string | null

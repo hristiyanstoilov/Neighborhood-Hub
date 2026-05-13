@@ -21,10 +21,12 @@ type FeedItem = {
 type FeedResponse = {
   items: FeedItem[]
   total: number
+  page: number
+  limit: number
 }
 
-async function fetchFeedPage(offset: number): Promise<FeedResponse> {
-  const res = await apiFetch(`/api/feed?limit=20&offset=${offset}`)
+async function fetchFeedPage(page: number): Promise<FeedResponse> {
+  const res = await apiFetch(`/api/feed?page=${page}&limit=20`)
   const json = await res.json().catch(() => null)
 
   if (!res.ok || !json?.data) {
@@ -40,10 +42,10 @@ export function FeedList() {
   const query = useInfiniteQuery({
     queryKey: queryKeys.feed.list,
     queryFn: ({ pageParam }) => fetchFeedPage(pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, pages) => {
-      const loaded = pages.flatMap((page) => page.items).length
-      return loaded < lastPage.total ? loaded : undefined
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.flatMap((page) => page.items).length
+      return loaded < lastPage.total ? allPages.length + 1 : undefined
     },
   })
 

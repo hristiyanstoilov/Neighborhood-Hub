@@ -1,6 +1,6 @@
 {
-  "id": "db0554d2-5223-45ab-beac-4ee7a2d18130",
-  "prevId": "30fa0ba9-1bce-484f-8ce1-b14028ab1a7e",
+  "id": "7d36a984-161b-4520-a4ab-04982dd5120c",
+  "prevId": "3bc72b4e-7825-4d85-ac91-130883214af2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -487,6 +487,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "goal_amount": {
+          "name": "goal_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_amount": {
+          "name": "current_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
         "drop_off_address": {
           "name": "drop_off_address",
           "type": "varchar(300)",
@@ -531,19 +544,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "goal_amount": {
-          "name": "goal_amount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_amount": {
-          "name": "current_amount",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
         }
       },
       "indexes": {
@@ -2249,6 +2249,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "default_location_id": {
+          "name": "default_location_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "avatar_url": {
           "name": "avatar_url",
           "type": "varchar(2048)",
@@ -2309,6 +2315,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "profiles_default_location_id_locations_id_fk": {
+          "name": "profiles_default_location_id_locations_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "locations",
+          "columnsFrom": [
+            "default_location_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "profiles_location_id_locations_id_fk": {
@@ -2922,6 +2941,93 @@
           "value": "\"reports\".\"status\" IN ('pending', 'reviewed', 'dismissed')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.skill_endorsements": {
+      "name": "skill_endorsements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "skill_id": {
+          "name": "skill_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endorser_id": {
+          "name": "endorser_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "skill_endorsements_skill_endorser_idx": {
+          "name": "skill_endorsements_skill_endorser_idx",
+          "columns": [
+            {
+              "expression": "skill_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "endorser_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "skill_endorsements_skill_id_skills_id_fk": {
+          "name": "skill_endorsements_skill_id_skills_id_fk",
+          "tableFrom": "skill_endorsements",
+          "tableTo": "skills",
+          "columnsFrom": [
+            "skill_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "skill_endorsements_endorser_id_users_id_fk": {
+          "name": "skill_endorsements_endorser_id_users_id_fk",
+          "tableFrom": "skill_endorsements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "endorser_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.skill_requests": {

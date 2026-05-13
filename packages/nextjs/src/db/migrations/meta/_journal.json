@@ -190,6 +190,13 @@
       "when": 1778636303497,
       "tag": "0026_dry_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1778642352469,
+      "tag": "0027_tiresome_green_goblin",
+      "breakpoints": true
     }
   ]
 }

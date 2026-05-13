@@ -115,6 +115,12 @@ export default function ReservationCard({ reservation, viewerId }: Props) {
           <dt className="text-xs text-gray-400">{t('field_until')}</dt>
           <dd className="font-medium">{sharedFormatDate(reservation.endDate)}</dd>
         </div>
+        {reservation.returnBy && (
+          <div className="col-span-2 flex justify-between">
+            <dt className="text-gray-500">{t('field_return_by')}</dt>
+            <dd className="font-medium">{sharedFormatDate(reservation.returnBy)}</dd>
+          </div>
+        )}
       </dl>
 
       {reservation.notes && (

@@ -11,7 +11,7 @@ export const feedEventTypeSchema = z.enum([
 
 export const listFeedSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
-  offset: z.coerce.number().int().min(0).default(0),
+  page: z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
 })
 
 export const createFeedSchema = z.object({

@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { limit, offset } = parsed.data
+    const { limit, page } = parsed.data
+    const offset = (page - 1) * limit
 
     const [items, [{ total }]] = await Promise.all([
       db
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       db.select({ total: count() }).from(feedEvents),
     ])
 
-    return NextResponse.json({ data: { items, total } })
+    return NextResponse.json({ data: { items, total, page, limit } })
   } catch (err) {
     console.error('[GET /api/feed]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
