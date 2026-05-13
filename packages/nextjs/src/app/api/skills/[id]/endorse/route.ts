@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skills, skillEndorsements } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { requireAuthWithRateLimit, requireAuth } from '@/lib/middleware'
+import { and, eq, isNull } from 'drizzle-orm'
+import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { isUniqueViolation } from '@/lib/db-errors'
 import { uuidSchema } from '@/lib/schemas/skill'
 
@@ -12,7 +12,11 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, pa
     const id = params.id
     if (!uuidSchema.safeParse(id).success) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
-    const skill = await db.query.skills.findFirst({ where: eq(skills.id, id) })
+    const [skill] = await db
+      .select({ id: skills.id, ownerId: skills.ownerId })
+      .from(skills)
+      .where(and(eq(skills.id, id), isNull(skills.deletedAt)))
+      .limit(1)
     if (!skill) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
 
     if (skill.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_ENDORSE_OWN_SKILL' }, { status: 422 })
@@ -34,7 +38,7 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, pa
 })
 
 // DELETE /api/skills/[id]/endorse
-export const DELETE = requireAuth(async (req: NextRequest, { user, params }) => {
+export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const id = params.id
     if (!uuidSchema.safeParse(id).success) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
