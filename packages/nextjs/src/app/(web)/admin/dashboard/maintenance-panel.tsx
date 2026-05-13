@@ -14,6 +14,11 @@ const INITIAL: ActionResult = { loading: false, result: null, error: null }
 export function MaintenancePanel() {
   const [purgeState, setPurgeState] = useState<ActionResult>(INITIAL)
   const [cleanupState, setCleanupState] = useState<ActionResult>(INITIAL)
+<<<<<<< HEAD
+=======
+  const [recalcState, setRecalcState] = useState<ActionResult>(INITIAL)
+  const [orphanState, setOrphanState] = useState<ActionResult>(INITIAL)
+>>>>>>> a4608b6 (chore(admin): add orphan cleanup API + maintenance UI)
 
   async function handlePurge() {
     if (!window.confirm('This will permanently delete all accounts soft-deleted more than 30 days ago. This cannot be undone. Continue?')) return
@@ -48,6 +53,37 @@ export function MaintenancePanel() {
     }
   }
 
+<<<<<<< HEAD
+=======
+  async function handleRecalc() {
+    setRecalcState({ loading: true, result: null, error: null })
+    try {
+      const res = await apiFetch('/api/admin/recalc-ratings', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      setRecalcState({
+        loading: false,
+        result: `Recalculated ${json.data.updated} profile(s).`,
+        error: null,
+      })
+    } catch (err) {
+      setRecalcState({ loading: false, result: null, error: String(err) })
+    }
+  }
+
+  async function handleOrphanCleanup() {
+    setOrphanState({ loading: true, result: null, error: null })
+    try {
+      const res = await apiFetch('/api/admin/cleanup-orphans', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      setOrphanState({ loading: false, result: `Deleted ${json.data.deleted} orphaned notification(s).`, error: null })
+    } catch (err) {
+      setOrphanState({ loading: false, result: null, error: String(err) })
+    }
+  }
+
+>>>>>>> a4608b6 (chore(admin): add orphan cleanup API + maintenance UI)
   return (
     <div className="mt-8 bg-white rounded-lg border border-gray-200 p-5">
       <h3 className="text-sm font-semibold text-gray-700 mb-4">Maintenance</h3>
@@ -93,6 +129,50 @@ export function MaintenancePanel() {
           </button>
         </div>
 
+<<<<<<< HEAD
+=======
+        <div className="border-t border-gray-100" />
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Recalculate Ratings</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Recompute avgRating and ratingCount for all profiles from the ratings table.
+            </p>
+            {recalcState.result && <p className="text-xs text-green-700 mt-1">{recalcState.result}</p>}
+            {recalcState.error && <p className="text-xs text-red-600 mt-1">{recalcState.error}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={handleRecalc}
+            disabled={recalcState.loading}
+            className="shrink-0 px-3 py-1.5 text-sm bg-blue-700 text-white rounded-md hover:bg-blue-800 disabled:opacity-50 transition-colors"
+          >
+            {recalcState.loading ? 'Running…' : 'Recalculate'}
+          </button>
+        </div>
+ 
+        <div className="border-t border-gray-100" />
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Orphan Cleanup</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Delete notifications whose referenced entity (skill request, reservation, etc.) no longer exists.
+            </p>
+            {orphanState.result && <p className="text-xs text-green-700 mt-1">{orphanState.result}</p>}
+            {orphanState.error && <p className="text-xs text-red-600 mt-1">{orphanState.error}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={handleOrphanCleanup}
+            disabled={orphanState.loading}
+            className="shrink-0 px-3 py-1.5 text-sm bg-orange-700 text-white rounded-md hover:bg-orange-800 disabled:opacity-50 transition-colors"
+          >
+            {orphanState.loading ? 'Running…' : 'Run Orphan Cleanup'}
+          </button>
+        </div>
+>>>>>>> a4608b6 (chore(admin): add orphan cleanup API + maintenance UI)
       </div>
     </div>
   )
