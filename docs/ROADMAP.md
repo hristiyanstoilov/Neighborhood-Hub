@@ -131,6 +131,8 @@ All 5 core modules complete and deployed.
 
 | Item | Domain | Description |
 |------|--------|-------------|
+| ISR for public listing pages | Perf | All public list pages (`/skills`, `/tools`, `/events`, `/food`, `/drives`, `/leaderboard`, home) are currently `force-dynamic` — every request hits DB. Add `export const revalidate = 60` to reduce DB load. Detail pages stay dynamic (personalised content). |
+| Suspense streaming within pages | Perf | Route-level `loading.tsx` exists. Add `<Suspense>` around independent data sections inside pages (e.g. skill detail: endorsements + owner stats can stream separately). Reduces time-to-first-meaningful-paint. |
 | Contract tests expansion | QA | Skills + skill-requests have contract tests. Add for: tools, food, events, drives, auth. |
 | E2E — full skill exchange cycle | QA | Playwright: create skill → request → accept → complete → rate. Full happy path across 5 API calls. |
 | E2E — tool + food cycles | QA | Tool: create → reserve → approve → return. Food: create → reserve → mark picked_up. |
