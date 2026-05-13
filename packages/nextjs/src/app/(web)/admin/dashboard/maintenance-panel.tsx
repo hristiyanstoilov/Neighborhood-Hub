@@ -15,6 +15,7 @@ export function MaintenancePanel() {
   const [purgeState, setPurgeState] = useState<ActionResult>(INITIAL)
   const [cleanupState, setCleanupState] = useState<ActionResult>(INITIAL)
   const [recalcState, setRecalcState] = useState<ActionResult>(INITIAL)
+  const [orphanState, setOrphanState] = useState<ActionResult>(INITIAL)
 
   async function handlePurge() {
     if (!window.confirm('This will permanently delete all accounts soft-deleted more than 30 days ago. This cannot be undone. Continue?')) return
@@ -62,6 +63,18 @@ export function MaintenancePanel() {
       })
     } catch (err) {
       setRecalcState({ loading: false, result: null, error: String(err) })
+    }
+  }
+
+  async function handleOrphanCleanup() {
+    setOrphanState({ loading: true, result: null, error: null })
+    try {
+      const res = await apiFetch('/api/admin/cleanup-orphans', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error ?? 'UNKNOWN_ERROR')
+      setOrphanState({ loading: false, result: `Deleted ${json.data.deleted} orphaned notification(s).`, error: null })
+    } catch (err) {
+      setOrphanState({ loading: false, result: null, error: String(err) })
     }
   }
 
@@ -130,7 +143,27 @@ export function MaintenancePanel() {
             {recalcState.loading ? 'Running…' : 'Recalculate'}
           </button>
         </div>
+ 
+        <div className="border-t border-gray-100" />
 
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Orphan Cleanup</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Delete notifications whose referenced entity (skill request, reservation, etc.) no longer exists.
+            </p>
+            {orphanState.result && <p className="text-xs text-green-700 mt-1">{orphanState.result}</p>}
+            {orphanState.error && <p className="text-xs text-red-600 mt-1">{orphanState.error}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={handleOrphanCleanup}
+            disabled={orphanState.loading}
+            className="shrink-0 px-3 py-1.5 text-sm bg-orange-700 text-white rounded-md hover:bg-orange-800 disabled:opacity-50 transition-colors"
+          >
+            {orphanState.loading ? 'Running…' : 'Run Orphan Cleanup'}
+          </button>
+        </div>
       </div>
     </div>
   )
