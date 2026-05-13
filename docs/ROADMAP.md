@@ -98,6 +98,8 @@ All 5 core modules complete and deployed.
 | Bulk dismiss notifications | ✅ Done — `POST /api/notifications/read-all` endpoint + "Mark all as read" button on notifications page. |
 | User home neighborhood | ✅ Done — `defaultLocationId` FK added to `profiles`. Location picker UI and pre-filter wiring are future work. |
 | Pagination variable standardization | ✅ Done — Feed standardized to page/limit. All routes now consistent. |
+| reserve-button.tsx i18n | `"Return by (optional)"` label is hardcoded English. Add `reserve_return_by_label` key to `tools` namespace in `en.json`/`bg.json` and wire `t('reserve_return_by_label')`. |
+| Skill endorsements UI | `endorsementCount` is fetched in `querySkillById` but never rendered. Add endorsement count badge to `skills/[id]/page.tsx` and wire POST/DELETE buttons for logged-in non-owners. |
 
 ---
 
@@ -105,6 +107,7 @@ All 5 core modules complete and deployed.
 
 | Item | Description |
 |------|-------------|
+| Profile PUT partial update | PUT `/api/profile` clears any field not explicitly sent (all fields default to null). Introduce PATCH semantics so callers can update individual fields without resending the full profile. |
 | Mutation testing (Stryker) | Run Stryker on `lib/state-machine.ts` + `lib/badges.ts` to verify tests actually catch regressions. |
 | SAST — Semgrep / CodeQL | Static analysis for SQL injection, XSS, JWT bypass. GitHub Actions job. |
 | Pen tester engagement | Active pentest: JWT algo confusion, mass assignment, SSRF via imageUrl, R2 enumeration. Code review is not a substitute. |

@@ -397,6 +397,7 @@ After every batch of completed tasks (or at the start of a session involving cod
 2. **Remove completed items** — delete rows from backlog tables once confirmed done. Do not accumulate ✅ markers forever; clean rows that are clearly done.
 3. **Correct wrong descriptions** — fix items that describe something as missing when it's actually implemented.
 4. **Update the `Last updated` date** at the top.
+5. **Document deferred findings immediately** — if a bug or improvement is found during a code review or audit but is NOT fixed right away (because scope shifted, time ran out, or a different direction was chosen), add it to the appropriate priority bucket in `docs/ROADMAP.md` before moving on. Never leave an unresolved finding only in conversation history.
 
 Trigger: after every 5+ file changes in a session, or before generating new junior-agent prompts, or when the user asks to "check the roadmap".
 
