@@ -45,6 +45,7 @@ export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) 
 const updateProfileSchema = z.object({
   name:       z.string().min(1).max(100).optional(),
   bio:        z.string().max(500).optional(),
+  defaultLocationId: z.string().uuid().optional().nullable(),
   avatarUrl:  z.string().url().max(2048).optional().or(z.literal('')),
   locationId: z.string().uuid().optional().or(z.literal('')),
   isPublic:   z.boolean().optional(),
@@ -63,7 +64,7 @@ export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { name, bio, avatarUrl, locationId, isPublic } = parsed.data
+    const { name, bio, defaultLocationId, avatarUrl, locationId, isPublic } = parsed.data
 
     // Validate locationId FK if provided and non-empty
     if (locationId) {
@@ -75,6 +76,7 @@ export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
       userId:     user.sub,
       name:       name ?? null,
       bio:        bio ?? null,
+      defaultLocationId: defaultLocationId ?? null,
       avatarUrl:  avatarUrl || null,
       locationId: locationId || null,
       updatedAt:  new Date(),
@@ -83,6 +85,7 @@ export const PUT = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
     const conflictSet: Record<string, unknown> = { ...values }
     // Only update isPublic when the caller explicitly sends it
     if (isPublic !== undefined) conflictSet.isPublic = isPublic
+    if (defaultLocationId !== undefined) conflictSet.defaultLocationId = defaultLocationId
 
     const [profile] = await db
       .insert(profiles)

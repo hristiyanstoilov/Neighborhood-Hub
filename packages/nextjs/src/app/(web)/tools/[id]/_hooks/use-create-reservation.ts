@@ -8,6 +8,7 @@ export interface CreateReservationBody {
   startDate: string
   endDate: string
   notes?: string
+  returnBy?: string
 }
 
 const ERROR_MESSAGES: Record<string, string> = {

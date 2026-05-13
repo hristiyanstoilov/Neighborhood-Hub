@@ -176,6 +176,20 @@
       "when": 1778555864006,
       "tag": "0024_huge_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1778636034324,
+      "tag": "0025_reflective_mentallo",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1778636303497,
+      "tag": "0026_dry_inertia",
+      "breakpoints": true
     }
   ]
 }

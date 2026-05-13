@@ -29,6 +29,7 @@ export default function ReserveButton({
   const [startDate, setStart]   = useState('')
   const [endDate, setEnd]       = useState('')
   const [notes, setNotes]       = useState('')
+  const [returnBy, setReturnBy] = useState('')
   const reservation             = useCreateReservation()
 
   const handleClose = () => setOpen(false)
@@ -64,6 +65,7 @@ export default function ReserveButton({
     setStart('')
     setEnd('')
     setNotes('')
+    setReturnBy('')
     reservation.reset()
     setOpen(true)
   }
@@ -72,7 +74,14 @@ export default function ReserveButton({
     e.preventDefault()
     if (!startDate || !endDate) return
     try {
-      await reservation.mutateAsync({ toolId, startDate, endDate, notes: notes || undefined })
+      const form = new FormData(e.currentTarget as HTMLFormElement)
+      await reservation.mutateAsync({
+        toolId,
+        startDate,
+        endDate,
+        notes: notes || undefined,
+        returnBy: (form.get('returnBy') as string) || undefined,
+      })
       posthog?.capture('tool_reserved', {})
       setOpen(false)
       router.push('/my-reservations')
@@ -139,6 +148,21 @@ export default function ReserveButton({
                   rows={3}
                   placeholder={t('reserve_notes_placeholder')}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="res-return-by" className="block text-sm font-medium text-gray-700 mb-1">
+                  Return by (optional)
+                </label>
+                <input
+                  id="res-return-by"
+                  name="returnBy"
+                  type="date"
+                  value={returnBy}
+                  onChange={(e) => setReturnBy(e.target.value)}
+                  min={startDate || new Date().toISOString().split('T')[0]}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 

@@ -22,6 +22,7 @@ export const createToolReservationSchema = z
     startDate: futureDateOrDatetime,
     endDate:   dateOrDatetime,
     notes:     z.string().trim().max(1000).optional(),
+    returnBy:  dateOrDatetime.optional(),
   })
   .superRefine((data, ctx) => {
     if (new Date(data.endDate) <= new Date(data.startDate)) {

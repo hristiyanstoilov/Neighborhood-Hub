@@ -42,7 +42,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { toolId, startDate, endDate, notes } = parsed.data
+    const { toolId, startDate, endDate, notes, returnBy } = parsed.data
 
     const tool = await db.query.tools.findFirst({
       where: and(eq(tools.id, toolId), isNull(tools.deletedAt)),
@@ -74,6 +74,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
         startDate:  start,
         endDate:    end,
         notes:      notes ?? null,
+        returnBy:   returnBy ? new Date(returnBy) : null,
       }).returning()
     } catch (err: unknown) {
       // Unique index: borrower already has an active (pending/approved) reservation for this tool

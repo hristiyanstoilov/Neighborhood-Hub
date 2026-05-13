@@ -1,0 +1,1 @@
+ALTER TABLE "tool_reservations" ADD COLUMN "return_by" timestamp with time zone;

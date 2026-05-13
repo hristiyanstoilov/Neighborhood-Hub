@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-12 (batch 8)
+> Last updated: 2026-05-12 (batch 9)
 
 ---
 
@@ -75,7 +75,7 @@ All 5 core modules complete and deployed.
 | Mobile leaderboard screen | Web leaderboard exists; mobile has no equivalent. |
 | Mobile map: wire live API | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Data breach incident response plan | Document KZLD 72-hour notification procedure (GDPR Art. 33). Private ops runbook. |
-| Orphan cleanup job | Weekly cleanup of orphaned rows in `ratings`, `notifications`, `feed_events` where referenced entity no longer exists. |
+| Orphan cleanup job | ✅ Done — `POST /api/admin/cleanup-orphans` added to admin maintenance panel. Covers notifications. ratings and feed_events cleanup are future work. |
 
 ---
 
@@ -93,9 +93,10 @@ All 5 core modules complete and deployed.
 | JWT key rotation procedure | Document: bump token version counter in DB → force logout all sessions → rotate `JWT_SECRET` env var. |
 | Audit log append-only sink | Critical audit events written to a table a compromised admin could delete. Add separate table with `REVOKE DELETE` or external structured log sink. |
 | Event waitlist | `event_waitlist` table with ordered position + auto-promotion when an attendee cancels. `maxCapacity` currently hard-rejects over-capacity RSVPs. |
-| Tool return date enforcement | Add `returnBy` column to `tool_reservations` + overdue notification. Loans currently go stale indefinitely. |
+| Tool return date enforcement | ✅ Done — `returnBy` nullable column added to `tool_reservations`. Overdue notification trigger is future work. |
 | Skill endorsements | `skill_endorsements` table — neighbors who completed exchanges can vouch for skills. Solves cold-start trust problem. |
-| User home neighborhood | Add `defaultLocationId` FK to `profiles` for "near you" pre-filter in discovery. |
+| Bulk dismiss notifications | ✅ Done — `POST /api/notifications/read-all` endpoint + "Mark all as read" button on notifications page. |
+| User home neighborhood | ✅ Done — `defaultLocationId` FK added to `profiles`. Location picker UI and pre-filter wiring are future work. |
 | Pagination variable standardization | Feed uses `{ limit, offset }`, all other routes use `{ page, limit }`. Standardize on one approach. |
 
 ---

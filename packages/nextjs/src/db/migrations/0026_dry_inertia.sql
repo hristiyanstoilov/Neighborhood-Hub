@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "default_location_id" uuid;--> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_default_location_id_locations_id_fk" FOREIGN KEY ("default_location_id") REFERENCES "public"."locations"("id") ON DELETE set null ON UPDATE no action;

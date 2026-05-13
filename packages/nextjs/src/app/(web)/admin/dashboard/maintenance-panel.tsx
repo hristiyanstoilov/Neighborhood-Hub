@@ -143,7 +143,7 @@ export function MaintenancePanel() {
             {recalcState.loading ? 'Running…' : 'Recalculate'}
           </button>
         </div>
- 
+
         <div className="border-t border-gray-100" />
 
         <div className="flex items-start justify-between gap-4">
@@ -164,6 +164,7 @@ export function MaintenancePanel() {
             {orphanState.loading ? 'Running…' : 'Run Orphan Cleanup'}
           </button>
         </div>
+
       </div>
     </div>
   )
