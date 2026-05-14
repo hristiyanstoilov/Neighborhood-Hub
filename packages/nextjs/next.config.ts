@@ -1,19 +1,8 @@
 import type { NextConfig } from 'next'
-import path from 'path'
-import { withSentryConfig } from '@sentry/nextjs'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  // next-intl@3.x requires 'next-intl/config' to resolve to the request config at build time.
-  // createNextIntlPlugin does this via webpack, which does not work under Turbopack (Next 16 default).
-  // Setting it manually in turbopack.resolveAlias covers the Turbopack build path.
-  turbopack: {
-    resolveAlias: {
-      'next-intl/config': './src/i18n/request.ts',
-    },
-  },
   headers: async () => [
     {
       source: '/(.*)',
@@ -28,9 +17,9 @@ const nextConfig: NextConfig = {
             // 'unsafe-inline' required by Next.js for hydration scripts
             `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
             "style-src 'self' 'unsafe-inline'",
-            `img-src 'self' data: blob: ${process.env.CLOUDFLARE_R2_PUBLIC_URL ?? 'https:'}`,
+            "img-src 'self' data: blob: https:",
             "font-src 'self'",
-            "connect-src 'self' https://eu.i.posthog.com https://us.i.posthog.com https://*.ingest.sentry.io",
+            "connect-src 'self'",
             "frame-ancestors 'none'",
           ].join('; '),
         },
@@ -41,13 +30,4 @@ const nextConfig: NextConfig = {
   ],
 }
 
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  disableLogger: true,
-  widenClientFileUpload: true,
-  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
-  // Source map upload requires SENTRY_AUTH_TOKEN env var — skipped if absent
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-})
+export default nextConfig

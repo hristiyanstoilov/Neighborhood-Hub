@@ -12,8 +12,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import SkillCard from '../../../components/SkillCard'
-import { AppScreen } from '../../../components/AppScreen'
-import { mobileTheme } from '../../../lib/theme'
 import { fetchNotifications, notificationsKeys } from '../../../lib/queries/notifications'
 import { SkillsHeader } from './_components/skills-header'
 import { SkillsLoadingState } from './_components/skills-loading-state'
@@ -62,12 +60,11 @@ export default function SkillListScreen() {
     queryKey: notificationsKeys.list(),
     queryFn: fetchNotifications,
     enabled: Boolean(user),
-    refetchInterval: 30_000,
   })
 
   const unreadCount = notificationsQuery.data?.length ?? 0
 
-  // Also refresh on focus for snappier feel when switching tabs
+  // Refresh unread notification count when screen is focused
   useFocusEffect(
     useCallback(() => {
       if (!user) return
@@ -122,29 +119,23 @@ export default function SkillListScreen() {
   )
 
   if (isInitialLoading) {
-    return (
-      <AppScreen>
-        <SkillsLoadingState header={header} />
-      </AppScreen>
-    )
+    return <SkillsLoadingState header={header} />
   }
 
   if (isError) {
     return (
-      <AppScreen>
-        <SkillsErrorState
-          message={errorMessage}
-          header={header}
-          onRetry={() => {
-            void retry()
-          }}
-        />
-      </AppScreen>
+      <SkillsErrorState
+        message={errorMessage}
+        header={header}
+        onRetry={() => {
+          void retry()
+        }}
+      />
     )
   }
 
   return (
-    <AppScreen>
+    <View style={styles.container}>
       <FlatList
         data={skills}
         keyExtractor={(item) => item.id}
@@ -166,14 +157,14 @@ export default function SkillListScreen() {
           hasMore ? (
             <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore} disabled={loadingMore}>
               {loadingMore
-                ? <ActivityIndicator color={mobileTheme.colors.primary} />
+                ? <ActivityIndicator color="#15803d" />
                 : <Text style={styles.loadMoreText}>Load more</Text>
               }
             </TouchableOpacity>
           ) : null
         }
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor={mobileTheme.colors.primary} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor="#15803d" />
         }
         contentContainerStyle={styles.list}
       />
@@ -188,12 +179,12 @@ export default function SkillListScreen() {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
-    </AppScreen>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: mobileTheme.colors.canvas },
+  container: { flex: 1, backgroundColor: '#f3f4f6' },
   list: { paddingBottom: 24 },
   communityRow: {
     flexDirection: 'row',
@@ -207,27 +198,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: mobileTheme.colors.surface,
+    backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border,
+    borderColor: '#d1d5db',
     paddingVertical: 10,
   },
   communityBtnIcon:  { fontSize: 16 },
-  communityBtnLabel: { fontSize: 13, fontWeight: '600', color: mobileTheme.colors.textSecondary },
+  communityBtnLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
   loadMoreButton: {
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
     paddingVertical: 12,
-    backgroundColor: mobileTheme.colors.primarySoft,
+    backgroundColor: '#f0fdf4',
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: mobileTheme.colors.primarySoftBorder,
+    borderColor: '#bbf7d0',
   },
-  loadMoreText: { color: mobileTheme.colors.primary, fontWeight: '500', fontSize: 14 },
+  loadMoreText: { color: '#15803d', fontWeight: '500', fontSize: 14 },
 
+  // FAB
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -235,14 +227,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: mobileTheme.colors.primary,
+    backgroundColor: '#15803d',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: mobileTheme.colors.shadow,
+    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
   },
-  fabText: { color: mobileTheme.colors.onPrimary, fontSize: 28, lineHeight: 32, fontWeight: '400' },
+  fabText: { color: '#fff', fontSize: 28, lineHeight: 32, fontWeight: '400' },
 })
