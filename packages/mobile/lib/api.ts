@@ -7,6 +7,9 @@ const MAX_RETRIES = 2
 const BASE_BACKOFF_MS = 250
 
 let _accessToken: string | null = null
+// Shared promise while a refresh is in-flight — prevents concurrent 401s from
+// each firing their own refresh and revoking each other's tokens.
+let _refreshInFlight: Promise<string | null> | null = null
 
 class OfflineResponse extends Response {
   get status() {
@@ -23,32 +26,36 @@ export function getAccessToken(): string | null {
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = await Storage.get('refresh_token')
-  if (!refreshToken) return null
+  if (_refreshInFlight) return _refreshInFlight
+  _refreshInFlight = (async () => {
+    const refreshToken = await Storage.get('refresh_token')
+    if (!refreshToken) return null
 
-  try {
-    const res = await fetch(`${BASE}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    })
+    try {
+      const res = await fetch(`${BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
 
-    if (!res.ok) {
-      await Storage.delete('refresh_token')
+      if (!res.ok) {
+        await Storage.delete('refresh_token')
+        return null
+      }
+
+      const json = await res.json()
+      const newAccess: string | undefined = json.data?.accessToken
+      const newRefresh: string | undefined = json.data?.refreshToken
+
+      if (newRefresh) await Storage.set('refresh_token', newRefresh)
+      if (newAccess) _accessToken = newAccess
+
+      return newAccess ?? null
+    } catch {
       return null
     }
-
-    const json = await res.json()
-    const newAccess: string | undefined = json.data?.accessToken
-    const newRefresh: string | undefined = json.data?.refreshToken
-
-    if (newRefresh) await Storage.set('refresh_token', newRefresh)
-    if (newAccess) _accessToken = newAccess
-
-    return newAccess ?? null
-  } catch {
-    return null
-  }
+  })().finally(() => { _refreshInFlight = null })
+  return _refreshInFlight
 }
 
 function getMethod(options?: RequestInit) {

@@ -5,6 +5,9 @@ const MAX_RETRIES = 2
 const BASE_BACKOFF_MS = 250
 
 let accessToken: string | null = null
+// Shared promise while a refresh is in-flight — prevents concurrent 401s from
+// each firing their own refresh and revoking each other's tokens.
+let refreshInFlight: Promise<string | null> | null = null
 
 export function setAccessToken(token: string | null) {
   accessToken = token
@@ -15,15 +18,19 @@ export function getAccessToken(): string | null {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const res = await fetch(`${BASE}/api/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-  if (!res.ok) return null
-  const json = await res.json()
-  const newToken = json.data?.accessToken ?? null
-  accessToken = newToken
-  return newToken
+  if (refreshInFlight) return refreshInFlight
+  refreshInFlight = (async () => {
+    const res = await fetch(`${BASE}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    const newToken = json.data?.accessToken ?? null
+    accessToken = newToken
+    return newToken
+  })().finally(() => { refreshInFlight = null })
+  return refreshInFlight
 }
 
 function getMethod(options: RequestInit) {
