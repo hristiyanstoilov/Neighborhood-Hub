@@ -31,7 +31,7 @@ export async function registerAndVerifyUser(
 
   const token = await getVerificationToken(email)
   if (!token) {
-    return
+    throw new Error(`Verification token not found for ${email} — email may not have been created`)
   }
 
   const verifyResponse = await request.post('/api/auth/verify-email', { data: { token } })

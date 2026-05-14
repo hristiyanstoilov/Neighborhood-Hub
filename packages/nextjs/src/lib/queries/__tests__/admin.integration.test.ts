@@ -21,11 +21,9 @@ describe('queryUserByRefreshToken', () => {
     expect(result).toBeNull()
   })
 
-  it('returns null for token of deleted user', async () => {
-    // This test verifies the isNull(users.deletedAt) check in the query
-    // The seeded user is not deleted, so this demonstrates the guard exists
+  it('returns user for non-deleted user (soft-delete guard present)', async () => {
     const result = await queryUserByRefreshToken(seed.refreshToken)
-    expect(result).not.toBeNull() // owner is not deleted
+    expect(result).not.toBeNull()
     expect(result!.id).toBe(seed.ownerUserId)
   })
 })
