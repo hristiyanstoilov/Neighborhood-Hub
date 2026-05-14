@@ -10,6 +10,8 @@
     "test": "vitest run --coverage.enabled=true --coverage.provider=v8 --coverage.include='src/lib/**' --coverage.thresholds.lines=25 --exclude='src/**/*.integration.test.ts'",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots",
     "db:seed": "npx tsx src/db/seed.ts"
   },
   "dependencies": {
@@ -36,6 +38,10 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.60.0",
+    "@types/pg": "^8.11.11",
+    "pg": "^8.20.0",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",

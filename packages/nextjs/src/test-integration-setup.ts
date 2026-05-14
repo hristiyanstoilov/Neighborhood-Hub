@@ -13,6 +13,7 @@ import {
   foodReservations,
   communityDrives,
   events,
+  refreshTokens,
 } from '@/db/schema'
 import { beforeAll } from 'vitest'
 
@@ -31,6 +32,8 @@ export const seed = {
   foodReservationId: '10000000-0000-0000-0000-000000000041',
   driveId:           '10000000-0000-0000-0000-000000000050',
   eventId:           '10000000-0000-0000-0000-000000000060',
+  refreshToken:      'test-refresh-token-valid-abc123xyz',
+  expiredRefreshToken: 'test-refresh-token-expired-xyz789',
 }
 
 beforeAll(async () => {
@@ -61,6 +64,21 @@ beforeAll(async () => {
   await db.insert(profiles).values([
     { userId: seed.ownerUserId,     name: 'Owner User' },
     { userId: seed.requesterUserId, name: 'Requester User' },
+  ])
+
+  await db.insert(refreshTokens).values([
+    {
+      userId:    seed.ownerUserId,
+      token:     seed.refreshToken,
+      isRevoked: false,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days in future
+    },
+    {
+      userId:    seed.ownerUserId,
+      token:     seed.expiredRefreshToken,
+      isRevoked: false,
+      expiresAt: new Date(Date.now() - 60 * 1000), // 1 minute in past
+    },
   ])
 
   await db.insert(skills).values([
