@@ -163,7 +163,7 @@ export default async function NotificationsPage() {
             </span>
           )}
         </div>
-        <MarkAllReadButton accessToken={accessToken} unreadCount={unread.length} />
+        <MarkAllReadButton unreadCount={unread.length} />
       </div>
 
       {notifications.length === 0 ? (

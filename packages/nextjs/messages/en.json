@@ -884,6 +884,7 @@
     "all_caught_up": "You're all caught up!",
     "mark_all_read": "Mark all read",
     "marking": "Marking…",
+    "mark_all_read_error": "Failed to mark as read. Please try again.",
     "unread": "Unread",
     "read_label": "Read",
     "new_notification": "New notification",

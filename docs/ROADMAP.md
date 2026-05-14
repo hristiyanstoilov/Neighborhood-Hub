@@ -100,6 +100,7 @@ All 5 core modules complete and deployed.
 | Pagination variable standardization | ✅ Done — Feed standardized to page/limit. All routes now consistent. |
 | reserve-button.tsx i18n | ✅ Done — `reserve_return_by_label` key added to tools namespace; hardcoded string removed. |
 | Skill endorsements UI | ✅ Done — endorsementCount badge in dl grid + EndorseButton client component on skill detail page. |
+| EndorseButton retry on error | Error state shows "Failed. Try again." but has no retry button — component is stuck until page refresh. Add a retry handler that resets state to 'idle'. |
 
 ---
 

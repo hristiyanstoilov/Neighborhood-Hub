@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { apiFetch } from '@/lib/api'
 
 type Props = {
-  accessToken: string
   unreadCount: number
 }
 
-export default function MarkAllReadButton({ accessToken, unreadCount }: Props) {
+export default function MarkAllReadButton({ unreadCount }: Props) {
   const router = useRouter()
+  const t = useTranslations('notifications')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
   const [optimisticUnread, setOptimisticUnread] = useState(unreadCount)
@@ -22,12 +24,7 @@ export default function MarkAllReadButton({ accessToken, unreadCount }: Props) {
     setOptimisticUnread(0)
 
     try {
-      const res = await fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${accessToken}`,
-        },
-      })
+      const res = await apiFetch('/api/notifications/read-all', { method: 'POST' })
 
       if (!res.ok) {
         throw new Error('MARK_ALL_FAILED')
@@ -52,9 +49,9 @@ export default function MarkAllReadButton({ accessToken, unreadCount }: Props) {
         disabled={busy}
         className="inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
       >
-        {busy ? 'Marking…' : 'Mark all as read'}
+        {busy ? t('marking') : t('mark_all_read')}
       </button>
-      {error && <p className="text-xs text-red-600">Failed to mark as read</p>}
+      {error && <p className="text-xs text-red-600">{t('mark_all_read_error')}</p>}
     </div>
   )
 }

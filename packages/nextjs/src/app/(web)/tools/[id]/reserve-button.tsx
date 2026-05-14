@@ -161,7 +161,7 @@ export default function ReserveButton({
                   type="date"
                   value={returnBy}
                   onChange={(e) => setReturnBy(e.target.value)}
-                  min={startDate || new Date().toISOString().split('T')[0]}
+                  min={endDate || startDate || new Date().toISOString().split('T')[0]}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
