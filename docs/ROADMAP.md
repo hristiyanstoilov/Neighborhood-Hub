@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-13 (batch 10)
+> Last updated: 2026-05-14 (batch 11)
 
 ---
 
@@ -84,7 +84,7 @@ All 5 core modules complete and deployed.
 | Item | Description |
 |------|-------------|
 | Brand typography | ✅ Done — Inter font via `next/font/google` with latin + cyrillic subsets. |
-| CTA color differentiation | `green-700` used for nav hovers AND primary CTA buttons — no visual hierarchy. Change CTA buttons to `emerald-600`; introduce `amber-600` for secondary-action affordances. |
+| CTA color differentiation | ✅ Done — Primary action buttons changed to `emerald-600`; nav hovers remain `green-700`. |
 | Accessibility pass (WCAG 2.1 AA) | Systematic `aria-label`, `aria-expanded`, focus management audit. EN 301 549 EU standard applies in Bulgaria. |
 | App Store submission materials | Screenshots EN + BG, descriptions, content rating forms, Google Play Data Safety form. Hard blocker for store submission. |
 | Calendar export | `.ics` / Google Calendar deep-link on event detail and confirmed reservations. Standard UX expectation. |
@@ -98,8 +98,8 @@ All 5 core modules complete and deployed.
 | Bulk dismiss notifications | ✅ Done — `POST /api/notifications/read-all` endpoint + "Mark all as read" button on notifications page. |
 | User home neighborhood | ✅ Done — `defaultLocationId` FK added to `profiles`. Location picker UI and pre-filter wiring are future work. |
 | Pagination variable standardization | ✅ Done — Feed standardized to page/limit. All routes now consistent. |
-| reserve-button.tsx i18n | `"Return by (optional)"` label is hardcoded English. Add `reserve_return_by_label` key to `tools` namespace in `en.json`/`bg.json` and wire `t('reserve_return_by_label')`. |
-| Skill endorsements UI | `endorsementCount` is fetched in `querySkillById` but never rendered. Add endorsement count badge to `skills/[id]/page.tsx` and wire POST/DELETE buttons for logged-in non-owners. |
+| reserve-button.tsx i18n | ✅ Done — `reserve_return_by_label` key added to tools namespace; hardcoded string removed. |
+| Skill endorsements UI | ✅ Done — endorsementCount badge in dl grid + EndorseButton client component on skill detail page. |
 
 ---
 

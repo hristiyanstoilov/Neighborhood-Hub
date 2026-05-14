@@ -448,6 +448,10 @@
     "request_sent_title": "Заявката е изпратена!",
     "request_sent_desc": "Собственикът ще бъде уведомен. Можете да проследите статуса на заявката си по-долу.",
     "view_requests": "Виж моите заявки",
+    "endorse_btn": "Препоръчай",
+    "endorse_done": "Препоръчано ✓",
+    "endorse_error": "Грешка. Опитай отново.",
+    "field_endorsements": "Препоръки",
     "close_dialog_label": "Затвори диалога за заявка",
     "request_sr_desc": "Попълнете дата, час и детайли за срещата, за да изпратите заявка.",
     "request_start_label": "Начало",
@@ -540,6 +544,7 @@
     "reserve_end_label": "Крайна дата",
     "reserve_notes_label": "Бележки (по избор)",
     "reserve_notes_placeholder": "Всякакви детайли за собственика…",
+    "reserve_return_by_label": "Върни до (по избор)",
     "sending": "Изпращане…",
     "send_request": "Изпрати заявка",
     "errors": {

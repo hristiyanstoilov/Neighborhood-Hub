@@ -448,6 +448,10 @@
     "request_sent_title": "Request sent!",
     "request_sent_desc": "The skill owner will be notified. You can track your request status below.",
     "view_requests": "View my requests",
+    "endorse_btn": "Endorse",
+    "endorse_done": "Endorsed ✓",
+    "endorse_error": "Failed. Try again.",
+    "field_endorsements": "Endorsements",
     "close_dialog_label": "Close request dialog",
     "request_sr_desc": "Fill in the date, time, and meeting details to send a request.",
     "request_start_label": "Start",
@@ -540,6 +544,7 @@
     "reserve_end_label": "End date",
     "reserve_notes_label": "Notes (optional)",
     "reserve_notes_placeholder": "Any details for the owner…",
+    "reserve_return_by_label": "Return by (optional)",
     "sending": "Sending…",
     "send_request": "Send request",
     "errors": {

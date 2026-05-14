@@ -28,7 +28,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
     return (
       <Link
         href={`/login?next=/events/${eventId}`}
-        className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
+        className="block w-full text-center bg-emerald-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
       >
         {t('login_to_rsvp')}
       </Link>
@@ -111,7 +111,7 @@ export default function RsvpButton({ eventId, organizerId, status, initialRsvpSt
       type="button"
       onClick={handleRsvp}
       disabled={busy}
-      className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
+      className="w-full bg-emerald-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
     >
       {busy ? t('saving') : rsvpStatus === 'cancelled' ? t('re_rsvp_btn') : t('rsvp_btn')}
     </button>

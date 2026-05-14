@@ -69,7 +69,7 @@ export default function RequestButton({ skill }: Props) {
     return (
       <Link
         href={`/login?next=/skills/${skill.id}`}
-        className="block w-full text-center bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
+        className="block w-full text-center bg-emerald-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
       >
         Log in to request this skill
       </Link>
@@ -116,7 +116,7 @@ export default function RequestButton({ skill }: Props) {
       <button
         type="button"
         onClick={() => { setOpen(true); setStep('form'); createRequest.reset() }}
-        className="w-full bg-green-700 text-white rounded-md py-2.5 text-sm font-medium hover:bg-green-800 transition-colors"
+        className="w-full bg-emerald-600 text-white rounded-md py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
       >
         Request this skill
       </button>
@@ -145,7 +145,7 @@ export default function RequestButton({ skill }: Props) {
                   <Link
                     href="/my-requests"
                     onClick={() => setOpen(false)}
-                    className="bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700 transition-colors"
                   >
                     View my requests
                   </Link>

@@ -9,6 +9,7 @@ import { queryUserByRefreshToken } from '@/lib/queries/admin'
 import RequestButton from './request-button'
 import SkillOwnerActions from './skill-owner-actions'
 import { FlagButton } from '@/components/ui/flag-button'
+import { EndorseButton } from './endorse-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -143,6 +144,12 @@ export default async function SkillDetailPage({
               )}
             </dd>
           </div>
+          {(skill!.endorsementCount ?? 0) > 0 && (
+            <div className="col-span-2">
+              <dt className="text-gray-400 text-xs uppercase tracking-wide mb-0.5">{t('field_endorsements')}</dt>
+              <dd className="font-medium">{skill!.endorsementCount}</dd>
+            </div>
+          )}
         </dl>
 
         {currentUserId && currentUserId === skill!.ownerId && (
@@ -151,7 +158,8 @@ export default async function SkillDetailPage({
         <RequestButton skill={skill!} />
 
         {currentUserId && currentUserId !== skill!.ownerId && (
-          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <EndorseButton skillId={skill!.id} />
             <FlagButton entityType="skill" entityId={skill!.id} />
           </div>
         )}

@@ -54,7 +54,7 @@ export default function ReserveButton({
     return (
       <button
         onClick={() => router.push('/login?next=' + encodeURIComponent(`/tools/${toolId}`))}
-        className="mt-4 w-full bg-green-700 text-white py-2.5 rounded-md font-medium hover:bg-green-800 transition-colors"
+        className="mt-4 w-full bg-emerald-600 text-white py-2.5 rounded-md font-medium hover:bg-emerald-700 transition-colors"
       >
         {t('login_to_reserve')}
       </button>
@@ -94,7 +94,7 @@ export default function ReserveButton({
     <>
       <button
         onClick={handleOpen}
-        className="mt-4 w-full bg-green-700 text-white py-2.5 rounded-md font-medium hover:bg-green-800 transition-colors"
+        className="mt-4 w-full bg-emerald-600 text-white py-2.5 rounded-md font-medium hover:bg-emerald-700 transition-colors"
       >
         {t('reserve_btn')}
       </button>
@@ -153,7 +153,7 @@ export default function ReserveButton({
 
               <div>
                 <label htmlFor="res-return-by" className="block text-sm font-medium text-gray-700 mb-1">
-                  Return by (optional)
+                  {t('reserve_return_by_label')}
                 </label>
                 <input
                   id="res-return-by"
@@ -181,7 +181,7 @@ export default function ReserveButton({
                 <button
                   type="submit"
                   disabled={reservation.isPending || !startDate || !endDate}
-                  className="flex-1 bg-green-700 text-white py-2 rounded-md text-sm font-medium hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-emerald-600 text-white py-2 rounded-md text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {reservation.isPending ? t('sending') : t('send_request')}
                 </button>
