@@ -82,32 +82,41 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (20 tables)
+## 4. Database Schema (28 tables)
 
 ### Core tables (all built)
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth only (email, password_hash, role, failed_login_attempts, locked_until, deleted_at) |
-| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, is_public) |
-| `refresh_tokens` | JWT refresh tokens (user_id FK, token, is_revoked, expires_at, ip_address) |
+| `profiles` | Profile data (user_id FK, name, bio, avatar_url, location_id FK, default_location_id FK, avg_rating, rating_count, is_public) |
+| `refresh_tokens` | JWT refresh tokens (user_id FK, token, is_revoked, expires_at, ip_address, user_agent) |
 | `audit_log` | Admin action log (user_id FK, action, entity, entity_id, metadata jsonb, ip_address) |
-| `categories` | Normalized skill categories (slug UNIQUE, label) |
+| `categories` | Normalized skill categories (slug UNIQUE, label, icon) |
 | `user_consents` | GDPR consent tracking (user_id FK, consent_type, granted, granted_at, revoked_at, version) |
+| `user_stats` | Gamification points (user_id FK UNIQUE, total_points, level) |
+| `badges` | Achievement records (user_id FK, type enum, awarded_at) — unique per user+type |
 | `skills` | Skill listings (owner_id FK, title, category_id FK, available_hours, status, image_url, location_id FK, deleted_at) |
-| `skill_requests` | Booking requests (user_from_id FK, user_to_id FK, skill_id FK, scheduled_start, scheduled_end, meeting_type, meeting_url, status) |
+| `skill_endorsements` | Neighbor endorsements (skill_id FK, endorser_id FK) — unique per skill+endorser |
+| `skill_requests` | Booking requests (user_from_id FK, user_to_id FK, skill_id FK, scheduled_start, scheduled_end, meeting_type, meeting_url, status, completed_at) |
 | `locations` | Geo data for radar map (city, neighborhood, lat, lng – neighborhood centroid only, country_code, type) |
 | `notifications` | In-app notifications (user_id FK, type, entity_type, entity_id, is_read) |
-| `ai_conversations` | AI chat sessions (user_id FK, title) |
+| `ai_conversations` | AI chat sessions (user_id FK, title, deleted_at) |
 | `ai_messages` | AI chat messages (conversation_id FK, role, content) |
 | `tools` | Tool listings (owner_id FK, title, condition, category_id FK, location_id FK, status, deleted_at) |
-| `tool_reservations` | Borrow requests (tool_id FK, borrower_id FK, start_date, end_date, status, cancellation_reason) |
+| `tool_reservations` | Borrow requests (tool_id FK, borrower_id FK, owner_id FK, start_date, end_date, return_by, status, cancellation_reason) |
 | `events` | Neighborhood events (organizer_id FK, title, description, status, starts_at, ends_at, address, image_url, max_capacity, location_id FK, deleted_at) |
 | `event_attendees` | RSVP records (event_id FK, user_id FK, status) |
-| `community_drives` | Charity/donation drives (organizer_id FK, title, description, drive_type, status, deadline, goal_description, drop_off_address, image_url, deleted_at) |
+| `community_drives` | Charity/donation drives (organizer_id FK, title, description, drive_type, status, deadline, goal_description, goal_amount, current_amount, drop_off_address, image_url, deleted_at) |
 | `drive_pledges` | Pledge records (drive_id FK, user_id FK, pledge_description, status) |
 | `food_shares` | Food listings (owner_id FK, title, quantity, location_id FK, available_until, pickup_instructions, image_url, status, deleted_at) |
-| `food_reservations` | Food reservations (food_share_id FK, requester_id FK, pickup_time, notes, status, picked_up_at) |
+| `food_reservations` | Food reservations (food_share_id FK, requester_id FK, owner_id FK, pickup_at, notes, status, picked_up_at, cancellation_reason) |
+| `ratings` | 5-star feedback (rater_id FK, rated_user_id FK, context_type, context_id, score 1–5, comment) |
+| `conversations` | DM threads (participant_a FK, participant_b FK — ordered pair, unique) |
+| `messages` | DM content (conversation_id FK, sender_id FK, body, read_at) |
+| `push_tokens` | Expo push tokens for mobile notifications (user_id FK, token UNIQUE, platform) |
+| `reports` | Content moderation (reporter_id FK, target_type, target_id, reason, status, reviewed_by_id FK) |
+| `user_blocks` | User safety (blocker_id FK, blocked_id FK — ordered pair, unique) |
 
 **Rules:**
 - Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
