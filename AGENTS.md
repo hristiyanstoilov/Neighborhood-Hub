@@ -400,6 +400,8 @@ After every batch of completed tasks (or at the start of a session involving cod
 
 Trigger: after every 5+ file changes in a session, or before generating new junior-agent prompts, or when the user asks to "check the roadmap".
 
+5. **Deferred findings** — if a bug or improvement is found but cannot be fixed immediately (out of scope, needs migration, or session is changing direction), add it to the appropriate P-level backlog row in `docs/ROADMAP.md` before moving on. Never leave a known issue undocumented.
+
 ### What Claude should NOT do
 - Change the tech stack without being asked
 - Add features beyond the current phase (v0.1) unless asked
