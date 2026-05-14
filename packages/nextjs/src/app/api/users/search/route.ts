@@ -3,9 +3,13 @@ import { and, eq, ilike, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { users, profiles } from '@/db/schema'
 import { requireAuth } from '@/lib/middleware'
+import { searchUserRatelimit } from '@/lib/ratelimit'
 
 export const GET = requireAuth(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await searchUserRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
 
     if (q.length < 2) {
