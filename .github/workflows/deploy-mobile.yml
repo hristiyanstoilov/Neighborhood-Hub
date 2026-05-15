@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: packages/mobile
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Export Expo web
         working-directory: packages/mobile
