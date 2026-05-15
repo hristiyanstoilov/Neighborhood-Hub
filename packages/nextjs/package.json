@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
-    "db:seed": "npx tsx src/db/seed.ts"
+    "db:seed": "npx tsx src/db/seed.ts",
+    "db:seed:bulk": "npx tsx src/db/seed.ts --bulk"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

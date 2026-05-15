@@ -74,7 +74,7 @@ neighborhood-hub/
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (all 20 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (all 30 tables)
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify helpers
@@ -102,7 +102,7 @@ neighborhood-hub/
 
 ## Database Schema
 
-20 tables across 6 concern areas:
+30 tables across 8 concern areas:
 
 ### Auth & Users
 | Table | Purpose |
@@ -119,6 +119,7 @@ neighborhood-hub/
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
 | `locations` | Neighborhood-level geo centroids (GDPR compliant) |
 | `skills` | Skill listings (owner_id, title, category, status, soft delete) |
+| `skill_endorsements` | Peer endorsements on skill listings (unique per endorser+skill) |
 | `skill_requests` | Booking requests — full state machine |
 | `notifications` | In-app notifications triggered by request status changes |
 
@@ -145,6 +146,23 @@ neighborhood-hub/
 |-------|---------|
 | `food_shares` | Food listings with quantity, status, and pickup details |
 | `food_reservations` | Reservation workflow for shared food |
+
+### Community & Social
+| Table | Purpose |
+|-------|---------|
+| `ratings` | Mutual ratings after completed skill requests and tool returns |
+| `feed_events` | Activity feed (skill listed, tool listed, food shared, event created) |
+| `conversations` | DM conversation pairs (participantA, participantB unique) |
+| `messages` | DM messages within conversations |
+| `push_tokens` | Expo push notification tokens per user device |
+
+### Gamification & Safety
+| Table | Purpose |
+|-------|---------|
+| `user_stats` | Points, level, rank per user |
+| `badges` | Earned badges (type, earnedAt) |
+| `reports` | Content reports with moderation status |
+| `user_blocks` | Block relationships between users |
 
 ### AI Chat
 | Table | Purpose |
@@ -456,8 +474,11 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 # 4. Run DB migrations
 cd packages/nextjs && npx drizzle-kit migrate && cd ../..
 
-# 5. (Optional) Seed categories, locations, demo users, skills/requests, and tools/reservations
+# 5. (Optional) Seed categories, locations, and demo data
 cd packages/nextjs && npm run db:seed && cd ../..
+
+# 5a. (Optional) Bulk-seed 10,000+ records for scalability testing
+cd packages/nextjs && npm run db:seed:bulk && cd ../..
 
 # 6. Install mobile dependencies
 cd packages/mobile && npm install --legacy-peer-deps && cd ../..

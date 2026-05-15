@@ -87,6 +87,12 @@ async function seed() {
     process.exit(0)
   }
 
+  if (process.argv.includes('--bulk')) {
+    await seedBulk()
+    console.log('Done.')
+    process.exit(0)
+  }
+
   // ─── 3. Guard: skip demo data if it already exists ───────────────────────
   const existing = await db.select({ id: users.id })
     .from(users)
@@ -1706,6 +1712,304 @@ async function seedConversations() {
   if (feedRows.length > 0) {
     await db.insert(feedEvents).values(feedRows).onConflictDoNothing()
   }
+}
+
+// ─── Bulk seed (10k+ records for scalability) ───────────────────────────────
+// Run with: npm run db:seed -- --bulk
+
+async function seedBulk() {
+  const guard = await db.select({ id: users.id })
+    .from(users).where(eq(users.email, 'bulk_0001@demo.bg')).limit(1)
+  if (guard.length > 0) {
+    console.log('Bulk data already seeded, skipping')
+    return
+  }
+
+  console.log('Seeding bulk data (10,000+ records)...')
+
+  const allLocations = await db.select({ id: locations.id }).from(locations)
+  const allCategories = await db.select({ id: categories.id }).from(categories)
+  const locIds = allLocations.map((l) => l.id)
+  const catIds = allCategories.map((c) => c.id)
+  const rand = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+  const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
+  const daysAhead = (n: number) => new Date(Date.now() + n * 24 * 60 * 60 * 1000)
+
+  const pwHash = await bcrypt.hash('Demo1234!', 10)
+  const now = new Date()
+  const N = 200
+
+  const NAMES = ['Александър', 'Антон', 'Борислав', 'Валентин', 'Георги', 'Димитър', 'Емил', 'Живко', 'Ивайло', 'Йордан', 'Ангелина', 'Биляна', 'Валерия', 'Галя', 'Даниела', 'Зорница', 'Ирина', 'Калина', 'Пламен', 'Теодора']
+  const SURNAMES = ['Петров', 'Иванов', 'Георгиев', 'Димитров', 'Стоянов', 'Николов', 'Тодоров', 'Атанасов', 'Христов', 'Маринов']
+  const SKILL_TITLES = ['Web development tutoring', 'Home repair help', 'Language lessons', 'Cooking assistance', 'Garden advice', 'Music lessons', 'Design consultation', 'Fitness coaching', 'Pet care', 'Photography tips']
+  const TOOL_TITLES = ['Power drill', 'Extension ladder', 'Stand mixer', 'Projector', 'Bicycle pump', 'Cordless vacuum', 'Sewing machine', 'Pasta maker', 'Pressure washer', 'Circular saw']
+  const FOOD_TITLES = ['Домашна баница', 'Кисело тесто хляб', 'Лютеница', 'Постна чорба', 'Таратор', 'Плодова торта', 'Домашно сладко', 'Мусака', 'Пилешка супа', 'Зеленчукова яхния']
+  const MSG_BODIES = [
+    'Здравей! Интересувам се от твоята обява.',
+    'Мога ли да взема утре?',
+    'Перфектно, ще се видим!',
+    'Благодаря, много помогна!',
+    'Кога е удобно за теб?',
+    'Ще се свържа допълнително.',
+    'Звучи добре, запазено!',
+    'Ок, ще мина в 18:00.',
+  ]
+
+  // ─── Users (200) ─────────────────────────────────────────────────────────
+  const bulkIds: string[] = []
+  for (let i = 0; i < N; i += 50) {
+    const batch = Array.from({ length: Math.min(50, N - i) }, (_, j) => ({
+      email: `bulk_${String(i + j + 1).padStart(4, '0')}@demo.bg`,
+      passwordHash: pwHash,
+      role: 'user' as const,
+      emailVerifiedAt: now,
+    }))
+    const inserted = await db.insert(users).values(batch).onConflictDoNothing().returning({ id: users.id })
+    bulkIds.push(...inserted.map((u) => u.id))
+  }
+  console.log(`  ✓ ${bulkIds.length} users`)
+
+  // ─── Profiles (200) ──────────────────────────────────────────────────────
+  await db.insert(profiles).values(
+    bulkIds.map((userId, i) => ({
+      userId,
+      name: `${NAMES[i % NAMES.length]} ${SURNAMES[i % SURNAMES.length]}`,
+      bio: 'Community member and neighbour.',
+      locationId: rand(locIds),
+      isPublic: true,
+    })),
+  ).onConflictDoNothing()
+  console.log(`  ✓ ${bulkIds.length} profiles`)
+
+  // ─── Skills (600 — 3 per user) ────────────────────────────────────────────
+  const bulkSkillIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof skills.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      for (let k = 0; k < 3; k++) {
+        const id = crypto.randomUUID()
+        bulkSkillIds.push(id)
+        batch.push({
+          id,
+          ownerId: bulkIds[j],
+          title: `${SKILL_TITLES[(j * 3 + k) % SKILL_TITLES.length]} — community offer`,
+          description: 'Happy to help neighbours in the community. Contact me to arrange.',
+          categoryId: catIds[(j + k) % catIds.length],
+          availableHours: randInt(2, 10),
+          status: 'available',
+          locationId: rand(locIds),
+        })
+      }
+    }
+    await db.insert(skills).values(batch).onConflictDoNothing()
+  }
+  console.log(`  ✓ ${bulkSkillIds.length} skills`)
+
+  // ─── Tools (400 — 2 per user) ─────────────────────────────────────────────
+  const bulkToolIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof tools.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      for (let k = 0; k < 2; k++) {
+        const id = crypto.randomUUID()
+        bulkToolIds.push(id)
+        batch.push({
+          id,
+          ownerId: bulkIds[j],
+          title: TOOL_TITLES[(j * 2 + k) % TOOL_TITLES.length],
+          description: 'Available for short-term loan to neighbours.',
+          categoryId: catIds[(j + k) % catIds.length],
+          locationId: rand(locIds),
+          condition: (['good', 'fair', 'new'] as const)[k % 3],
+          status: 'available',
+        })
+      }
+    }
+    await db.insert(tools).values(batch).onConflictDoNothing()
+  }
+  console.log(`  ✓ ${bulkToolIds.length} tools`)
+
+  // ─── Food shares (200 — 1 per user) ──────────────────────────────────────
+  const bulkFoodIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof foodShares.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      const id = crypto.randomUUID()
+      bulkFoodIds.push(id)
+      batch.push({
+        id,
+        ownerId: bulkIds[j],
+        title: `${FOOD_TITLES[j % FOOD_TITLES.length]} — ${j + 1}`,
+        description: 'Домашна храна, приготвена с грижа за съседите.',
+        quantity: randInt(2, 8),
+        locationId: rand(locIds),
+        availableUntil: daysAhead(randInt(1, 5)),
+        pickupInstructions: 'Вземане по договорка.',
+        status: 'available',
+      })
+    }
+    await db.insert(foodShares).values(batch).onConflictDoNothing()
+  }
+  console.log(`  ✓ ${bulkFoodIds.length} food shares`)
+
+  // ─── Skill requests (3,000) ───────────────────────────────────────────────
+  for (let batch = 0; batch < 15; batch++) {
+    const rows: Array<typeof skillRequests.$inferInsert> = []
+    for (let i = 0; i < 200; i++) {
+      const fromIdx = randInt(0, bulkIds.length - 1)
+      let toIdx = randInt(0, bulkIds.length - 1)
+      while (toIdx === fromIdx) toIdx = randInt(0, bulkIds.length - 1)
+      const skillIdx = toIdx * 3 + (i % 3)
+      const start = daysAhead(randInt(1, 30))
+      const end = new Date(start.getTime() + randInt(1, 3) * 60 * 60 * 1000)
+      rows.push({
+        userFromId: bulkIds[fromIdx],
+        userToId: bulkIds[toIdx],
+        skillId: bulkSkillIds[Math.min(skillIdx, bulkSkillIds.length - 1)],
+        scheduledStart: start,
+        scheduledEnd: end,
+        meetingType: i % 2 === 0 ? 'online' : 'in_person',
+        status: (['pending', 'accepted', 'completed', 'rejected'] as const)[i % 4],
+      })
+    }
+    await db.insert(skillRequests).values(rows).onConflictDoNothing()
+  }
+  console.log('  ✓ 3,000 skill requests')
+
+  // ─── Tool reservations (2,000) ────────────────────────────────────────────
+  for (let batch = 0; batch < 10; batch++) {
+    const rows: Array<typeof toolReservations.$inferInsert> = []
+    for (let i = 0; i < 200; i++) {
+      const ownerIdx = randInt(0, bulkIds.length - 1)
+      let borrowerIdx = randInt(0, bulkIds.length - 1)
+      while (borrowerIdx === ownerIdx) borrowerIdx = randInt(0, bulkIds.length - 1)
+      const toolIdx = ownerIdx * 2 + (i % 2)
+      const start = daysAhead(randInt(1, 14))
+      const end = new Date(start.getTime() + randInt(1, 7) * 24 * 60 * 60 * 1000)
+      rows.push({
+        toolId: bulkToolIds[Math.min(toolIdx, bulkToolIds.length - 1)],
+        borrowerId: bulkIds[borrowerIdx],
+        ownerId: bulkIds[ownerIdx],
+        startDate: start,
+        endDate: end,
+        status: (['pending', 'approved', 'returned'] as const)[i % 3],
+      })
+    }
+    await db.insert(toolReservations).values(rows).onConflictDoNothing()
+  }
+  console.log('  ✓ 2,000 tool reservations')
+
+  // ─── Food reservations (1,000) ────────────────────────────────────────────
+  for (let batch = 0; batch < 5; batch++) {
+    const rows: Array<typeof foodReservations.$inferInsert> = []
+    for (let i = 0; i < 200; i++) {
+      const ownerIdx = (batch * 200 + i) % bulkIds.length
+      let requesterIdx = randInt(0, bulkIds.length - 1)
+      while (requesterIdx === ownerIdx) requesterIdx = randInt(0, bulkIds.length - 1)
+      rows.push({
+        foodShareId: bulkFoodIds[ownerIdx],
+        requesterId: bulkIds[requesterIdx],
+        ownerId: bulkIds[ownerIdx],
+        pickupAt: daysAhead(randInt(1, 3)),
+        status: (['pending', 'reserved', 'cancelled'] as const)[i % 3],
+      })
+    }
+    await db.insert(foodReservations).values(rows).onConflictDoNothing()
+  }
+  console.log('  ✓ 1,000 food reservations')
+
+  // ─── Conversations + messages (300 convs × 8 msgs = 2,400 messages) ────────
+  const pairsSeen = new Set<string>()
+  const pairs: Array<{ participantA: string; participantB: string }> = []
+  let attempts = 0
+  while (pairs.length < 300 && attempts < 5000) {
+    attempts++
+    const aIdx = randInt(0, bulkIds.length - 1)
+    const bIdx = randInt(0, bulkIds.length - 1)
+    if (aIdx === bIdx) continue
+    const a = bulkIds[aIdx]
+    const b = bulkIds[bIdx]
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`
+    if (pairsSeen.has(key)) continue
+    pairsSeen.add(key)
+    pairs.push(a < b ? { participantA: a, participantB: b } : { participantA: b, participantB: a })
+  }
+
+  let msgTotal = 0
+  for (let i = 0; i < pairs.length; i += 50) {
+    const inserted = await db.insert(conversations)
+      .values(pairs.slice(i, i + 50))
+      .onConflictDoNothing()
+      .returning({ id: conversations.id, participantA: conversations.participantA })
+    if (inserted.length === 0) continue
+    const msgRows: Array<typeof messages.$inferInsert> = []
+    for (const conv of inserted) {
+      for (let m = 0; m < 8; m++) {
+        msgRows.push({
+          conversationId: conv.id,
+          senderId: m % 2 === 0 ? conv.participantA : bulkIds[randInt(0, bulkIds.length - 1)],
+          body: MSG_BODIES[m % MSG_BODIES.length],
+          createdAt: daysAgo(randInt(0, 14)),
+        })
+      }
+    }
+    await db.insert(messages).values(msgRows).onConflictDoNothing()
+    msgTotal += msgRows.length
+  }
+  console.log(`  ✓ ${pairs.length} conversations, ${msgTotal} messages`)
+
+  // ─── Feed events (2,000) ──────────────────────────────────────────────────
+  const FEED_TYPES = ['skill_listed', 'tool_listed', 'food_shared'] as const
+  for (let batch = 0; batch < 10; batch++) {
+    const rows: Array<typeof feedEvents.$inferInsert> = []
+    for (let i = 0; i < 200; i++) {
+      const type = FEED_TYPES[(batch * 200 + i) % FEED_TYPES.length]
+      const actorIdx = randInt(0, bulkIds.length - 1)
+      let targetId: string
+      let targetTitle: string
+      let targetUrl: string
+      if (type === 'skill_listed') {
+        targetId = bulkSkillIds[actorIdx * 3]
+        targetTitle = 'Community skill offer'
+        targetUrl = `/skills/${targetId}`
+      } else if (type === 'tool_listed') {
+        targetId = bulkToolIds[actorIdx * 2]
+        targetTitle = 'Tool available for loan'
+        targetUrl = `/tools/${targetId}`
+      } else {
+        targetId = bulkFoodIds[actorIdx]
+        targetTitle = 'Food share available'
+        targetUrl = `/food/${targetId}`
+      }
+      rows.push({
+        actorId: bulkIds[actorIdx],
+        actorName: `${NAMES[actorIdx % NAMES.length]} ${SURNAMES[actorIdx % SURNAMES.length]}`,
+        eventType: type,
+        targetId,
+        targetTitle,
+        targetUrl,
+        createdAt: daysAgo(randInt(0, 30)),
+      })
+    }
+    await db.insert(feedEvents).values(rows).onConflictDoNothing()
+  }
+  console.log('  ✓ 2,000 feed events')
+
+  console.log('\n  Bulk seed summary:')
+  console.log(`    Users:             ${bulkIds.length}`)
+  console.log(`    Profiles:          ${bulkIds.length}`)
+  console.log(`    Skills:            ${bulkSkillIds.length}`)
+  console.log(`    Tools:             ${bulkToolIds.length}`)
+  console.log(`    Food shares:       ${bulkFoodIds.length}`)
+  console.log('    Skill requests:    3,000')
+  console.log('    Tool reservations: 2,000')
+  console.log('    Food reservations: 1,000')
+  console.log(`    Conversations:     ${pairs.length}`)
+  console.log(`    Messages:          ${msgTotal}`)
+  console.log('    Feed events:       2,000')
+  console.log('    ──────────────────────────')
+  console.log('    TOTAL NEW:         ~12,300+')
 }
 
 seed().catch((err) => {
