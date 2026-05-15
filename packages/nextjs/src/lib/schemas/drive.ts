@@ -4,7 +4,7 @@ import { PAGINATION_DEFAULTS } from '@/lib/query-defaults'
 export const createDriveSchema = z.object({
   title:            z.string().trim().min(3).max(200),
   description:      z.string().trim().max(5000).optional(),
-  driveType:        z.enum(['items', 'money', 'food', 'other']),
+  driveType:        z.enum(['items', 'money', 'food', 'other', 'volunteer']),
   goalDescription:  z.string().trim().max(500).optional(),
   goalAmount:       z.coerce.number().int().min(1).optional(),
   currentAmount:    z.coerce.number().int().min(0).optional(),
@@ -16,7 +16,7 @@ export const createDriveSchema = z.object({
 export const updateDriveSchema = z.object({
   title:            z.string().trim().min(3).max(200).optional(),
   description:      z.string().trim().max(5000).nullable().optional(),
-  driveType:        z.enum(['items', 'money', 'food', 'other']).optional(),
+  driveType:        z.enum(['items', 'money', 'food', 'other', 'volunteer']).optional(),
   goalDescription:  z.string().trim().max(500).nullable().optional(),
   goalAmount:       z.coerce.number().int().min(1).nullable().optional(),
   currentAmount:    z.coerce.number().int().min(0).nullable().optional(),
@@ -28,7 +28,7 @@ export const updateDriveSchema = z.object({
 
 export const listDrivesSchema = z.object({
   status:    z.enum(['open', 'completed', 'cancelled']).optional(),
-  driveType: z.enum(['items', 'money', 'food', 'other']).optional(),
+  driveType: z.enum(['items', 'money', 'food', 'other', 'volunteer']).optional(),
   limit:     z.coerce.number().int().min(1).max(50).default(PAGINATION_DEFAULTS.defaultPageSize),
   page:      z.coerce.number().int().min(1).default(PAGINATION_DEFAULTS.defaultPage),
 })

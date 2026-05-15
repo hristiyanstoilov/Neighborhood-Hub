@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
@@ -27,6 +28,9 @@ export default function SkillDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuth()
   const router = useRouter()
+  const hydratedSkillId = useRef<string | null>(null)
+  const [endorsementCount, setEndorsementCount] = useState(0)
+  const [isEndorsedByMe, setIsEndorsedByMe] = useState(false)
 
   const skillQuery = useQuery({
     queryKey: skillDetailKeys.detail(id ?? ''),
@@ -41,6 +45,53 @@ export default function SkillDetailScreen() {
       return { res, json }
     },
   })
+
+  const endorsementMutation = useMutation({
+    mutationFn: async (action: 'endorse' | 'unendorse') => {
+      const res = await apiFetch(`/api/skills/${skillQuery.data?.id}/endorse`, {
+        method: action === 'endorse' ? 'POST' : 'DELETE',
+      })
+      const json = await res.json().catch(() => null)
+
+      if (!res.ok && !(action === 'endorse' && res.status === 409)) {
+        const errorMessages: Record<string, string> = {
+          NOT_FOUND: 'This skill could not be found.',
+          CANNOT_ENDORSE_OWN_SKILL: 'You cannot endorse your own skill.',
+          ALREADY_ENDORSED: 'You have already endorsed this skill.',
+          TOO_MANY_REQUESTS: 'Too many requests. Please wait and try again.',
+        }
+        const errorCode = json && typeof json === 'object' && 'error' in json && typeof (json as { error?: unknown }).error === 'string'
+          ? (json as { error: string }).error
+          : 'UNKNOWN_ERROR'
+        throw new Error(errorMessages[errorCode] ?? 'Something went wrong.')
+      }
+
+      return { action, status: res.status }
+    },
+    onSuccess: ({ action, status }) => {
+      if (action === 'endorse') {
+        setIsEndorsedByMe(true)
+        if (status === 201) {
+          setEndorsementCount((count) => count + 1)
+        }
+      } else {
+        setIsEndorsedByMe(false)
+        setEndorsementCount((count) => Math.max(0, count - 1))
+      }
+    },
+    onError: (error: Error) => {
+      Alert.alert('Could not update endorsement', error.message)
+    },
+  })
+
+  useEffect(() => {
+    if (!skillQuery.data) return
+    if (hydratedSkillId.current === skillQuery.data.id) return
+
+    setEndorsementCount(skillQuery.data.endorsementCount ?? 0)
+    setIsEndorsedByMe(Boolean(skillQuery.data.isEndorsedByMe))
+    hydratedSkillId.current = skillQuery.data.id
+  }, [skillQuery.data])
 
   function handleRequest() {
     if (!user) {
@@ -82,6 +133,18 @@ export default function SkillDetailScreen() {
     router.push(`/(app)/skills/request/${skillQuery.data?.id}`)
   }
 
+  function handleEndorsementPress() {
+    if (!user) {
+      Alert.alert('Login required', 'Please login to endorse this skill.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Login', onPress: () => router.push('/(auth)/login') },
+      ])
+      return
+    }
+
+    endorsementMutation.mutate(isEndorsedByMe ? 'unendorse' : 'endorse')
+  }
+
   if (skillQuery.isLoading) {
     return <SkillDetailLoadingState />
   }
@@ -98,6 +161,7 @@ export default function SkillDetailScreen() {
   const statusStyle = SKILL_STATUS_COLORS[skill.status] ?? SKILL_STATUS_COLORS.available
   const isOwner = user?.id === skill.ownerId
   const canRequest = !isOwner && skill.status === 'available'
+  const endorsementLabel = endorsementCount === 1 ? '1 endorsement' : `${endorsementCount} endorsements`
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -125,6 +189,30 @@ export default function SkillDetailScreen() {
 
       {/* Title */}
       <Text style={styles.title}>{skill.title}</Text>
+
+      <View style={styles.endorsementSection}>
+        <Text style={styles.endorsementCount}>{endorsementLabel}</Text>
+        {!isOwner && (
+          <TouchableOpacity
+            style={[
+              styles.endorsementButton,
+              isEndorsedByMe && styles.endorsementButtonActive,
+              endorsementMutation.isPending && styles.endorsementButtonDisabled,
+            ]}
+            onPress={handleEndorsementPress}
+            disabled={endorsementMutation.isPending}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.endorsementButtonText, isEndorsedByMe && styles.endorsementButtonTextActive]}>
+              {endorsementMutation.isPending
+                ? 'Updating…'
+                : isEndorsedByMe
+                  ? 'Remove endorsement'
+                  : 'Endorse'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Owner */}
       {skill.ownerName && (
@@ -242,6 +330,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginBottom: 6,
+  },
+  endorsementSection: {
+    marginBottom: 10,
+  },
+  endorsementCount: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  endorsementButton: {
+    marginTop: 10,
+    backgroundColor: '#15803d',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  endorsementButtonActive: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  endorsementButtonDisabled: {
+    opacity: 0.6,
+  },
+  endorsementButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  endorsementButtonTextActive: {
+    color: '#b91c1c',
   },
   owner: {
     fontSize: 14,

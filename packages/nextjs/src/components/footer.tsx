@@ -35,7 +35,7 @@ export function Footer() {
         </nav>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-500">
             © {year} Neighborhood Hub. Built for Bulgarian communities.
           </p>
 
@@ -44,7 +44,7 @@ export function Footer() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-xs text-gray-400 hover:text-green-700 transition-colors"
+                className="text-xs text-gray-500 hover:text-green-700 transition-colors"
               >
                 {link.label}
               </Link>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { apiFetch } from '@/lib/api'
+import { submitContact } from './actions'
 
 export default function ContactPage() {
   const t = useTranslations('contact')
@@ -31,12 +31,15 @@ export default function ContactPage() {
 
     setLoading(true)
     try {
-      const res = await apiFetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
-      })
-      if (!res.ok) throw new Error()
+      const result = await submitContact({ name, email, subject, message })
+      if (!result.ok) {
+        if (result.error === 'TOO_MANY_REQUESTS') {
+          setError(t('error_failed'))
+        } else {
+          setError(t('error_failed'))
+        }
+        return
+      }
       setSent(true)
     } catch {
       setError(t('error_failed'))

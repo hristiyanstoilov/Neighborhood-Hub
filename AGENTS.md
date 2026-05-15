@@ -54,7 +54,7 @@ neighborhood-hub/
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (20 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (31 tables)
 │   │   │   │   ├── index.ts     # DB connection (neon-http)
 │   │   │   │   ├── seed.ts      # Seed locations, categories, demo users, skills/requests, tools/reservations
 │   │   │   │   └── migrations/  # SQL migration files
@@ -291,7 +291,7 @@ Rules:
 | 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Community Drives (Charity) | ✅ Done |
 | 0.4 | Food Sharing | ✅ Done |
-| 0.5 | Chat / Feed | Later |
+| 0.5 | Chat / Feed | ✅ Done |
 
 > **Community Drives are NOT "charity events"** — they are a separate module with their own tables (`community_drives`, `drive_pledges`), API routes (`/api/drives`), and screens.
 > Events have their own tables (`events`, `event_attendees`), API routes (`/api/events`), and screens.

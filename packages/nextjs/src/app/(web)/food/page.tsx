@@ -94,7 +94,7 @@ export default async function FoodPage({
       </div>
 
       {foodShares.length === 0 ? (
-        <div className="text-center py-24 text-gray-400">
+        <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-1">No food listings yet.</p>
           {isLoggedIn ? (
             <Link href="/food/new" className="text-sm text-green-700 hover:underline">
@@ -143,7 +143,7 @@ export default async function FoodPage({
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{foodShare.pickupInstructions ? 'Pickup instructions included' : 'Pickup details available on request'}</span>
                 <span>Listed {new Date(foodShare.createdAt).toLocaleDateString('en-GB')}</span>
               </div>

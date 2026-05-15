@@ -707,6 +707,7 @@ describe('createRatingSchema', () => {
 describe('createDriveSchema', () => {
   it('accepts a valid payload', () => {
     expect(createDriveSchema.safeParse({ title: 'Winter Clothes Drive', driveType: 'items' }).success).toBe(true)
+    expect(createDriveSchema.safeParse({ title: 'Volunteer Drive', driveType: 'volunteer' }).success).toBe(true)
   })
 
   it('rejects a title that is too short', () => {
@@ -717,6 +718,10 @@ describe('createDriveSchema', () => {
   it('rejects an invalid driveType', () => {
     const result = createDriveSchema.safeParse({ title: 'Valid Title', driveType: 'electronics' })
     expectIssuePath(result, 'driveType')
+  })
+
+  it('accepts volunteer as a driveType', () => {
+    expect(createDriveSchema.safeParse({ title: 'Volunteer Drive', driveType: 'volunteer' }).success).toBe(true)
   })
 
   it('rejects a deadline in the past', () => {
@@ -742,6 +747,10 @@ describe('listDrivesSchema', () => {
   it('rejects an invalid driveType value', () => {
     const result = listDrivesSchema.safeParse({ driveType: 'electronics' })
     expectIssuePath(result, 'driveType')
+  })
+
+  it('accepts volunteer as a listed driveType', () => {
+    expect(listDrivesSchema.safeParse({ driveType: 'volunteer' }).success).toBe(true)
   })
 })
 

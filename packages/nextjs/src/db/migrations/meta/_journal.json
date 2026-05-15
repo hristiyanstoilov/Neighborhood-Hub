@@ -197,6 +197,13 @@
       "when": 1778642352469,
       "tag": "0027_tiresome_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1778809347961,
+      "tag": "0028_concerned_bastion",
+      "breakpoints": true
     }
   ]
 }

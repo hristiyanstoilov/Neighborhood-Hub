@@ -77,7 +77,8 @@ beforeAll(async () => {
       userId:    seed.ownerUserId,
       token:     seed.expiredRefreshToken,
       isRevoked: false,
-      expiresAt: new Date(Date.now() - 60 * 1000), // 1 minute in past
+      createdAt: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago (before expiresAt)
+      expiresAt: new Date(Date.now() - 60 * 1000),     // 1 minute ago (expired but > createdAt)
     },
   ])
 

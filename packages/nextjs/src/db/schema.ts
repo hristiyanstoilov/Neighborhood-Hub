@@ -503,7 +503,7 @@ export const communityDrives = pgTable(
     index('community_drives_status_idx').on(t.status).where(sql`${t.deletedAt} IS NULL`),
     index('community_drives_deadline_idx').on(t.deadline),
     check('community_drives_status_check', sql`${t.status} IN ('open', 'completed', 'cancelled')`),
-    check('community_drives_type_check', sql`${t.driveType} IN ('items', 'money', 'food', 'other')`),
+    check('community_drives_type_check', sql`${t.driveType} IN ('items', 'money', 'food', 'other', 'volunteer')`),
     check('community_drives_title_length_check', sql`char_length(${t.title}) >= 3`),
   ]
 )

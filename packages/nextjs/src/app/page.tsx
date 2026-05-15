@@ -80,7 +80,7 @@ export default function Home() {
               <div className="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
                 {icon}
               </div>
-              <span className="text-xs font-bold text-green-500 tracking-widest uppercase">{step}</span>
+              <span className="text-xs font-bold text-green-700 tracking-widest uppercase">{step}</span>
               <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
             </div>

@@ -657,6 +657,7 @@
     "type_items": "Items",
     "type_food": "Food",
     "type_money": "Money",
+    "type_volunteer": "Volunteer time",
     "type_other": "Other",
     "empty_title": "No drives here yet.",
     "start_first": "Start the first one →",

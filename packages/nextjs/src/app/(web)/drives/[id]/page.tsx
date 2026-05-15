@@ -89,6 +89,7 @@ export default async function DriveDetailPage({
     items: t('type_items'),
     food:  t('type_food'),
     money: t('type_money'),
+    volunteer: t('type_volunteer'),
     other: t('type_other'),
   }
 

@@ -56,8 +56,8 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     const pickupAt = new Date(parsed.data.pickupAt)
     const notes    = parsed.data.notes ?? null
     const result = await db.execute<{ id: string }>(
-      sql`INSERT INTO food_reservations (food_share_id, requester_id, owner_id, pickup_at, notes)
-          SELECT ${foodShareId}::uuid, ${user.sub}::uuid, ${foodShare.ownerId}::uuid, ${pickupAt}, ${notes}
+      sql`INSERT INTO food_reservations (id, food_share_id, requester_id, owner_id, pickup_at, notes)
+          SELECT gen_random_uuid(), ${foodShareId}::uuid, ${user.sub}::uuid, ${foodShare.ownerId}::uuid, ${pickupAt}, ${notes}
           WHERE (
             SELECT COUNT(*) FILTER (WHERE status IN ('reserved', 'picked_up'))
             FROM food_reservations

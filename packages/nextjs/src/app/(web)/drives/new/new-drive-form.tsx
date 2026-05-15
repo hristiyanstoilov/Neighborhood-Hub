@@ -100,6 +100,7 @@ export default function NewDriveForm() {
             <option value="items">{t('type_items')}</option>
             <option value="food">{t('type_food')}</option>
             <option value="money">{t('type_money')}</option>
+            <option value="volunteer">{t('type_volunteer')}</option>
             <option value="other">{t('type_other')}</option>
           </select>
         </div>

@@ -19,6 +19,8 @@ export interface SkillDetail {
   locationId: string | null
   category: string | null
   location: string | null
+  endorsementCount: number
+  isEndorsedByMe: boolean
 }
 
 export const skillDetailKeys = {
@@ -64,5 +66,7 @@ export async function fetchSkillDetail(id: string): Promise<SkillDetail> {
     location: source.locationNeighborhood
       ? `${source.locationNeighborhood}, ${source.locationCity ?? ''}`
       : null,
+    endorsementCount: typeof source.endorsementCount === 'number' ? source.endorsementCount : 0,
+    isEndorsedByMe: Boolean(source.isEndorsedByMe),
   }
 }

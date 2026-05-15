@@ -657,6 +657,7 @@
     "type_items": "Предмети",
     "type_food": "Храна",
     "type_money": "Пари",
+    "type_volunteer": "Доброволческо време",
     "type_other": "Друго",
     "empty_title": "Все още няма инициативи.",
     "start_first": "Бъди първият да стартира →",

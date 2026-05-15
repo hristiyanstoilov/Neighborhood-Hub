@@ -17,6 +17,7 @@ const TYPE_ICONS: Record<string, AppIconName> = {
   items: 'reservations',
   food: 'food',
   money: 'target',
+  volunteer: 'volunteer',
   other: 'pledge',
 }
 
@@ -24,6 +25,7 @@ const TYPE_COLORS: Record<string, string> = {
   items: 'bg-blue-50 text-blue-700',
   food: 'bg-orange-50 text-orange-700',
   money: 'bg-yellow-50 text-yellow-700',
+  volunteer: 'bg-emerald-50 text-emerald-700',
   other: 'bg-gray-100 text-gray-600',
 }
 
@@ -77,6 +79,7 @@ export default async function DrivesPage({
     items: t('type_items'),
     food:  t('type_food'),
     money: t('type_money'),
+    volunteer: t('type_volunteer'),
     other: t('type_other'),
   }
 
@@ -124,7 +127,7 @@ export default async function DrivesPage({
         >
           {t('all_types')}
         </Link>
-        {(['items', 'food', 'money', 'other'] as const).map((type) => (
+        {(['items', 'food', 'money', 'volunteer', 'other'] as const).map((type) => (
           <Link
             key={type}
             href={`/drives?status=${activeStatus}&driveType=${type}`}
@@ -141,7 +144,7 @@ export default async function DrivesPage({
       </div>
 
       {drives.length === 0 ? (
-        <div className="text-center py-24 text-gray-400">
+        <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-1">{t('empty_title')}</p>
           {isLoggedIn ? (
             <Link href="/drives/new" className="text-sm text-green-700 hover:underline">

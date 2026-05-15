@@ -49,7 +49,7 @@ export function SkillsGrid({ skills }: SkillsGridProps) {
               {skill.availableHours != null && <span>{skill.availableHours}h/week</span>}
             </div>
 
-            {skill.ownerName && <p className="text-xs text-gray-400 mt-2">by {skill.ownerName}</p>}
+            {skill.ownerName && <p className="text-xs text-gray-500 mt-2">by {skill.ownerName}</p>}
           </div>
         </Link>
       ))}

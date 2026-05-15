@@ -43,6 +43,7 @@ export type AppIconName =
   | 'complete'
   | 'return'
   | 'pledge'
+  | 'volunteer'
   | 'target'
 
 const ICONS: Record<AppIconName, LucideIcon> = {
@@ -66,6 +67,7 @@ const ICONS: Record<AppIconName, LucideIcon> = {
   complete: CheckCircle2,
   return: Undo2,
   pledge: HandHeart,
+  volunteer: HandHeart,
   target: Target,
 }
 

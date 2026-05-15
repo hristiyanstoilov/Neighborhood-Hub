@@ -28,3 +28,5 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - Never hardcode `'image/jpeg'` for mobile image picker — use `asset.mimeType` from expo-image-picker.
 - Never pre-seed `drizzle.__drizzle_migrations` without running SQL — causes invisible schema drift.
 - Bulk seed: use only terminal statuses (completed/rejected/returned/cancelled) — partial unique indexes reject intra-batch active duplicates.
+- `vitest.integration.config.ts` runs before vitest loads `.env.local` — add `dotenv.config({ path: '.env.local' })` at the top.
+- `refresh_tokens_expiry_check` requires `expires_at > created_at` — test expired tokens need explicit past `createdAt`.

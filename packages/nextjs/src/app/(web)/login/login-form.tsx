@@ -78,7 +78,7 @@ export default function LoginForm() {
         <div>
           <div className="flex items-center justify-between mb-1">
             <label htmlFor="login-password" className="block text-sm font-medium">{t('password')}</label>
-            <Link href="/forgot-password" className="text-xs text-gray-400 hover:text-green-700 transition-colors">
+            <Link href="/forgot-password" className="text-xs text-gray-500 hover:text-green-700 transition-colors">
               {t('forgot_password')}
             </Link>
           </div>
@@ -111,7 +111,7 @@ export default function LoginForm() {
 
       <p className="text-center text-sm text-gray-600 mt-6">
         {t('no_account')}{' '}
-        <Link href="/register" className="text-green-700 hover:underline">
+        <Link href="/register" className="text-green-700 underline">
           {t('sign_up')}
         </Link>
       </p>

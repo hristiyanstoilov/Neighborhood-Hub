@@ -113,7 +113,7 @@ export default async function EventsPage({
       </div>
 
       {events.length === 0 ? (
-        <div className="text-center py-24 text-gray-400">
+        <div className="text-center py-24 text-gray-500">
           <p className="text-lg mb-1">{t('empty_title')}</p>
           {isLoggedIn ? (
             <Link href="/events/new" className="text-sm text-green-700 hover:underline">
@@ -162,7 +162,7 @@ export default async function EventsPage({
                 <p className="text-sm text-gray-600 line-clamp-2 mb-3">{event.description}</p>
               )}
 
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>{t('by_organizer', { name: event.organizerName ?? 'Anonymous' })}</span>
                 {event.maxCapacity && (
                   <span>{t('max_attendees', { count: event.maxCapacity })}</span>

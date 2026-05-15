@@ -32,6 +32,21 @@ Neighbors can:
 
 ---
 
+## Demo Credentials
+
+**Web app:** https://neighborhood-hub.netlify.app
+
+**Mobile web:** https://hristiyanstoilov.github.io/Neighborhood-Hub/
+
+| Role | Email | Password |
+|------|-------|----------|
+| Regular user | `demo@neighborhoodhub.bg` | `demo1234` |
+| Seed users (ivan, maria, georgi…) | e.g. `ivan@demo.bg` | `Demo1234!` |
+
+> To get admin access, register an account and ask the maintainer to promote it, or run `UPDATE users SET role = 'admin' WHERE email = '...'` against the DB.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -74,7 +89,7 @@ neighborhood-hub/
 │   │   │   ├── components/      # Shared React components
 │   │   │   ├── contexts/        # Auth context
 │   │   │   ├── db/
-│   │   │   │   ├── schema.ts    # Drizzle schema (all 30 tables)
+│   │   │   │   ├── schema.ts    # Drizzle schema (31 tables)
 │   │   │   │   └── migrations/  # SQL migration files
 │   │   │   └── lib/
 │   │   │       ├── auth.ts      # JWT sign/verify helpers
@@ -102,9 +117,60 @@ neighborhood-hub/
 
 ## Database Schema
 
-30 tables across 8 concern areas:
+31 tables across 8 concern areas.
 
-### Auth & Users
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    users ||--|| profiles : "has"
+    users ||--o{ refresh_tokens : "has"
+    users ||--o{ user_consents : "gives"
+    users ||--|| user_stats : "has"
+    users ||--o{ badges : "earns"
+    users ||--o{ audit_log : "logged_in"
+
+    profiles }o--o| locations : "located_at"
+
+    users ||--o{ skills : "owns"
+    skills }o--|| categories : "in"
+    skills }o--o| locations : "at"
+    skills ||--o{ skill_endorsements : "receives"
+    skills ||--o{ skill_requests : "booked_via"
+    skill_requests ||--o{ notifications : "triggers"
+
+    users ||--o{ tools : "owns"
+    tools }o--|| categories : "in"
+    tools }o--o| locations : "at"
+    tools ||--o{ tool_reservations : "reserved_via"
+
+    users ||--o{ events : "organizes"
+    events }o--o| locations : "held_at"
+    events ||--o{ event_attendees : "rsvp"
+
+    users ||--o{ community_drives : "organizes"
+    community_drives ||--o{ drive_pledges : "receives"
+
+    users ||--o{ food_shares : "owns"
+    food_shares }o--o| locations : "at"
+    food_shares ||--o{ food_reservations : "reserved_via"
+
+    users ||--o{ ratings : "gives"
+    users ||--o{ feed_events : "generates"
+    users ||--o{ reports : "files"
+    users ||--o{ user_blocks : "blocks"
+    users ||--o{ push_tokens : "registers"
+
+    users ||--o{ conversations : "participates"
+    conversations ||--o{ messages : "contains"
+
+    users ||--o{ ai_conversations : "has"
+    ai_conversations ||--o{ ai_messages : "contains"
+```
+
+### Tables by Area
+
+#### Auth & Users
 | Table | Purpose |
 |-------|---------|
 | `users` | Auth only (email, password_hash, role, lockout, soft delete) |
@@ -113,7 +179,7 @@ neighborhood-hub/
 | `user_consents` | GDPR consent tracking |
 | `audit_log` | Admin action log with metadata jsonb |
 
-### Skills & Requests
+#### Skills & Requests
 | Table | Purpose |
 |-------|---------|
 | `categories` | Normalized skill categories (slug UNIQUE, label) |
@@ -123,31 +189,31 @@ neighborhood-hub/
 | `skill_requests` | Booking requests — full state machine |
 | `notifications` | In-app notifications triggered by request status changes |
 
-### Tool Library
+#### Tool Library
 | Table | Purpose |
 |-------|---------|
 | `tools` | Tool listings (owner_id, title, condition, category, location, status, soft delete) |
 | `tool_reservations` | Borrow requests — pending → approved → returned/rejected/cancelled |
 
-### Events
+#### Events
 | Table | Purpose |
 |-------|---------|
 | `events` | Neighborhood events with schedule, location, status, and capacity |
 | `event_attendees` | RSVP records per user/event |
 
-### Community Drives
+#### Community Drives
 | Table | Purpose |
 |-------|---------|
 | `community_drives` | Donation and community initiatives |
 | `drive_pledges` | User pledges for a drive |
 
-### Food Sharing
+#### Food Sharing
 | Table | Purpose |
 |-------|---------|
 | `food_shares` | Food listings with quantity, status, and pickup details |
 | `food_reservations` | Reservation workflow for shared food |
 
-### Community & Social
+#### Community & Social
 | Table | Purpose |
 |-------|---------|
 | `ratings` | Mutual ratings after completed skill requests and tool returns |
@@ -156,7 +222,7 @@ neighborhood-hub/
 | `messages` | DM messages within conversations |
 | `push_tokens` | Expo push notification tokens per user device |
 
-### Gamification & Safety
+#### Gamification & Safety
 | Table | Purpose |
 |-------|---------|
 | `user_stats` | Points, level, rank per user |
@@ -164,14 +230,15 @@ neighborhood-hub/
 | `reports` | Content reports with moderation status |
 | `user_blocks` | Block relationships between users |
 
-### AI Chat
+#### AI Chat
 | Table | Purpose |
 |-------|---------|
 | `ai_conversations` | Chat sessions (user_id, title, soft delete) |
 | `ai_messages` | Individual messages (role: user/assistant, content) |
 
-### Skill Request State Machine
+### State Machines
 
+#### Skill Request
 ```
 pending ──[owner accepts]──→ accepted ──[requester confirms]──→ completed
    │                             │
@@ -180,18 +247,16 @@ pending ──[owner accepts]──→ accepted ──[requester confirms]──
    └──[requester cancels]──→ cancelled
 ```
 
-### Tool Reservation State Machine
-
+#### Tool Reservation
 ```
 pending ──[owner approves]──→ approved ──[owner marks returned]──→ returned
    │                              │
    │                              └──[owner or borrower cancels]──→ cancelled
-   └──[owner rejects]──→ rejected
+   ├──[owner rejects]──→ rejected
    └──[borrower cancels]──→ cancelled
 ```
 
-### Food Reservation State Machine
-
+#### Food Reservation
 ```
 pending ──[owner approves]──→ reserved ──[owner marks picked up]──→ picked_up
    │
@@ -199,15 +264,13 @@ pending ──[owner approves]──→ reserved ──[owner marks picked up]�
    └──[requester or owner cancels]──→ cancelled
 ```
 
-### Event RSVP State Machine
-
+#### Event RSVP
 ```
 going ──[user toggles]──→ not_going
 not_going ──[user toggles]──→ going
 ```
 
-### Drive Pledge State Machine
-
+#### Drive Pledge
 ```
 pledged ──[organizer marks fulfilled]──→ fulfilled
 pledged ──[user or organizer cancels]──→ cancelled
@@ -253,7 +316,7 @@ pledged ──[user or organizer cancels]──→ cancelled
 | GET | `/api/tools` | — | List tools (search, filter by category/location/status, paginate) |
 | POST | `/api/tools` | JWT + verified | Create tool listing |
 | GET | `/api/tools/[id]` | — | Get tool detail |
-| PUT | `/api/tools/[id]` | JWT + owner | Edit tool (title, description, category, location, condition, status) |
+| PUT | `/api/tools/[id]` | JWT + owner | Edit tool |
 | DELETE | `/api/tools/[id]` | JWT + owner | Soft delete tool |
 
 ### Tool Reservations
@@ -346,6 +409,7 @@ pledged ──[user or organizer cancels]──→ cancelled
 | Profile Edit | `/profile/edit` |
 | Admin — Users | `/admin/users` |
 | Admin — Audit Log | `/admin/audit` |
+| Admin — Dashboard | `/admin/dashboard` |
 | AI Chat | `/chat` |
 | Tool Library | `/tools` |
 | Tool Detail + Reserve | `/tools/[id]` |
@@ -364,7 +428,6 @@ pledged ──[user or organizer cancels]──→ cancelled
 | Food Share Detail + Reserve | `/food/[id]` |
 | Create Food Share | `/food/new` |
 | Edit Food Share | `/food/[id]/edit` |
-| Admin — Dashboard | `/admin/dashboard` |
 | My Events (RSVPs) | `/my-events` |
 | My Pledges (Drives) | `/my-drives` |
 | My Food Reservations | `/food/reservations` |
@@ -402,12 +465,12 @@ pledged ──[user or organizer cancels]──→ cancelled
 | Food Shares List (paginated) | `/(app)/food` |
 | Food Share Detail + Reserve | `/(app)/food/[id]` |
 | Create Food Share | `/(app)/food/new` |
-| My Food Reservations | `/(app)/food/reservations` |
 | Edit Food Share | `/(app)/food/edit/[id]` |
 | Edit Tool | `/(app)/tools/edit/[id]` |
 | Edit Event | `/(app)/events/edit/[id]` |
 | Edit Drive | `/(app)/drives/edit/[id]` |
 | My Tool Reservations | `/(app)/tools/my-reservations` |
+| My Food Reservations | `/(app)/food/reservations` |
 | My Events (RSVPs) | `/(app)/events/my-rsvps` |
 | My Pledges (Drives) | `/(app)/drives/my-pledges` |
 | Forgot Password | `/(auth)/forgot-password` |
@@ -422,7 +485,7 @@ pledged ──[user or organizer cancels]──→ cancelled
 | 0.2 | Tool Library | ✅ Done |
 | 0.3 | Events + Community Drives | ✅ Done |
 | 0.4 | Food Sharing | ✅ Done |
-| 0.5 | Chat / Feed | Planned |
+| 0.5 | Chat / Feed + Direct Messages | ✅ Done |
 
 ---
 
@@ -472,7 +535,7 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 # Edit .env.local with your credentials
 
 # 4. Run DB migrations
-cd packages/nextjs && npx drizzle-kit migrate && cd ../..
+cd packages/nextjs && npm run db:migrate && cd ../..
 
 # 5. (Optional) Seed categories, locations, and demo data
 cd packages/nextjs && npm run db:seed && cd ../..
@@ -521,6 +584,25 @@ CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxx.r2.dev
 
 ---
 
+## Automated Tests
+
+```bash
+cd packages/nextjs
+
+# Unit tests (181 tests — schemas, state machines, badges, auth, formatting)
+npm test
+
+# Integration tests (90 tests — DB queries against a real Neon test branch)
+# Requires TEST_DATABASE_URL in .env.local pointing to a separate Neon branch
+npm run test:integration
+
+# E2E tests (20 tests — accessibility, visual snapshots, full API cycles)
+# Requires a running dev server: npm run dev:web
+npm run test:e2e
+```
+
+---
+
 ## Deployment (Netlify)
 
 1. Go to [netlify.com](https://netlify.com) → Add new site → Import from GitHub
@@ -540,8 +622,8 @@ The `netlify.toml` at the repo root is pre-configured for the monorepo layout.
 cd packages/nextjs
 
 # After changing schema.ts:
-npx drizzle-kit generate   # generates SQL migration file
-npx drizzle-kit migrate    # applies to DB
+npx drizzle-kit generate        # generates SQL migration file
+npm run db:migrate              # applies to DB (use this — drizzle-kit migrate hangs with Neon HTTP)
 
 # Never use drizzle-kit push in production
 ```
@@ -551,4 +633,3 @@ npx drizzle-kit migrate    # applies to DB
 ## Contributing
 
 See [AGENTS.md](AGENTS.md) for architecture decisions, coding rules, and business logic.
-
