@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -36,6 +37,9 @@ export default function EventsListScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const [status, setStatus] = useState('published')
+  const { width } = useWindowDimensions()
+  const isTablet = width >= 768
+  const numCols = isTablet ? 2 : 1
 
   const eventsQuery = useInfiniteQuery({
     queryKey:        eventsKeys.list(status),
@@ -83,7 +87,7 @@ export default function EventsListScreen() {
     const sc = STATUS_COLORS[item.status] ?? { bg: mobileTheme.colors.canvas, text: mobileTheme.colors.textMuted }
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, isTablet && styles.cardTablet]}
         onPress={() => router.push(`/(app)/events/${item.id}`)}
         activeOpacity={0.75}
       >
@@ -153,7 +157,9 @@ export default function EventsListScreen() {
         onEndReached={handleLoadMore}
         hasMore={hasMore}
         loadingMore={eventsQuery.isFetchingNextPage}
-        listContentStyle={styles.list}
+        numColumns={numCols}
+        columnWrapperStyle={isTablet ? styles.columnWrapper : undefined}
+        listContentStyle={isTablet ? styles.listTablet : styles.list}
         emptyMessage="No events yet."
         emptyAction={
           user ? (
@@ -222,6 +228,8 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: mobileTheme.colors.textSecondary },
   chipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   list: { paddingBottom: 100 },
+  listTablet: { paddingHorizontal: 16, paddingBottom: 100 },
+  columnWrapper: { gap: 12, paddingHorizontal: 16, marginVertical: 6 },
   card: {
     backgroundColor: mobileTheme.colors.surface,
     marginHorizontal: 16,
@@ -233,6 +241,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
+  },
+  cardTablet: {
+    flex: 1,
+    marginHorizontal: 0,
+    marginVertical: 0,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
   cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: mobileTheme.colors.textPrimary },

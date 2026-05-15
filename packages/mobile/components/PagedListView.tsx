@@ -23,6 +23,8 @@ type PagedListViewProps<T> = {
   emptyAction?: ReactElement | null
   footer?: ReactElement | null
   footerLoaderColor?: string
+  numColumns?: number
+  columnWrapperStyle?: object
 }
 
 export function PagedListView<T>({
@@ -46,6 +48,8 @@ export function PagedListView<T>({
   emptyAction,
   footer,
   footerLoaderColor = mobileTheme.colors.primary,
+  numColumns,
+  columnWrapperStyle,
 }: PagedListViewProps<T>) {
   const staleDataError = error && data.length > 0
 
@@ -104,6 +108,9 @@ export function PagedListView<T>({
           )
         ) : null
       }
+      numColumns={numColumns}
+      key={numColumns}
+      columnWrapperStyle={numColumns && numColumns > 1 ? columnWrapperStyle : undefined}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.3}
     />

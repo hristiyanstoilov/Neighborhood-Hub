@@ -7,9 +7,11 @@ import { PagedListView } from '../../../components/PagedListView'
 import { feedActionText, feedKeys, fetchFeedPage, type FeedItem } from '../../../lib/queries/feed'
 import { formatDateTime } from '../../../lib/format'
 import { mobileTheme } from '../../../lib/theme'
+import { useTablet } from './_hooks/useTablet'
 
 export default function FeedTabScreen() {
   const router = useRouter()
+  const isTablet = useTablet()
 
   const query = useInfiniteQuery({
     queryKey: feedKeys.list,
@@ -84,7 +86,7 @@ export default function FeedTabScreen() {
         onEndReached={handleLoadMore}
         hasMore={query.hasNextPage}
         loadingMore={query.isFetchingNextPage}
-        listContentStyle={styles.listContent}
+        listContentStyle={isTablet ? styles.listContentTablet : styles.listContent}
         emptyMessage="No activity yet."
         footer={
           <TouchableOpacity
@@ -105,6 +107,7 @@ export default function FeedTabScreen() {
 
 const styles = StyleSheet.create({
   listContent: { padding: 16, gap: 10, paddingBottom: 32 },
+  listContentTablet: { paddingHorizontal: 64, paddingVertical: 24, gap: 12, paddingBottom: 48 },
   itemText: {
     backgroundColor: mobileTheme.colors.surface,
     borderColor: mobileTheme.colors.borderSoft,

@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -52,6 +53,9 @@ export default function DrivesListScreen() {
   const router   = useRouter()
   const [status,    setStatus]    = useState('open')
   const [driveType, setDriveType] = useState<string | null>(null)
+  const { width } = useWindowDimensions()
+  const isTablet = width >= 768
+  const numCols  = isTablet ? 2 : 1
 
   const drivesQuery = useInfiniteQuery({
     queryKey:         drivesKeys.list(status, driveType),
@@ -107,7 +111,7 @@ export default function DrivesListScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, isTablet && styles.cardTablet]}
         onPress={() => router.push(`/(app)/drives/${item.id}`)}
         activeOpacity={0.75}
       >
@@ -200,7 +204,9 @@ export default function DrivesListScreen() {
         onEndReached={handleLoadMore}
         hasMore={hasMore}
         loadingMore={drivesQuery.isFetchingNextPage}
-        listContentStyle={styles.list}
+        numColumns={numCols}
+        columnWrapperStyle={isTablet ? styles.columnWrapper : undefined}
+        listContentStyle={isTablet ? styles.listTablet : styles.list}
         emptyMessage="No drives here yet."
         emptyAction={
           user ? (
@@ -260,6 +266,8 @@ const styles = StyleSheet.create({
   chipSmallText:      { fontSize: 12, color: mobileTheme.colors.textMuted },
   chipSmallTextActive:{ color: mobileTheme.colors.onPrimary, fontWeight: '600' },
   list:          { paddingBottom: 100 },
+  listTablet:    { paddingHorizontal: 16, paddingBottom: 100 },
+  columnWrapper: { gap: 12, paddingHorizontal: 16, marginVertical: 6 },
   emptyContainer:{ flex: 1 },
   card: {
     backgroundColor: mobileTheme.colors.surface,
@@ -273,6 +281,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
+  cardTablet: { flex: 1, marginHorizontal: 0, marginVertical: 0 },
   cardTop:    { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 6 },
   cardTitle:  { flex: 1, fontSize: 15, fontWeight: '600', color: mobileTheme.colors.textPrimary },
   badge:      { alignSelf: 'flex-start', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },

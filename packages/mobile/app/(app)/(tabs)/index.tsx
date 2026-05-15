@@ -17,10 +17,12 @@ import { SkillsHeader } from './_components/skills-header'
 import { SkillsLoadingState } from './_components/skills-loading-state'
 import { SkillsEmptyState, SkillsErrorState } from './_components/skills-list-states'
 import { useSkillsTabState } from './_hooks/use-skills-tab-state'
+import { useTablet } from './_hooks/useTablet'
 
 export default function SkillListScreen() {
   const { user } = useAuth()
   const router = useRouter()
+  const isTablet = useTablet()
   const { locationId: paramLocationId } = useLocalSearchParams<{ locationId?: string }>()
 
   const {
@@ -75,18 +77,18 @@ export default function SkillListScreen() {
 
 
   const communityRow = (
-    <View style={styles.communityRow}>
-      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/events')}>
+    <View style={[styles.communityRow, isTablet && styles.communityRowTablet]}>
+      <TouchableOpacity style={[styles.communityBtn, isTablet && styles.communityBtnTablet]} onPress={() => router.push('/(app)/events')}>
         <Text style={styles.communityBtnIcon}>📅</Text>
-        <Text style={styles.communityBtnLabel}>Events</Text>
+        <Text style={[styles.communityBtnLabel, isTablet && styles.communityBtnLabelTablet]}>Events</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/drives')}>
+      <TouchableOpacity style={[styles.communityBtn, isTablet && styles.communityBtnTablet]} onPress={() => router.push('/(app)/drives')}>
         <Text style={styles.communityBtnIcon}>🫶</Text>
-        <Text style={styles.communityBtnLabel}>Drives</Text>
+        <Text style={[styles.communityBtnLabel, isTablet && styles.communityBtnLabelTablet]}>Drives</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.communityBtn} onPress={() => router.push('/(app)/food')}>
+      <TouchableOpacity style={[styles.communityBtn, isTablet && styles.communityBtnTablet]} onPress={() => router.push('/(app)/food')}>
         <Text style={styles.communityBtnIcon}>🍲</Text>
-        <Text style={styles.communityBtnLabel}>Food</Text>
+        <Text style={[styles.communityBtnLabel, isTablet && styles.communityBtnLabelTablet]}>Food</Text>
       </TouchableOpacity>
     </View>
   )
@@ -139,6 +141,8 @@ export default function SkillListScreen() {
       <FlatList
         data={skills}
         keyExtractor={(item) => item.id}
+        numColumns={isTablet ? 2 : 1}
+        key={isTablet ? 'tablet' : 'phone'}
         ListHeaderComponent={header}
         renderItem={({ item }) => (
           <SkillCard
@@ -192,6 +196,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
+  communityRowTablet: {
+    paddingHorizontal: 32,
+    gap: 16,
+  },
   communityBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -204,8 +212,12 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     paddingVertical: 10,
   },
+  communityBtnTablet: {
+    paddingVertical: 14,
+  },
   communityBtnIcon:  { fontSize: 16 },
   communityBtnLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  communityBtnLabelTablet: { fontSize: 15 },
   loadMoreButton: {
     marginHorizontal: 16,
     marginTop: 8,

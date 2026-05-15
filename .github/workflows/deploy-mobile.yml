@@ -1,0 +1,46 @@
+name: Deploy Mobile Web
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed by peaceiris/actions-gh-pages
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: packages/mobile
+        run: npm install --legacy-peer-deps
+
+      - name: Export Expo web
+        working-directory: packages/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://neighborhood-hub.netlify.app
+        run: npx expo export --platform web
+
+      - name: Add SPA 404 fallback
+        working-directory: packages/mobile
+        run: cp dist/index.html dist/404.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: packages/mobile/dist
+          cname: ''          # no custom domain
