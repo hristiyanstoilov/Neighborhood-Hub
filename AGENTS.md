@@ -82,7 +82,7 @@ neighborhood-hub/
 
 ---
 
-## 4. Database Schema (28 tables)
+## 4. Database Schema (31 tables)
 
 ### Core tables (all built)
 
@@ -119,7 +119,7 @@ neighborhood-hub/
 | `user_blocks` | User safety (blocker_id FK, blocked_id FK — ordered pair, unique) |
 
 **Rules:**
-- Always use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
+- Always use Drizzle migrations (`drizzle-kit generate` + `npm run db:migrate` via `scripts/migrate.ts` — do NOT use `drizzle-kit migrate` directly, it hangs with Neon's HTTP driver)
 - Commit migration SQL files to GitHub
 - Use `uuid` primary keys
 - Add `created_at` / `updated_at` to every table

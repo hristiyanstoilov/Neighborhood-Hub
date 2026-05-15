@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
+    "db:migrate": "npx tsx scripts/migrate.ts",
     "db:seed": "npx tsx src/db/seed.ts",
     "db:seed:bulk": "npx tsx src/db/seed.ts --bulk"
   },

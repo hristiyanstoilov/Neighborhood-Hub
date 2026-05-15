@@ -66,13 +66,13 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         .from(eventAttendees)
         .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
 
-      for (const a of attendees) {
-        void createNotification({
-          userId: a.userId,
+      for (const attendee of attendees) {
+        await createNotification({
+          userId: attendee.userId,
           type: 'event_cancelled',
           entityType: 'event',
           entityId: id,
-        }).catch(() => {})
+        }).catch((e) => console.error('[createNotification event_cancelled]', e))
       }
     }
 
@@ -101,13 +101,13 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
       .from(eventAttendees)
       .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
 
-    for (const a of attendees) {
-      void createNotification({
-        userId: a.userId,
+    for (const attendee of attendees) {
+      await createNotification({
+        userId: attendee.userId,
         type: 'event_cancelled',
         entityType: 'event',
         entityId: id,
-      }).catch(() => {})
+      }).catch((e) => console.error('[createNotification event_deleted]', e))
     }
 
     await db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, id))

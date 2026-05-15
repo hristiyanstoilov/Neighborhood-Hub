@@ -13,7 +13,7 @@ Step 7 applies: split UI into modular React components and feature folders. Keep
 npm run dev:web                          # Start Next.js dev server
 npm run dev:mobile                       # Start Expo dev server
 cd packages/nextjs && npx drizzle-kit generate  # Generate DB migration
-cd packages/nextjs && npx drizzle-kit migrate   # Run DB migration
+cd packages/nextjs && npm run db:migrate        # Run migrations (scripts/migrate.ts — drizzle-kit migrate hangs with Neon)
 npm run build:web                        # Build web app
 ```
 
@@ -26,3 +26,5 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - `drizzle-orm/neon-http` does not support `db.transaction`; use sequential writes + compensation.
 - Mobile `npm install` requires `--legacy-peer-deps` due to react-native peer constraints.
 - Never hardcode `'image/jpeg'` for mobile image picker — use `asset.mimeType` from expo-image-picker.
+- Never pre-seed `drizzle.__drizzle_migrations` without running SQL — causes invisible schema drift.
+- Bulk seed: use only terminal statuses (completed/rejected/returned/cancelled) — partial unique indexes reject intra-batch active duplicates.
