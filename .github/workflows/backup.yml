@@ -11,7 +11,6 @@ jobs:
     timeout-minutes: 15
 
     env:
-      PGPASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
       AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_KEY }}
       R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
@@ -33,32 +32,32 @@ jobs:
 
       - name: Dump and compress database
         run: |
-          pg_dump "${{ secrets.PROD_DATABASE_URL }}" \
-            --format=custom \
+          pg_dump "${{ secrets.PROD_DATABASE_DIRECT_URL }}" \
+            --format=plain \
             --no-acl \
             --no-owner \
-            | gzip > backup-${{ steps.vars.outputs.timestamp }}.dump.gz
+            | gzip > backup-${{ steps.vars.outputs.timestamp }}.sql.gz
 
       - name: Upload daily backup
         run: |
-          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.dump.gz \
-            "s3://${R2_BUCKET}/daily/backup-${{ steps.vars.outputs.timestamp }}.dump.gz" \
+          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.sql.gz \
+            "s3://${R2_BUCKET}/daily/backup-${{ steps.vars.outputs.timestamp }}.sql.gz" \
             --endpoint-url "${R2_ENDPOINT}" \
             --region auto
 
       - name: Upload weekly backup (every Sunday)
         if: steps.vars.outputs.dow == '7'
         run: |
-          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.dump.gz \
-            "s3://${R2_BUCKET}/weekly/backup-${{ steps.vars.outputs.timestamp }}.dump.gz" \
+          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.sql.gz \
+            "s3://${R2_BUCKET}/weekly/backup-${{ steps.vars.outputs.timestamp }}.sql.gz" \
             --endpoint-url "${R2_ENDPOINT}" \
             --region auto
 
       - name: Upload monthly backup (1st of month)
         if: steps.vars.outputs.dom == '1'
         run: |
-          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.dump.gz \
-            "s3://${R2_BUCKET}/monthly/backup-${{ steps.vars.outputs.timestamp }}.dump.gz" \
+          aws s3 cp backup-${{ steps.vars.outputs.timestamp }}.sql.gz \
+            "s3://${R2_BUCKET}/monthly/backup-${{ steps.vars.outputs.timestamp }}.sql.gz" \
             --endpoint-url "${R2_ENDPOINT}" \
             --region auto
 

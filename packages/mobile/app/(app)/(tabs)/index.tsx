@@ -143,6 +143,7 @@ export default function SkillListScreen() {
         keyExtractor={(item) => item.id}
         numColumns={isTablet ? 2 : 1}
         key={isTablet ? 'tablet' : 'phone'}
+        columnWrapperStyle={isTablet ? styles.columnWrapper : undefined}
         ListHeaderComponent={header}
         renderItem={({ item }) => (
           <SkillCard
@@ -151,6 +152,7 @@ export default function SkillListScreen() {
             category={item.category}
             status={item.status}
             imageUrl={item.imageUrl}
+            cardStyle={isTablet ? styles.skillCardTablet : undefined}
             onPress={() => router.push(`/(app)/skills/${item.id}`)}
           />
         )}
@@ -218,6 +220,8 @@ const styles = StyleSheet.create({
   communityBtnIcon:  { fontSize: 16 },
   communityBtnLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
   communityBtnLabelTablet: { fontSize: 15 },
+  columnWrapper: { gap: 8, paddingHorizontal: 16, marginVertical: 6 },
+  skillCardTablet: { flex: 1, marginHorizontal: 0, marginVertical: 0 },
   loadMoreButton: {
     marginHorizontal: 16,
     marginTop: 8,

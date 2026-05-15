@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, Image, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native'
 import { mobileTheme } from '../lib/theme'
 
 interface SkillCardProps {
@@ -7,14 +7,15 @@ interface SkillCardProps {
   category: string | null
   status: string
   imageUrl?: string | null
+  cardStyle?: ViewStyle
   onPress: () => void
 }
 
-export default function SkillCard({ title, ownerName, category, status, imageUrl, onPress }: SkillCardProps) {
+export default function SkillCard({ title, ownerName, category, status, imageUrl, cardStyle, onPress }: SkillCardProps) {
   const statusStyle = mobileTheme.status.skill[status as keyof typeof mobileTheme.status.skill] ?? mobileTheme.status.skill.available
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={[styles.card, cardStyle]} onPress={onPress} activeOpacity={0.7}>
       {imageUrl && (
         <Image source={{ uri: imageUrl }} style={styles.image} />
       )}

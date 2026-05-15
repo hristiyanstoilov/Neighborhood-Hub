@@ -940,7 +940,8 @@
     "success_body": "Thanks for reaching out. We'll get back to you as soon as possible.",
     "error_required": "All fields are required.",
     "error_email": "Please enter a valid email address.",
-    "error_failed": "Failed to send message. Please try again."
+    "error_failed": "Failed to send message. Please try again.",
+    "error_rate_limit": "Too many attempts. Please wait a few minutes and try again."
   },
   "cookieConsent": {
     "text": "We use analytics cookies to understand how you use the app and improve it. No personal data is shared.",

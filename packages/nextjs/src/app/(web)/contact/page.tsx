@@ -33,11 +33,7 @@ export default function ContactPage() {
     try {
       const result = await submitContact({ name, email, subject, message })
       if (!result.ok) {
-        if (result.error === 'TOO_MANY_REQUESTS') {
-          setError(t('error_failed'))
-        } else {
-          setError(t('error_failed'))
-        }
+        setError(result.error === 'TOO_MANY_REQUESTS' ? t('error_rate_limit') : t('error_failed'))
         return
       }
       setSent(true)
