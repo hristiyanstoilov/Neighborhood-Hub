@@ -11,7 +11,6 @@ node_modules/
 # workspace root detection on Netlify (it picks packages/ as root instead of
 # packages/nextjs). The Netlify build command removes the root one too.
 package-lock.json
-packages/mobile/package-lock.json
 
 # Next.js
 .next/
