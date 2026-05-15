@@ -1,0 +1,2 @@
+ALTER TABLE "community_drives" DROP CONSTRAINT "community_drives_type_check";--> statement-breakpoint
+ALTER TABLE "community_drives" ADD CONSTRAINT "community_drives_type_check" CHECK ("community_drives"."drive_type" IN ('items', 'money', 'food', 'other', 'volunteer'));
