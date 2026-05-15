@@ -6,7 +6,7 @@ import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateSkillSchema, uuidSchema } from '@/lib/schemas/skill'
-import { skillSelect } from '@/lib/queries/skills'
+import { querySkillById } from '@/lib/queries/skills'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -23,19 +23,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     }
 
-    const [row] = await db
-      .select(skillSelect)
-      .from(skills)
-      .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
-      .leftJoin(categories, eq(categories.id, skills.categoryId))
-      .leftJoin(locations, eq(locations.id, skills.locationId))
-      .where(and(eq(skills.id, id), isNull(skills.deletedAt)))
-      .limit(1)
-
-    if (!row) {
-      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
-    }
-
+    const row = await querySkillById(id)
+    if (!row) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     return NextResponse.json({ data: row })
   } catch (err) {
     console.error('[GET /api/skills/[id]]', err)
