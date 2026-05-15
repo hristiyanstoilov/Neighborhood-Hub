@@ -8,7 +8,6 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
-  useWindowDimensions,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -18,6 +17,7 @@ import { PagedListView } from '../../../components/PagedListView'
 import { mobileTheme } from '../../../lib/theme'
 import { fetchDrivesList, drivesKeys, type DriveListItem } from '../../../lib/queries/drives'
 import { formatDateOnly } from '../../../lib/format'
+import { useTablet } from '../_hooks/useTablet'
 
 const PAGE_SIZE = 20
 
@@ -53,8 +53,7 @@ export default function DrivesListScreen() {
   const router   = useRouter()
   const [status,    setStatus]    = useState('open')
   const [driveType, setDriveType] = useState<string | null>(null)
-  const { width } = useWindowDimensions()
-  const isTablet = width >= 768
+  const isTablet = useTablet()
   const numCols  = isTablet ? 2 : 1
 
   const drivesQuery = useInfiniteQuery({

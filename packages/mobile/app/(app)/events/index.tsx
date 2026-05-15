@@ -8,7 +8,6 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
-  useWindowDimensions,
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -18,6 +17,7 @@ import { PagedListView } from '../../../components/PagedListView'
 import { mobileTheme } from '../../../lib/theme'
 import { fetchEventsList, eventsKeys, type EventListItem } from '../../../lib/queries/events'
 import { formatDateTime } from '../../../lib/format'
+import { useTablet } from '../_hooks/useTablet'
 
 const PAGE_SIZE = 20
 
@@ -37,8 +37,7 @@ export default function EventsListScreen() {
   const { user } = useAuth()
   const router = useRouter()
   const [status, setStatus] = useState('published')
-  const { width } = useWindowDimensions()
-  const isTablet = width >= 768
+  const isTablet = useTablet()
   const numCols = isTablet ? 2 : 1
 
   const eventsQuery = useInfiniteQuery({
