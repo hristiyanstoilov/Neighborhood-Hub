@@ -72,7 +72,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           type: 'event_cancelled',
           entityType: 'event',
           entityId: id,
-        }).catch(() => {})
+        }).catch((e) => console.error('[createNotification event_cancelled]', e))
       }
     }
 
@@ -107,7 +107,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
         type: 'event_cancelled',
         entityType: 'event',
         entityId: id,
-      }).catch(() => {})
+      }).catch((e) => console.error('[createNotification event_deleted]', e))
     }
 
     await db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, id))
