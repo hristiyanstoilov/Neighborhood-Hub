@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  const [ageError, setAgeError] = useState<string | null>(null)
 
   function validateField(name: string, value: string) {
     if (name === 'name' && !value.trim()) {
@@ -29,6 +31,13 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      // Age confirmation validation (required)
+      if (!ageConfirmed) {
+        setAgeError('You must be 16 or older to register')
+        setLoading(false)
+        return
+      }
+
       const form = new FormData(e.currentTarget)
       const body = {
         name: form.get('name') as string,
@@ -138,6 +147,26 @@ export default function RegisterPage() {
             {error}
           </p>
         )}
+
+        <div className="flex items-start space-x-2">
+          <div className="flex items-center h-5">
+            <input
+              id="register-age"
+              name="ageConfirmed"
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => { setAgeConfirmed(e.target.checked); if (e.target.checked) setAgeError(null) }}
+              className="h-4 w-4 text-green-700 border-gray-300 rounded focus:ring-green-500"
+              aria-describedby={ageError ? 'register-age-error' : undefined}
+            />
+          </div>
+          <div className="text-sm">
+            <label htmlFor="register-age" className="font-medium">
+              I confirm I am 16 years of age or older — Потвърждавам, че съм навършил/а 16 години
+            </label>
+            {ageError && <p id="register-age-error" className="text-xs text-red-600 mt-1">{ageError}</p>}
+          </div>
+        </div>
 
         <button
           type="submit"
