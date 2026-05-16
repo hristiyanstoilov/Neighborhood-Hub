@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   View,
   Text,
@@ -5,12 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Platform,
+  TextInput,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
@@ -24,11 +26,30 @@ const CONDITION_LABELS: Record<string, string> = {
   worn: 'Worn',
 }
 
+function todayMidnight() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function daysFromNow(n: number) {
+  const d = todayMidnight()
+  d.setDate(d.getDate() + n)
+  return d
+}
+
 export default function ToolDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
+
+  const [showReserveForm, setShowReserveForm] = useState(false)
+  const [startDate, setStartDate] = useState<Date>(todayMidnight)
+  const [endDate, setEndDate]     = useState<Date>(() => daysFromNow(7))
+  const [showStartPicker, setShowStartPicker] = useState(false)
+  const [showEndPicker, setShowEndPicker]     = useState(false)
+  const [reserveNotes, setReserveNotes] = useState('')
 
   const toolQuery = useQuery({
     queryKey: toolsKeys.detail(id ?? ''),
@@ -37,26 +58,30 @@ export default function ToolDetailScreen() {
   })
 
   const reserveMutation = useMutation({
-    mutationFn: async ({ toolId, startDate, endDate, notes }: { toolId: string; startDate: string; endDate: string; notes?: string }) => {
+    mutationFn: async ({ toolId, startDate: start, endDate: end, notes }: { toolId: string; startDate: string; endDate: string; notes?: string }) => {
       const res = await apiFetch('/api/tool-reservations', {
         method: 'POST',
-        body: JSON.stringify({ toolId, startDate, endDate, notes }),
+        body: JSON.stringify({ toolId, startDate: start, endDate: end, notes }),
       })
       const json = await res.json()
       if (!res.ok) {
         const ERROR_MESSAGES: Record<string, string> = {
-          TOOL_NOT_AVAILABLE:       'This tool is no longer available.',
-          CANNOT_RESERVE_OWN_TOOL:  'You cannot reserve your own tool.',
-          DUPLICATE_RESERVATION:    'You already have an active reservation for this tool.',
-          UNVERIFIED_EMAIL:         'Please verify your email first.',
-          VALIDATION_ERROR:         'Invalid dates. Please check your input.',
-          TOO_MANY_REQUESTS:        'Too many requests. Please wait.',
+          TOOL_NOT_AVAILABLE:      'This tool is no longer available.',
+          CANNOT_RESERVE_OWN_TOOL: 'You cannot reserve your own tool.',
+          DUPLICATE_RESERVATION:   'You already have an active reservation for this tool.',
+          UNVERIFIED_EMAIL:        'Please verify your email first.',
+          VALIDATION_ERROR:        'Invalid dates. Please check your input.',
+          TOO_MANY_REQUESTS:       'Too many requests. Please wait.',
         }
         throw new Error(ERROR_MESSAGES[json.error] ?? 'Something went wrong.')
       }
       return json.data
     },
     onSuccess: () => {
+      setShowReserveForm(false)
+      setStartDate(todayMidnight())
+      setEndDate(daysFromNow(7))
+      setReserveNotes('')
       queryClient.invalidateQueries({ queryKey: ['tools'] })
       queryClient.invalidateQueries({ queryKey: ['my-reservations'] })
       showAlert('Reservation sent!', 'Your request has been sent to the owner.', [
@@ -68,7 +93,7 @@ export default function ToolDetailScreen() {
     },
   })
 
-  function promptReserve() {
+  function handleReservePress() {
     if (!user) {
       showAlert('Login required', 'Please log in to reserve tools.', [
         { text: 'Cancel', style: 'cancel' },
@@ -76,64 +101,61 @@ export default function ToolDetailScreen() {
       ])
       return
     }
-
     if (!user.emailVerifiedAt) {
       showAlert('Email not verified', 'Please verify your email before reserving tools.')
       return
     }
+    setShowReserveForm(true)
+  }
 
-    // Alert.prompt is iOS only — on Android we fall back to a simpler confirm dialog.
-    // A full date picker would require a third-party package (e.g. @react-native-community/datetimepicker).
-    if (Platform.OS === 'ios') {
-      Alert.prompt(
-        'Start date',
-        'Enter start date (YYYY-MM-DD)',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Next',
-            onPress: (start: string | undefined) => {
-              if (!start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
-                showAlert('Invalid date', 'Please use YYYY-MM-DD format.')
-                return
-              }
-              Alert.prompt(
-                'End date',
-                'Enter end date (YYYY-MM-DD)',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Reserve',
-                    onPress: (end: string | undefined) => {
-                      if (!end || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
-                        showAlert('Invalid date', 'Please use YYYY-MM-DD format.')
-                        return
-                      }
-                      reserveMutation.mutate({ toolId: tool.id, startDate: start, endDate: end })
-                    },
-                  },
-                ],
-                'plain-text',
-                start,
-              )
-            },
-          },
-        ],
-        'plain-text',
-      )
-    } else {
-      // Android: show a simple confirmation — full date pickers need a native package
-      const today = new Date().toISOString().slice(0, 10)
-      const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-      showAlert(
-        'Reserve this tool',
-        `Send a reservation request?\n\nDefault: ${today} → ${weekLater}\n(Use the web app to select custom dates)`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Send request', onPress: () => reserveMutation.mutate({ toolId: tool.id, startDate: today, endDate: weekLater }) },
-        ],
-      )
+  function handleSubmitReservation() {
+    if (endDate < startDate) {
+      showAlert('Invalid dates', 'End date must be on or after the start date.')
+      return
     }
+    const start = startDate.toISOString().slice(0, 10)
+    const end   = endDate.toISOString().slice(0, 10)
+    reserveMutation.mutate({ toolId: tool.id, startDate: start, endDate: end, notes: reserveNotes || undefined })
+  }
+
+  function openStartPicker() {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: startDate,
+        mode: 'date',
+        minimumDate: todayMidnight(),
+        onChange: (event, selected) => {
+          if (event.type === 'set' && selected) setStartDate(selected)
+        },
+      })
+      return
+    }
+    setShowStartPicker((v) => !v)
+  }
+
+  function openEndPicker() {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: endDate,
+        mode: 'date',
+        minimumDate: startDate,
+        onChange: (event, selected) => {
+          if (event.type === 'set' && selected) setEndDate(selected)
+        },
+      })
+      return
+    }
+    setShowEndPicker((v) => !v)
+  }
+
+  function onStartChange(_event: DateTimePickerEvent, selected?: Date) {
+    setShowStartPicker(false)
+    if (selected) setStartDate(selected)
+  }
+
+  function onEndChange(_event: DateTimePickerEvent, selected?: Date) {
+    setShowEndPicker(false)
+    if (selected) setEndDate(selected)
   }
 
   if (toolQuery.isLoading) {
@@ -156,7 +178,7 @@ export default function ToolDetailScreen() {
   }
 
   const tool = toolQuery.data
-  const isOwner = user?.id === tool.ownerId
+  const isOwner    = user?.id === tool.ownerId
   const isAvailable = tool.status === 'available'
   const statusStyle = TOOL_STATUS_COLORS[tool.status] ?? TOOL_STATUS_COLORS.available
   const statusLabel = TOOL_STATUS_LABELS[tool.status] ?? tool.status
@@ -202,16 +224,86 @@ export default function ToolDetailScreen() {
       {!isOwner && (
         <View style={styles.actionArea}>
           {isAvailable ? (
-            <TouchableOpacity
-              style={[styles.reserveBtn, reserveMutation.isPending && styles.reserveBtnDisabled]}
-              onPress={promptReserve}
-              disabled={reserveMutation.isPending}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.reserveBtnText}>
-                {reserveMutation.isPending ? 'Sending…' : 'Reserve this tool'}
-              </Text>
-            </TouchableOpacity>
+            <>
+              {!showReserveForm ? (
+                <TouchableOpacity style={styles.reserveBtn} onPress={handleReservePress} activeOpacity={0.8}>
+                  <Text style={styles.reserveBtnText}>Reserve this tool</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.reserveForm}>
+                  <Text style={styles.formTitle}>Select reservation dates</Text>
+
+                  {/* Start date */}
+                  <Text style={styles.dateLabel}>Start date</Text>
+                  {Platform.OS === 'web' ? (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      minimumDate={todayMidnight()}
+                      onChange={(_, selected) => { if (selected) setStartDate(selected) }}
+                    />
+                  ) : (
+                    <>
+                      <TouchableOpacity style={styles.dateTrigger} onPress={openStartPicker}>
+                        <Text style={styles.dateTriggerText}>{startDate.toISOString().slice(0, 10)}</Text>
+                        <Ionicons name="calendar-outline" size={16} color="#6b7280" />
+                      </TouchableOpacity>
+                      {showStartPicker && Platform.OS === 'ios' && (
+                        <DateTimePicker value={startDate} mode="date" minimumDate={todayMidnight()} onChange={onStartChange} />
+                      )}
+                    </>
+                  )}
+
+                  {/* End date */}
+                  <Text style={[styles.dateLabel, { marginTop: 12 }]}>End date</Text>
+                  {Platform.OS === 'web' ? (
+                    <DateTimePicker
+                      value={endDate}
+                      mode="date"
+                      minimumDate={startDate}
+                      onChange={(_, selected) => { if (selected) setEndDate(selected) }}
+                    />
+                  ) : (
+                    <>
+                      <TouchableOpacity style={styles.dateTrigger} onPress={openEndPicker}>
+                        <Text style={styles.dateTriggerText}>{endDate.toISOString().slice(0, 10)}</Text>
+                        <Ionicons name="calendar-outline" size={16} color="#6b7280" />
+                      </TouchableOpacity>
+                      {showEndPicker && Platform.OS === 'ios' && (
+                        <DateTimePicker value={endDate} mode="date" minimumDate={startDate} onChange={onEndChange} />
+                      )}
+                    </>
+                  )}
+
+                  {/* Notes */}
+                  <Text style={[styles.dateLabel, { marginTop: 12 }]}>Notes (optional)</Text>
+                  <TextInput
+                    style={styles.notesInput}
+                    value={reserveNotes}
+                    onChangeText={setReserveNotes}
+                    placeholder="Any notes for the owner…"
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  {/* Submit */}
+                  <TouchableOpacity
+                    style={[styles.reserveBtn, reserveMutation.isPending && styles.reserveBtnDisabled]}
+                    onPress={handleSubmitReservation}
+                    disabled={reserveMutation.isPending}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.reserveBtnText}>
+                      {reserveMutation.isPending ? 'Sending…' : 'Send request'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.cancelFormBtn} onPress={() => setShowReserveForm(false)}>
+                    <Text style={styles.cancelFormBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           ) : (
             <Text style={styles.unavailableText}>This tool is currently not available for reservation.</Text>
           )}
@@ -231,28 +323,36 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  scroll:           { flex: 1, backgroundColor: '#f9fafb' },
-  content:          { paddingBottom: 40 },
-  centerFull:       { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText:      { fontSize: 15, color: '#6b7280' },
-  errorText:        { fontSize: 15, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
-  backBtn:          { paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#f3f4f6', borderRadius: 8 },
-  backBtnText:      { fontSize: 14, color: '#374151', fontWeight: '500' },
-  backRow:          { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 16, paddingTop: 56 },
-  backText:         { fontSize: 14, color: '#6b7280' },
-  image:            { width: '100%', height: 220 },
-  titleRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, gap: 12 },
-  title:            { flex: 1, fontSize: 20, fontWeight: '700', color: '#111827' },
-  statusBadge:      { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText:       { fontSize: 12, fontWeight: '600' },
-  description:      { paddingHorizontal: 16, fontSize: 14, color: '#4b5563', lineHeight: 22, marginBottom: 8 },
-  detailsGrid:      { margin: 16, backgroundColor: '#fff', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' },
-  detailRow:        { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  detailLabel:      { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
-  detailValue:      { fontSize: 13, color: '#111827', fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
-  actionArea:       { marginHorizontal: 16, marginTop: 8 },
-  reserveBtn:       { backgroundColor: '#15803d', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  reserveBtnDisabled: { opacity: 0.6 },
-  reserveBtnText:   { color: '#fff', fontSize: 16, fontWeight: '600' },
-  unavailableText:  { textAlign: 'center', fontSize: 14, color: '#9ca3af', paddingVertical: 12 },
+  scroll:              { flex: 1, backgroundColor: '#f9fafb' },
+  content:             { paddingBottom: 40 },
+  centerFull:          { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText:         { fontSize: 15, color: '#6b7280' },
+  errorText:           { fontSize: 15, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
+  backBtn:             { paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#f3f4f6', borderRadius: 8 },
+  backBtnText:         { fontSize: 14, color: '#374151', fontWeight: '500' },
+  backRow:             { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 16, paddingTop: 56 },
+  backText:            { fontSize: 14, color: '#6b7280' },
+  image:               { width: '100%', height: 220 },
+  titleRow:            { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, gap: 12 },
+  title:               { flex: 1, fontSize: 20, fontWeight: '700', color: '#111827' },
+  statusBadge:         { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText:          { fontSize: 12, fontWeight: '600' },
+  description:         { paddingHorizontal: 16, fontSize: 14, color: '#4b5563', lineHeight: 22, marginBottom: 8 },
+  detailsGrid:         { margin: 16, backgroundColor: '#fff', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' },
+  detailRow:           { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  detailLabel:         { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
+  detailValue:         { fontSize: 13, color: '#111827', fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
+  actionArea:          { marginHorizontal: 16, marginTop: 8 },
+  reserveBtn:          { backgroundColor: '#15803d', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  reserveBtnDisabled:  { opacity: 0.6 },
+  reserveBtnText:      { color: '#fff', fontSize: 16, fontWeight: '600' },
+  unavailableText:     { textAlign: 'center', fontSize: 14, color: '#9ca3af', paddingVertical: 12 },
+  reserveForm:         { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#e5e7eb', gap: 4 },
+  formTitle:           { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 8 },
+  dateLabel:           { fontSize: 13, color: '#6b7280', fontWeight: '500', marginBottom: 4 },
+  dateTrigger:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#f9fafb' },
+  dateTriggerText:     { fontSize: 14, color: '#111827' },
+  notesInput:          { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#111827', backgroundColor: '#f9fafb', textAlignVertical: 'top', minHeight: 72 },
+  cancelFormBtn:       { alignItems: 'center', paddingVertical: 10, marginTop: 4 },
+  cancelFormBtnText:   { fontSize: 14, color: '#6b7280' },
 })
