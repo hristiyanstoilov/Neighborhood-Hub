@@ -1,7 +1,7 @@
 [build]
   base    = "packages/nextjs"
-  command = "rm -rf .next src/app/admin ../../package-lock.json && npm run build"
-  publish = ".next"
+  command = "npm run build"
+  publish = "packages/nextjs/.next"
 
 [build.environment]
   # NEXT_PUBLIC_* variables are intentionally embedded in client-side bundles
