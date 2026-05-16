@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../../lib/api'
 import { SkillNotFoundError, fetchSkillDetail, skillDetailKeys } from '../../../../lib/queries/skill-detail'
@@ -83,7 +83,7 @@ export default function RequestSkillScreen() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: skillRequestsKeys.all })
-      Alert.alert(
+      showAlert(
         'Request sent!',
         'The skill owner will be notified.',
         [
@@ -96,12 +96,12 @@ export default function RequestSkillScreen() {
 
   async function handleSubmit() {
     if (!skillId) {
-      Alert.alert('Invalid request', 'Missing skill identifier.')
+      showAlert('Invalid request', 'Missing skill identifier.')
       return
     }
 
     if (meetingType !== 'in_person' && !meetingUrl.trim()) {
-      Alert.alert('Meeting URL required', 'Please provide a meeting link for online or hybrid sessions.')
+      showAlert('Meeting URL required', 'Please provide a meeting link for online or hybrid sessions.')
       return
     }
 
@@ -126,7 +126,7 @@ export default function RequestSkillScreen() {
         VALIDATION_ERROR: 'Please check your inputs.',
         TOO_MANY_REQUESTS: 'Too many attempts. Please wait.',
       }
-      Alert.alert('Could not send request', msgs[code] ?? 'Something went wrong.')
+      showAlert('Could not send request', msgs[code] ?? 'Something went wrong.')
     }
   }
 

@@ -7,9 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native'
+import { showAlert } from '../../../../lib/show-alert'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -143,7 +143,7 @@ export default function EditSkillScreen() {
     if (!skillQuery.data || !user || ownershipChecked.current) return
     if (skillQuery.data.ownerId !== user.id) {
       ownershipChecked.current = true
-      Alert.alert('Unauthorized', 'You can only edit your own skills.')
+      showAlert('Unauthorized', 'You can only edit your own skills.')
       router.back()
     }
   }, [router, skillQuery.data, user])
@@ -151,7 +151,7 @@ export default function EditSkillScreen() {
   async function handleImageChange() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow access to your photo library.')
+      showAlert('Permission required', 'Please allow access to your photo library.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -171,12 +171,12 @@ export default function EditSkillScreen() {
       const uploadRes = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const uploadJson = await uploadRes.json()
       if (!uploadRes.ok) {
-        Alert.alert('Upload failed', uploadJson.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
+        showAlert('Upload failed', uploadJson.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
         return
       }
       setImageUrl(uploadJson.data.url)
     } catch {
-      Alert.alert('Error', 'Upload failed. Please check your connection.')
+      showAlert('Error', 'Upload failed. Please check your connection.')
     } finally {
       setUploadingImage(false)
     }
@@ -184,11 +184,11 @@ export default function EditSkillScreen() {
 
   async function handleSubmit() {
     if (!title.trim()) {
-      Alert.alert('Required', 'Please enter a title for your skill.')
+      showAlert('Required', 'Please enter a title for your skill.')
       return
     }
     if (title.trim().length < 3) {
-      Alert.alert('Too short', 'Title must be at least 3 characters.')
+      showAlert('Too short', 'Title must be at least 3 characters.')
       return
     }
 
@@ -201,12 +201,12 @@ export default function EditSkillScreen() {
         TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
         NOT_FOUND: 'Skill not found.',
       }
-      Alert.alert('Could not save', msgs[code] ?? 'Something went wrong.')
+      showAlert('Could not save', msgs[code] ?? 'Something went wrong.')
     }
   }
 
   async function handleDelete() {
-    Alert.alert(
+    showAlert(
       'Delete skill',
       'Are you sure? This cannot be undone.',
       [
@@ -218,7 +218,7 @@ export default function EditSkillScreen() {
             try {
               await deleteSkillMutation.mutateAsync()
             } catch {
-              Alert.alert('Error', 'Network error. Please try again.')
+              showAlert('Error', 'Network error. Please try again.')
             }
           },
         },

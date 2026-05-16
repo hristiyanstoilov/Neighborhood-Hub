@@ -5,11 +5,11 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   TextInput,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
@@ -93,7 +93,7 @@ export default function DriveDetailScreen() {
         CANNOT_PLEDGE_OWN_DRIVE: 'You cannot pledge to your own drive.',
         TOO_MANY_REQUESTS:     'Too many attempts. Please wait.',
       }
-      Alert.alert('Error', msg[err.message] ?? 'Something went wrong.')
+      showAlert('Error', msg[err.message] ?? 'Something went wrong.')
     },
   })
 
@@ -128,7 +128,7 @@ export default function DriveDetailScreen() {
 
   function handlePledge() {
     if (!user) {
-      Alert.alert('Login required', 'Please log in to pledge.', [
+      showAlert('Login required', 'Please log in to pledge.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Log in', onPress: () => router.push('/(auth)/login') },
       ])
@@ -138,7 +138,7 @@ export default function DriveDetailScreen() {
   }
 
   function handleCancelPledge() {
-    Alert.alert('Cancel pledge', 'Are you sure you want to cancel your pledge?', [
+    showAlert('Cancel pledge', 'Are you sure you want to cancel your pledge?', [
       { text: 'No', style: 'cancel' },
       { text: 'Yes, cancel', style: 'destructive', onPress: () => pledgeMutation.mutate('cancel') },
     ])

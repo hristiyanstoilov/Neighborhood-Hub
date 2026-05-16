@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput, Platform } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, Platform } from 'react-native'
+import { showAlert } from '../../../lib/show-alert'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker'
@@ -82,7 +83,7 @@ export default function FoodDetailScreen() {
         VALIDATION_ERROR: 'Please choose pickup date and time.',
         DUPLICATE_ACTIVE_RESERVATION: 'You already have an active reservation for this listing.',
       }
-      Alert.alert('Error', messages[err.message] ?? 'Something went wrong.')
+      showAlert('Error', messages[err.message] ?? 'Something went wrong.')
     },
   })
 
@@ -113,7 +114,7 @@ export default function FoodDetailScreen() {
         INVALID_TRANSITION: 'This reservation cannot change to that state.',
         FORBIDDEN: 'You are not allowed to do that.',
       }
-      Alert.alert('Error', messages[err.message] ?? 'Something went wrong.')
+      showAlert('Error', messages[err.message] ?? 'Something went wrong.')
     },
   })
 
@@ -137,7 +138,7 @@ export default function FoodDetailScreen() {
 
   function handleReserve() {
     if (!user) {
-      Alert.alert('Login required', 'Please log in to reserve food.', [
+      showAlert('Login required', 'Please log in to reserve food.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Log in', onPress: () => router.push('/(auth)/login') },
       ])
@@ -147,7 +148,7 @@ export default function FoodDetailScreen() {
   }
 
   function handleCancelReservation(reservationId: string) {
-    Alert.alert('Cancel reservation', 'Are you sure?', [
+    showAlert('Cancel reservation', 'Are you sure?', [
       { text: 'No', style: 'cancel' },
       { text: 'Yes', style: 'destructive', onPress: () => reservationMutation.mutate({ reservationId, action: 'cancel', cancellationReason: 'Cancelled by requester' }) },
     ])

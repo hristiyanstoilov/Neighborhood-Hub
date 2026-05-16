@@ -5,10 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
@@ -83,7 +83,7 @@ export default function EventDetailScreen() {
 
   function handleRsvp() {
     if (!user) {
-      Alert.alert('Login required', 'Please log in to RSVP for this event.', [
+      showAlert('Login required', 'Please log in to RSVP for this event.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Log in', onPress: () => router.push('/(auth)/login') },
       ])
@@ -99,7 +99,7 @@ export default function EventDetailScreen() {
           EVENT_NOT_OPEN: 'This event is no longer accepting RSVPs.',
           TOO_MANY_REQUESTS: 'Too many attempts. Please wait.',
         }
-        Alert.alert('RSVP failed', msg[err.message] ?? 'Something went wrong.')
+        showAlert('RSVP failed', msg[err.message] ?? 'Something went wrong.')
       },
     })
   }

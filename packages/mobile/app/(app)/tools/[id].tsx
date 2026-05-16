@@ -5,10 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Platform,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../../contexts/auth'
@@ -58,18 +58,18 @@ export default function ToolDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tools'] })
       queryClient.invalidateQueries({ queryKey: ['my-reservations'] })
-      Alert.alert('Reservation sent!', 'Your request has been sent to the owner.', [
+      showAlert('Reservation sent!', 'Your request has been sent to the owner.', [
         { text: 'OK', onPress: () => router.back() },
       ])
     },
     onError: (err: Error) => {
-      Alert.alert('Could not reserve', err.message)
+      showAlert('Could not reserve', err.message)
     },
   })
 
   function promptReserve() {
     if (!user) {
-      Alert.alert('Login required', 'Please log in to reserve tools.', [
+      showAlert('Login required', 'Please log in to reserve tools.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Login', onPress: () => router.push('/(auth)/login' as never) },
       ])
@@ -77,7 +77,7 @@ export default function ToolDetailScreen() {
     }
 
     if (!user.emailVerifiedAt) {
-      Alert.alert('Email not verified', 'Please verify your email before reserving tools.')
+      showAlert('Email not verified', 'Please verify your email before reserving tools.')
       return
     }
 
@@ -93,7 +93,7 @@ export default function ToolDetailScreen() {
             text: 'Next',
             onPress: (start: string | undefined) => {
               if (!start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
-                Alert.alert('Invalid date', 'Please use YYYY-MM-DD format.')
+                showAlert('Invalid date', 'Please use YYYY-MM-DD format.')
                 return
               }
               Alert.prompt(
@@ -105,7 +105,7 @@ export default function ToolDetailScreen() {
                     text: 'Reserve',
                     onPress: (end: string | undefined) => {
                       if (!end || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
-                        Alert.alert('Invalid date', 'Please use YYYY-MM-DD format.')
+                        showAlert('Invalid date', 'Please use YYYY-MM-DD format.')
                         return
                       }
                       reserveMutation.mutate({ toolId: tool.id, startDate: start, endDate: end })
@@ -124,7 +124,7 @@ export default function ToolDetailScreen() {
       // Android: show a simple confirmation — full date pickers need a native package
       const today = new Date().toISOString().slice(0, 10)
       const weekLater = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-      Alert.alert(
+      showAlert(
         'Reserve this tool',
         `Send a reservation request?\n\nDefault: ${today} → ${weekLater}\n(Use the web app to select custom dates)`,
         [

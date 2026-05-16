@@ -7,9 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchOwnProfile,
@@ -19,8 +19,6 @@ import {
   updateOwnProfile,
 } from '../../../lib/queries/profile'
 import { useToast } from '../../../lib/toast'
-import { AppScreen } from '../../../components/AppScreen'
-import { mobileTheme } from '../../../lib/theme'
 
 export default function EditProfileScreen() {
   const router = useRouter()
@@ -72,7 +70,7 @@ export default function EditProfileScreen() {
       })
     } catch (error) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
-      Alert.alert('Could not save', profileUpdateErrorMessage(code))
+      showAlert('Could not save', profileUpdateErrorMessage(code))
     }
   }
 
@@ -83,38 +81,33 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={mobileTheme.colors.primary} />
-        </View>
-      </AppScreen>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#15803d" />
+      </View>
     )
   }
 
   if (loadError) {
     return (
-      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
-        <View style={styles.center}>
-          <Text style={styles.errorText}>Could not load profile. Please try again.</Text>
-          <TouchableOpacity
-            style={styles.submitBtn}
-            onPress={() => {
-              void profileQuery.refetch()
-              void locationsQuery.refetch()
-            }}
-          >
-            <Text style={styles.submitBtnText}>Retry</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
-            <Text style={styles.cancelBtnText}>Go back</Text>
-          </TouchableOpacity>
-        </View>
-      </AppScreen>
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Could not load profile. Please try again.</Text>
+        <TouchableOpacity
+          style={styles.submitBtn}
+          onPress={() => {
+            void profileQuery.refetch()
+            void locationsQuery.refetch()
+          }}
+        >
+          <Text style={styles.submitBtnText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+          <Text style={styles.cancelBtnText}>Go back</Text>
+        </TouchableOpacity>
+      </View>
     )
   }
 
   return (
-    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -211,7 +204,7 @@ export default function EditProfileScreen() {
           disabled={submitting}
         >
           {submitting
-            ? <ActivityIndicator color={mobileTheme.colors.onPrimary} />
+            ? <ActivityIndicator color="#fff" />
             : <Text style={styles.submitBtnText}>Save changes</Text>
           }
         </TouchableOpacity>
@@ -220,28 +213,27 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
-    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: mobileTheme.colors.canvas },
+  container: { flex: 1, backgroundColor: '#f3f4f6' },
   content: { padding: 20, paddingBottom: 48 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: mobileTheme.colors.canvas },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
   errorText: { fontSize: 14, color: '#dc2626', marginBottom: 10 },
-  pageTitle: { fontSize: 22, fontWeight: '700', color: mobileTheme.colors.textPrimary, marginBottom: 20 },
+  pageTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 20 },
   field: { marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: mobileTheme.colors.textSecondary, marginBottom: 6 },
-  hint: { fontSize: 11, color: mobileTheme.colors.textSubtle, marginTop: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  hint: { fontSize: 11, color: '#9ca3af', marginTop: 4 },
   input: {
-    backgroundColor: mobileTheme.colors.surface,
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border,
+    borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: mobileTheme.colors.textPrimary,
+    color: '#111827',
   },
   textarea: { minHeight: 90, paddingTop: 10 },
   chipScroll: { flexDirection: 'row' },
@@ -250,42 +242,42 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 99,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border,
-    backgroundColor: mobileTheme.colors.surface,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
     marginRight: 8,
   },
-  chipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
-  chipText: { fontSize: 13, color: mobileTheme.colors.textSecondary },
-  chipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
+  chipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
+  chipText: { fontSize: 13, color: '#374151' },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggleChip: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border,
-    backgroundColor: mobileTheme.colors.surface,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
     alignItems: 'center',
   },
-  toggleChipActive: { backgroundColor: mobileTheme.colors.primary, borderColor: mobileTheme.colors.primary },
-  toggleChipText: { fontSize: 13, color: mobileTheme.colors.textSecondary, fontWeight: '500' },
-  toggleChipTextActive: { color: mobileTheme.colors.onPrimary, fontWeight: '600' },
+  toggleChipActive: { backgroundColor: '#15803d', borderColor: '#15803d' },
+  toggleChipText: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  toggleChipTextActive: { color: '#fff', fontWeight: '600' },
   actions: { gap: 10, marginTop: 8 },
   submitBtn: {
-    backgroundColor: mobileTheme.colors.primary,
+    backgroundColor: '#15803d',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  submitBtnText: { color: mobileTheme.colors.onPrimary, fontWeight: '600', fontSize: 16 },
+  submitBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   disabled: { opacity: 0.6 },
   cancelBtn: {
-    backgroundColor: mobileTheme.colors.surface,
+    backgroundColor: '#fff',
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: mobileTheme.colors.borderSoft,
+    borderColor: '#e5e7eb',
   },
-  cancelBtnText: { color: mobileTheme.colors.textSecondary, fontWeight: '500', fontSize: 14 },
+  cancelBtnText: { color: '#374151', fontWeight: '500', fontSize: 14 },
 })

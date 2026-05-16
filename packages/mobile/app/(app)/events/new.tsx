@@ -6,13 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
+import { showAlert } from '../../../lib/show-alert'
 import { eventsKeys } from '../../../lib/queries/events'
 
 export default function NewEventScreen() {
@@ -74,7 +74,7 @@ export default function NewEventScreen() {
         TOO_MANY_REQUESTS: 'Too many attempts. Please wait.',
         VALIDATION_ERROR:  'Please check your inputs.',
       }
-      Alert.alert('Could not create event', msg[err.message] ?? 'Something went wrong. Please try again.')
+      showAlert('Could not create event', msg[err.message] ?? 'Something went wrong. Please try again.')
     },
   })
 

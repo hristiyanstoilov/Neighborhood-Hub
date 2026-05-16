@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { showAlert } from '../../../../lib/show-alert'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../../lib/api'
 import { fetchFoodDetail, foodKeys } from '../../../../lib/queries/food'
 import { useToast } from '../../../../lib/toast'
-import { mobileTheme } from '../../../../lib/theme'
-import { ImageUpload } from '../../../../components/ImageUpload'
 
 export default function EditFoodScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -60,7 +59,7 @@ export default function EditFoodScreen() {
       router.replace(`/(app)/food/${data.id}`)
     },
     onError: (err) => {
-      Alert.alert('Could not save listing', err.message === 'VALIDATION_ERROR' ? 'Please check the form fields.' : 'Something went wrong.')
+      showAlert('Could not save listing', err.message === 'VALIDATION_ERROR' ? 'Please check the form fields.' : 'Something went wrong.')
     },
   })
 
@@ -77,7 +76,7 @@ export default function EditFoodScreen() {
       router.replace('/(app)/food')
     },
     onError: () => {
-      Alert.alert('Could not delete listing', 'Something went wrong.')
+      showAlert('Could not delete listing', 'Something went wrong.')
     },
   })
 
@@ -95,7 +94,7 @@ export default function EditFoodScreen() {
   }
 
   function handleDelete() {
-    Alert.alert('Delete listing', 'Are you sure you want to delete this food listing?', [
+    showAlert('Delete listing', 'Are you sure you want to delete this food listing?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate() },
     ])
@@ -117,8 +116,8 @@ export default function EditFoodScreen() {
       <Field label="Pickup instructions">
         <TextInput style={[styles.input, styles.textarea]} value={pickupInstructions} onChangeText={setPickupInstructions} multiline numberOfLines={4} textAlignVertical="top" maxLength={500} />
       </Field>
-      <Field label="Image">
-        <ImageUpload value={imageUrl} onChange={setImageUrl} />
+      <Field label="Image URL">
+        <TextInput style={styles.input} value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" />
       </Field>
 
       <TouchableOpacity style={[styles.primaryBtn, updateMutation.isPending && styles.disabledBtn]} onPress={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
@@ -146,23 +145,23 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: mobileTheme.colors.canvasAlt },
+  container: { flex: 1, backgroundColor: '#f9fafb' },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: mobileTheme.colors.textPrimary, marginBottom: 6 },
+  title: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 6 },
   field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: mobileTheme.colors.textSecondary },
-  input: { backgroundColor: mobileTheme.colors.surface, borderWidth: 1, borderColor: mobileTheme.colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: mobileTheme.colors.textPrimary },
+  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#111827' },
   textarea: { minHeight: 96 },
   quantityInput: { maxWidth: 120 },
-  primaryBtn: { backgroundColor: mobileTheme.colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  primaryBtnText: { color: mobileTheme.colors.onPrimary, fontSize: 15, fontWeight: '700' },
+  primaryBtn: { backgroundColor: '#15803d', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   secondaryBtn: { borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   secondaryBtnText: { color: '#dc2626', fontSize: 15, fontWeight: '600' },
   disabledBtn: { opacity: 0.6 },
   backBtn: { alignItems: 'center', paddingVertical: 8 },
-  backBtnText: { color: mobileTheme.colors.textMuted, fontSize: 14 },
+  backBtnText: { color: '#6b7280', fontSize: 14 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
-  errorText: { fontSize: 14, color: mobileTheme.colors.textMuted, textAlign: 'center' },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 8, backgroundColor: mobileTheme.colors.primary },
-  retryText: { color: mobileTheme.colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  errorText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 8, backgroundColor: '#15803d' },
+  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 })

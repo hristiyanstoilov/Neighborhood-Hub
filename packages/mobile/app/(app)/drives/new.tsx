@@ -6,13 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
+import { showAlert } from '../../../lib/show-alert'
 import { drivesKeys } from '../../../lib/queries/drives'
 
 const DRIVE_TYPES = [
@@ -75,7 +75,7 @@ export default function NewDriveScreen() {
         TOO_MANY_REQUESTS:'Too many attempts. Please wait.',
         VALIDATION_ERROR: 'Please check your inputs.',
       }
-      Alert.alert('Could not start drive', msg[err.message] ?? 'Something went wrong.')
+      showAlert('Could not start drive', msg[err.message] ?? 'Something went wrong.')
     },
   })
 

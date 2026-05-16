@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, FlatList, TextInput } from 'react-native'
+import { FlatList, TextInput } from 'react-native'
+import { showAlert } from '../../../lib/show-alert'
 import { useFocusEffect } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../../lib/api'
@@ -101,7 +102,7 @@ export function useChatScreenState(input: { userId?: string }) {
   }
 
   async function requestDeleteConversation(id: string) {
-    Alert.alert('Delete conversation', 'Are you sure?', [
+    showAlert('Delete conversation', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -140,7 +141,7 @@ export function useChatScreenState(input: { userId?: string }) {
           AI_UNAVAILABLE: 'AI is temporarily unavailable.',
           CONVERSATION_NOT_FOUND: 'Conversation not found.',
         }
-        Alert.alert('Error', msgs[json.error] ?? 'Something went wrong.')
+        showAlert('Error', msgs[json.error] ?? 'Something went wrong.')
         return
       }
 
@@ -165,7 +166,7 @@ export function useChatScreenState(input: { userId?: string }) {
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId && m.id !== placeholderId))
-      Alert.alert('Error', 'Network error. Please check your connection.')
+      showAlert('Error', 'Network error. Please check your connection.')
     } finally {
       setSending(false)
     }

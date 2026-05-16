@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { showAlert } from '../../../lib/show-alert'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../contexts/auth'
 import { apiFetch } from '../../../lib/api'
@@ -87,11 +87,11 @@ export default function NewSkillScreen() {
 
   async function handleSubmit() {
     if (!title.trim()) {
-      Alert.alert('Required', 'Please enter a title for your skill.')
+      showAlert('Required', 'Please enter a title for your skill.')
       return
     }
     if (title.trim().length < 3) {
-      Alert.alert('Too short', 'Title must be at least 3 characters.')
+      showAlert('Too short', 'Title must be at least 3 characters.')
       return
     }
     try {
@@ -104,7 +104,7 @@ export default function NewSkillScreen() {
         TOO_MANY_REQUESTS: 'Too many attempts. Please wait and try again.',
         UNAUTHORIZED: 'You must be logged in to offer a skill.',
       }
-      Alert.alert('Could not publish', msgs[code] ?? 'Something went wrong.')
+      showAlert('Could not publish', msgs[code] ?? 'Something went wrong.')
     }
   }
 

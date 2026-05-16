@@ -3,8 +3,8 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
 } from 'react-native'
+import { showAlert } from '../../../lib/show-alert'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
@@ -23,8 +23,6 @@ import {
   ProfileLoadingState,
   ProfileUnauthorizedState,
 } from './_components/profile-states'
-import { AppScreen } from '../../../components/AppScreen'
-import { mobileTheme } from '../../../lib/theme'
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth()
@@ -49,7 +47,7 @@ export default function ProfileScreen() {
   async function handlePickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow access to your photo library.')
+      showAlert('Permission required', 'Please allow access to your photo library.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -68,13 +66,13 @@ export default function ProfileScreen() {
       const uploadRes = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const uploadJson = await uploadRes.json()
       if (!uploadRes.ok) {
-        Alert.alert('Upload failed', uploadJson.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
+        showAlert('Upload failed', uploadJson.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
         return
       }
       await avatarMutation.mutateAsync(uploadJson.data.url)
     } catch (error) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
-      Alert.alert('Error', profileUpdateErrorMessage(code))
+      showAlert('Error', profileUpdateErrorMessage(code))
     }
   }
 
@@ -85,7 +83,7 @@ export default function ProfileScreen() {
   }, [profileQuery, user]))
 
   async function handleLogout() {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
+    showAlert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log out',
@@ -99,33 +97,20 @@ export default function ProfileScreen() {
   }
 
   if (!user) {
-    return (
-      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
-        <ProfileUnauthorizedState onLogin={() => router.replace('/(auth)/login')} />
-      </AppScreen>
-    )
+    return <ProfileUnauthorizedState onLogin={() => router.replace('/(auth)/login')} />
   }
 
   if (profileQuery.isLoading) {
-    return (
-      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
-        <ProfileLoadingState />
-      </AppScreen>
-    )
+    return <ProfileLoadingState />
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return (
-      <AppScreen backgroundColor={mobileTheme.colors.canvas}>
-        <ProfileErrorState onRetry={() => { void profileQuery.refetch() }} />
-      </AppScreen>
-    )
+    return <ProfileErrorState onRetry={() => { void profileQuery.refetch() }} />
   }
 
   const profile = profileQuery.data
 
   return (
-    <AppScreen backgroundColor={mobileTheme.colors.canvas}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -157,14 +142,13 @@ export default function ProfileScreen() {
         onLogout={handleLogout}
       />
     </ScrollView>
-    </AppScreen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: mobileTheme.colors.canvas,
+    backgroundColor: '#f3f4f6',
   },
   content: {
     padding: 20,

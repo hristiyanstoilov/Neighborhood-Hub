@@ -6,8 +6,8 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native'
+import { showAlert } from '../../../lib/show-alert'
 import { useEffect, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useAuth } from '../../../contexts/auth'
@@ -80,7 +80,7 @@ export default function SkillDetailScreen() {
       }
     },
     onError: (error: Error) => {
-      Alert.alert('Could not update endorsement', error.message)
+      showAlert('Could not update endorsement', error.message)
     },
   })
 
@@ -95,7 +95,7 @@ export default function SkillDetailScreen() {
 
   function handleRequest() {
     if (!user) {
-      Alert.alert('Login required', 'Please login to request this skill.', [
+      showAlert('Login required', 'Please login to request this skill.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Login', onPress: () => router.push('/(auth)/login') },
       ])
@@ -103,7 +103,7 @@ export default function SkillDetailScreen() {
     }
 
     if (!user.emailVerifiedAt) {
-      Alert.alert(
+      showAlert(
         'Email not verified',
         'Please verify your email before requesting skills.',
         [
@@ -114,14 +114,14 @@ export default function SkillDetailScreen() {
               try {
                 const { res, json } = await resendVerificationMutation.mutateAsync()
                 if (res.ok) {
-                  Alert.alert('Email sent', 'Check your inbox for the verification link.')
+                  showAlert('Email sent', 'Check your inbox for the verification link.')
                 } else if (json.error === 'EMAIL_ALREADY_VERIFIED') {
-                  Alert.alert('Already verified', 'Your email is already verified. Please reload the app.')
+                  showAlert('Already verified', 'Your email is already verified. Please reload the app.')
                 } else {
-                  Alert.alert('Error', 'Could not send email. Please try again.')
+                  showAlert('Error', 'Could not send email. Please try again.')
                 }
               } catch {
-                Alert.alert('Error', 'Network error. Please try again.')
+                showAlert('Error', 'Network error. Please try again.')
               }
             },
           },
@@ -135,7 +135,7 @@ export default function SkillDetailScreen() {
 
   function handleEndorsementPress() {
     if (!user) {
-      Alert.alert('Login required', 'Please login to endorse this skill.', [
+      showAlert('Login required', 'Please login to endorse this skill.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Login', onPress: () => router.push('/(auth)/login') },
       ])
