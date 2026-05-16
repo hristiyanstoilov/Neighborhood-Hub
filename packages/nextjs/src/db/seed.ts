@@ -697,8 +697,11 @@ async function seedPersonalAccounts() {
   ])
   .onConflictDoUpdate({
     target: users.email,
-    // Always enforce the intended role; leave passwordHash untouched
-    set: { role: sqlExpr`excluded.role` },
+    // Always enforce both role and password so evaluator credentials never break
+    set: {
+      role:         sqlExpr`excluded.role`,
+      passwordHash: sqlExpr`excluded.password_hash`,
+    },
   })
   .returning()
 
