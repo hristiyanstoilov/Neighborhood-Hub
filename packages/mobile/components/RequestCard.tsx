@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
@@ -17,6 +16,7 @@ import {
 } from '../lib/queries/skill-requests'
 import { fetchRatingCheck, ratingsKeys } from '../lib/queries/ratings'
 import { useToast } from '../lib/toast'
+import { showAlert } from '../lib/show-alert'
 import { formatDateTime, formatMeetingType } from '../lib/format'
 import { RatingModal } from '../app/(app)/_components/RatingModal'
 import { mobileTheme } from '../lib/theme'
@@ -71,12 +71,12 @@ export default function RequestCard({ request, viewerId }: Props) {
       showToast({ message: ACTION_TOASTS[action], variant: 'success' })
     } catch (error) {
       const errorCode = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
-      Alert.alert('Error', getSkillRequestActionErrorMessage(errorCode))
+      showAlert('Error', getSkillRequestActionErrorMessage(errorCode))
     }
   }
 
   function confirmCancel() {
-    Alert.alert(
+    showAlert(
       'Cancel request',
       'Please provide a reason:',
       [
@@ -101,7 +101,7 @@ export default function RequestCard({ request, viewerId }: Props) {
       complete: { title: 'Mark complete',    message: 'Mark this session as completed?' },
     }
     const { title, message } = labels[action]
-    Alert.alert(title, message, [
+    showAlert(title, message, [
       { text: 'No', style: 'cancel' },
       { text: 'Yes', onPress: () => performAction(action) },
     ])

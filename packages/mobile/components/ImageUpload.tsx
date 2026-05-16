@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { apiFetch } from '../lib/api'
+import { showAlert } from '../lib/show-alert'
 import { mobileTheme } from '../lib/theme'
 
 type Props = {
@@ -15,7 +16,7 @@ export function ImageUpload({ value, onChange }: Props) {
   async function pickAndUpload() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow access to your photo library.')
+      showAlert('Permission required', 'Please allow access to your photo library.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -36,12 +37,12 @@ export function ImageUpload({ value, onChange }: Props) {
       const res = await apiFetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json().catch(() => null)
       if (!res.ok) {
-        Alert.alert('Upload failed', json?.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
+        showAlert('Upload failed', json?.detail ?? 'Only JPEG, PNG, WebP up to 5 MB.')
         return
       }
       onChange(json.data.url)
     } catch {
-      Alert.alert('Upload failed', 'Could not upload image.')
+      showAlert('Upload failed', 'Could not upload image.')
     } finally {
       setUploading(false)
     }
