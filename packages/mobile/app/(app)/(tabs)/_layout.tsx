@@ -100,6 +100,9 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Hide private folders from web tab bar — Expo Router static export picks them up as routes */}
+      <Tabs.Screen name="_components" options={{ href: null }} />
+      <Tabs.Screen name="_hooks" options={{ href: null }} />
     </Tabs>
   )
 }
