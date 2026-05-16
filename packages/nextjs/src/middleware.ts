@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const ALLOWED_ORIGINS = [
   'https://hristiyanstoilov.github.io',
-  'http://localhost:8081',
+  ...(process.env.NODE_ENV === 'development' ? ['http://localhost:8081'] : []),
 ]
 
 export function middleware(request: NextRequest) {
