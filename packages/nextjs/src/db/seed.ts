@@ -18,6 +18,11 @@ const DEMO_USER_PASSWORD = 'demo1234'
 const DEMO_USER_NAME = 'Demo User'
 const DEMO_USER_BIO = 'Explore the app freely.'
 
+// ─── Personal accounts (role enforced on every seed run) ─────────────────────
+const HARRI_EMAIL       = 'harr1@abv.bg'
+const XARIZAX_EMAIL     = 'xarizax@abv.bg'
+const PERSONAL_PASSWORD = 'Test123456'
+
 async function seed() {
   // ─── 1. Locations ────────────────────────────────────────────────────────
   console.log('Seeding locations...')
@@ -62,6 +67,8 @@ async function seed() {
     { slug: 'pets',           label: 'Pets & Animal Care',    icon: 'paw' },
     { slug: 'other',          label: 'Other',                 icon: 'star' },
   ]).onConflictDoNothing()
+
+  await seedPersonalAccounts()
 
   if (process.argv.includes('--food')) {
     await seedFood()
@@ -595,6 +602,18 @@ async function seed() {
       status: 'accepted',
       notes: 'Building a portfolio site in Next.js — need help with routing and image optimisation.',
     },
+    // Demo User requests Python tutoring from Ivan (pending — starter activity)
+    {
+      userFromId: demoUser.id,
+      userToId: ivan.id,
+      skillId: pythonSkill.id,
+      scheduledStart: d(2, 11),
+      scheduledEnd: d(2, 12),
+      meetingType: 'online',
+      meetingUrl: 'https://meet.google.com/demo-user-session',
+      status: 'pending',
+      notes: 'Just exploring the platform. Looking forward to learning Python from scratch!',
+    },
   ])
 
   // ─── 9 + 10. Tools & Reservations ───────────────────────────────────────
@@ -614,7 +633,13 @@ async function seed() {
   console.log('  stoyan@demo.bg  — Stoyan Nikolov   (Music)')
   console.log('  petya@demo.bg   — Petya Ivanova    (Design)')
   console.log('  dimitar@demo.bg — Dimitar Vasilev  (Gardening)')
-  console.log(`  Password for all: ${DEMO_PASSWORD}`)
+  console.log(`  Password for all above: ${DEMO_PASSWORD}`)
+  console.log('')
+  console.log(`  ${DEMO_USER_EMAIL} — Demo User (role: user) / ${DEMO_USER_PASSWORD}`)
+  console.log('')
+  console.log('  Personal accounts (role enforced):')
+  console.log(`  ${HARRI_EMAIL}   — Hristyan  (role: user)  / ${PERSONAL_PASSWORD}`)
+  console.log(`  ${XARIZAX_EMAIL} — Admin     (role: admin) / ${PERSONAL_PASSWORD}`)
   process.exit(0)
 }
 
@@ -657,6 +682,39 @@ async function ensureDemoUserAndProfile() {
   }
 
   return resolvedDemo
+}
+
+// ─── Personal accounts (idempotent — enforces roles on every run) ───────────
+
+async function seedPersonalAccounts() {
+  console.log('Ensuring personal accounts (harr1, xarizax)...')
+  const passwordHash = await bcrypt.hash(PERSONAL_PASSWORD, 12)
+  const now = new Date()
+
+  const upserted = await db.insert(users).values([
+    { email: HARRI_EMAIL,   passwordHash, role: 'user',  emailVerifiedAt: now },
+    { email: XARIZAX_EMAIL, passwordHash, role: 'admin', emailVerifiedAt: now },
+  ])
+  .onConflictDoUpdate({
+    target: users.email,
+    // Always enforce the intended role; leave passwordHash untouched
+    set: { role: sqlExpr`excluded.role` },
+  })
+  .returning()
+
+  const names: Record<string, string> = {
+    [HARRI_EMAIL]:   'Hristyan',
+    [XARIZAX_EMAIL]: 'Admin',
+  }
+
+  for (const u of upserted) {
+    await db.insert(profiles).values({
+      userId:   u.id,
+      name:     names[u.email] ?? u.email,
+      bio:      u.role === 'admin' ? 'Platform administrator.' : 'Platform tester.',
+      isPublic: true,
+    }).onConflictDoNothing()
+  }
 }
 
 // ─── Tools + Reservations (extracted so it can run standalone) ──────────────
@@ -833,6 +891,7 @@ async function seedFood() {
   const stoyan = byEmail('stoyan@demo.bg')
   const petya = byEmail('petya@demo.bg')
   const dimitar = byEmail('dimitar@demo.bg')
+  const demoU = byEmail(DEMO_USER_EMAIL)
 
   const [banitsa, bread, lyutenitsa, cake, soup, tarator, jam, tomatoes, moussaka] = await db.insert(foodShares).values([
     {
@@ -979,6 +1038,15 @@ async function seedFood() {
       pickupAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000),
       status: 'reserved',
       notes: 'Страхотно! Идвам в 18:30.',
+    },
+    // Demo User reserves lyutenitsa from Maria (pending — starter activity)
+    {
+      foodShareId: lyutenitsa.id,
+      requesterId: demoU.id,
+      ownerId: maria.id,
+      pickupAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000),
+      status: 'pending',
+      notes: 'Звучи страхотно! Мога да взема сутринта.',
     },
   ])
 }
@@ -1733,6 +1801,10 @@ async function seedBulk() {
   const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000)
   const daysAhead = (n: number) => new Date(Date.now() + n * 24 * 60 * 60 * 1000)
 
+  const pwHash = await bcrypt.hash('Demo1234!', 10)
+  const now = new Date()
+  const N = 200
+
   const NAMES = ['Александър', 'Антон', 'Борислав', 'Валентин', 'Георги', 'Димитър', 'Емил', 'Живко', 'Ивайло', 'Йордан', 'Ангелина', 'Биляна', 'Валерия', 'Галя', 'Даниела', 'Зорница', 'Ирина', 'Калина', 'Пламен', 'Теодора']
   const SURNAMES = ['Петров', 'Иванов', 'Георгиев', 'Димитров', 'Стоянов', 'Николов', 'Тодоров', 'Атанасов', 'Христов', 'Маринов']
   const SKILL_TITLES = ['Web development tutoring', 'Home repair help', 'Language lessons', 'Cooking assistance', 'Garden advice', 'Music lessons', 'Design consultation', 'Fitness coaching', 'Pet care', 'Photography tips']
@@ -1749,138 +1821,104 @@ async function seedBulk() {
     'Ок, ще мина в 18:00.',
   ]
 
-  let bulkIds: string[] = []
-  let bulkSkillIds: string[] = []
-  let bulkToolIds: string[] = []
-  let bulkFoodIds: string[] = []
+  // ─── Users (200) ─────────────────────────────────────────────────────────
+  const bulkIds: string[] = []
+  for (let i = 0; i < N; i += 50) {
+    const batch = Array.from({ length: Math.min(50, N - i) }, (_, j) => ({
+      email: `bulk_${String(i + j + 1).padStart(4, '0')}@demo.bg`,
+      passwordHash: pwHash,
+      role: 'user' as const,
+      emailVerifiedAt: now,
+    }))
+    const inserted = await db.insert(users).values(batch).onConflictDoNothing().returning({ id: users.id })
+    bulkIds.push(...inserted.map((u) => u.id))
+  }
+  console.log(`  ✓ ${bulkIds.length} users`)
 
-  if (phase1Done) {
-    console.log('  Phase 1 already complete — re-fetching IDs from DB...')
-    bulkIds = (await db.select({ id: users.id }).from(users)
-      .where(sqlExpr`${users.email} LIKE 'bulk_%@demo.bg'`)
-      .orderBy(users.email)).map(u => u.id)
-    bulkSkillIds = (await db.select({ id: skills.id }).from(skills)
-      .where(inArray(skills.ownerId, bulkIds))).map(s => s.id)
-    bulkToolIds = (await db.select({ id: tools.id }).from(tools)
-      .where(inArray(tools.ownerId, bulkIds))).map(t => t.id)
-    bulkFoodIds = (await db.select({ id: foodShares.id }).from(foodShares)
-      .where(inArray(foodShares.ownerId, bulkIds))).map(f => f.id)
-    console.log(`  ✓ Re-fetched: ${bulkIds.length} users, ${bulkSkillIds.length} skills, ${bulkToolIds.length} tools, ${bulkFoodIds.length} food shares`)
-  } else {
-    const pwHash = await bcrypt.hash('Demo1234!', 10)
-    const now = new Date()
-    const N = 200
+  // ─── Profiles (200) ──────────────────────────────────────────────────────
+  await db.insert(profiles).values(
+    bulkIds.map((userId, i) => ({
+      userId,
+      name: `${NAMES[i % NAMES.length]} ${SURNAMES[i % SURNAMES.length]}`,
+      bio: 'Community member and neighbour.',
+      locationId: rand(locIds),
+      isPublic: true,
+    })),
+  ).onConflictDoNothing()
+  console.log(`  ✓ ${bulkIds.length} profiles`)
 
-    // ─── Users (200) ───────────────────────────────────────────────────────
-    for (let i = 0; i < N; i += 50) {
-      const batch = Array.from({ length: Math.min(50, N - i) }, (_, j) => ({
-        email: `bulk_${String(i + j + 1).padStart(4, '0')}@demo.bg`,
-        passwordHash: pwHash,
-        role: 'user' as const,
-        emailVerifiedAt: now,
-      }))
-      const inserted = await db.insert(users).values(batch).onConflictDoNothing().returning({ id: users.id })
-      bulkIds.push(...inserted.map((u) => u.id))
-    }
-    console.log(`  ✓ ${bulkIds.length} users`)
-
-    // ─── Profiles (200) ────────────────────────────────────────────────────
-    await db.insert(profiles).values(
-      bulkIds.map((userId, i) => ({
-        userId,
-        name: `${NAMES[i % NAMES.length]} ${SURNAMES[i % SURNAMES.length]}`,
-        bio: 'Community member and neighbour.',
-        locationId: rand(locIds),
-        isPublic: true,
-      })),
-    ).onConflictDoNothing()
-    console.log(`  ✓ ${bulkIds.length} profiles`)
-
-    // ─── Skills (600 — 3 per user) ──────────────────────────────────────────
-    for (let i = 0; i < bulkIds.length; i += 50) {
-      const batch: Array<typeof skills.$inferInsert> = []
-      for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
-        for (let k = 0; k < 3; k++) {
-          const id = crypto.randomUUID()
-          bulkSkillIds.push(id)
-          batch.push({
-            id,
-            ownerId: bulkIds[j],
-            title: `${SKILL_TITLES[(j * 3 + k) % SKILL_TITLES.length]} — community offer`,
-            description: 'Happy to help neighbours in the community. Contact me to arrange.',
-            categoryId: catIds[(j + k) % catIds.length],
-            availableHours: randInt(2, 10),
-            status: 'available',
-            locationId: rand(locIds),
-          })
-        }
-      }
-      await db.insert(skills).values(batch).onConflictDoNothing()
-    }
-    console.log(`  ✓ ${bulkSkillIds.length} skills`)
-
-    // ─── Tools (400 — 2 per user) ───────────────────────────────────────────
-    for (let i = 0; i < bulkIds.length; i += 50) {
-      const batch: Array<typeof tools.$inferInsert> = []
-      for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
-        for (let k = 0; k < 2; k++) {
-          const id = crypto.randomUUID()
-          bulkToolIds.push(id)
-          batch.push({
-            id,
-            ownerId: bulkIds[j],
-            title: TOOL_TITLES[(j * 2 + k) % TOOL_TITLES.length],
-            description: 'Available for short-term loan to neighbours.',
-            categoryId: catIds[(j + k) % catIds.length],
-            locationId: rand(locIds),
-            condition: (['good', 'fair', 'new'] as const)[k % 3],
-            status: 'available',
-          })
-        }
-      }
-      await db.insert(tools).values(batch).onConflictDoNothing()
-    }
-    console.log(`  ✓ ${bulkToolIds.length} tools`)
-
-    // ─── Food shares (200 — 1 per user) ────────────────────────────────────
-    for (let i = 0; i < bulkIds.length; i += 50) {
-      const batch: Array<typeof foodShares.$inferInsert> = []
-      for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+  // ─── Skills (600 — 3 per user) ────────────────────────────────────────────
+  const bulkSkillIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof skills.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      for (let k = 0; k < 3; k++) {
         const id = crypto.randomUUID()
-        bulkFoodIds.push(id)
+        bulkSkillIds.push(id)
         batch.push({
           id,
           ownerId: bulkIds[j],
-          title: `${FOOD_TITLES[j % FOOD_TITLES.length]} — ${j + 1}`,
-          description: 'Домашна храна, приготвена с грижа за съседите.',
-          quantity: randInt(2, 8),
+          title: `${SKILL_TITLES[(j * 3 + k) % SKILL_TITLES.length]} — community offer`,
+          description: 'Happy to help neighbours in the community. Contact me to arrange.',
+          categoryId: catIds[(j + k) % catIds.length],
+          availableHours: randInt(2, 10),
+          status: 'available',
           locationId: rand(locIds),
-          availableUntil: daysAhead(randInt(1, 5)),
-          pickupInstructions: 'Вземане по договорка.',
+        })
+      }
+    }
+    await db.insert(skills).values(batch).onConflictDoNothing()
+  }
+  console.log(`  ✓ ${bulkSkillIds.length} skills`)
+
+  // ─── Tools (400 — 2 per user) ─────────────────────────────────────────────
+  const bulkToolIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof tools.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      for (let k = 0; k < 2; k++) {
+        const id = crypto.randomUUID()
+        bulkToolIds.push(id)
+        batch.push({
+          id,
+          ownerId: bulkIds[j],
+          title: TOOL_TITLES[(j * 2 + k) % TOOL_TITLES.length],
+          description: 'Available for short-term loan to neighbours.',
+          categoryId: catIds[(j + k) % catIds.length],
+          locationId: rand(locIds),
+          condition: (['good', 'fair', 'new'] as const)[k % 3],
           status: 'available',
         })
       }
-      await db.insert(foodShares).values(batch).onConflictDoNothing()
     }
-    console.log(`  ✓ ${bulkFoodIds.length} food shares`)
+    await db.insert(tools).values(batch).onConflictDoNothing()
   }
+  console.log(`  ✓ ${bulkToolIds.length} tools`)
 
-  // Phase 2 guard: skip all of phase 2 if conversations already seeded (last step)
-  const phase2Done = bulkIds.length > 0 && (await db.select({ id: conversations.id })
-    .from(conversations)
-    .where(inArray(conversations.participantA, bulkIds.slice(0, 5)))
-    .limit(1)).length > 0
-  if (phase2Done) {
-    console.log('  Phase 2 already complete — skipping.')
-    return
+  // ─── Food shares (200 — 1 per user) ──────────────────────────────────────
+  const bulkFoodIds: string[] = []
+  for (let i = 0; i < bulkIds.length; i += 50) {
+    const batch: Array<typeof foodShares.$inferInsert> = []
+    for (let j = i; j < Math.min(i + 50, bulkIds.length); j++) {
+      const id = crypto.randomUUID()
+      bulkFoodIds.push(id)
+      batch.push({
+        id,
+        ownerId: bulkIds[j],
+        title: `${FOOD_TITLES[j % FOOD_TITLES.length]} — ${j + 1}`,
+        description: 'Домашна храна, приготвена с грижа за съседите.',
+        quantity: randInt(2, 8),
+        locationId: rand(locIds),
+        availableUntil: daysAhead(randInt(1, 5)),
+        pickupInstructions: 'Вземане по договорка.',
+        status: 'available',
+      })
+    }
+    await db.insert(foodShares).values(batch).onConflictDoNothing()
   }
+  console.log(`  ✓ ${bulkFoodIds.length} food shares`)
 
   // ─── Skill requests (3,000) ───────────────────────────────────────────────
-  const skillReqDone = (await db.select({ id: skillRequests.id })
-    .from(skillRequests).where(inArray(skillRequests.userFromId, bulkIds.slice(0, 5))).limit(1)).length > 0
-  if (skillReqDone) {
-    console.log('  ✓ skill requests already seeded — skipping')
-  } else {
   for (let batch = 0; batch < 15; batch++) {
     const rows: Array<typeof skillRequests.$inferInsert> = []
     for (let i = 0; i < 200; i++) {
@@ -1896,14 +1934,13 @@ async function seedBulk() {
         skillId: bulkSkillIds[Math.min(skillIdx, bulkSkillIds.length - 1)],
         scheduledStart: start,
         scheduledEnd: end,
-        meetingType: 'in_person',
+        meetingType: i % 2 === 0 ? 'online' : 'in_person',
         status: (['completed', 'rejected'] as const)[i % 2],
       })
     }
     await db.insert(skillRequests).values(rows).onConflictDoNothing()
   }
   console.log('  ✓ 3,000 skill requests')
-  }
 
   // ─── Tool reservations (2,000) ────────────────────────────────────────────
   for (let batch = 0; batch < 10; batch++) {
@@ -1921,7 +1958,7 @@ async function seedBulk() {
         ownerId: bulkIds[ownerIdx],
         startDate: start,
         endDate: end,
-        status: (['returned', 'cancelled', 'rejected'] as const)[i % 3],
+        status: (['pending', 'approved', 'returned'] as const)[i % 3],
       })
     }
     await db.insert(toolReservations).values(rows).onConflictDoNothing()
@@ -1940,7 +1977,7 @@ async function seedBulk() {
         requesterId: bulkIds[requesterIdx],
         ownerId: bulkIds[ownerIdx],
         pickupAt: daysAhead(randInt(1, 3)),
-        status: (['picked_up', 'rejected', 'cancelled'] as const)[i % 3],
+        status: (['pending', 'reserved', 'cancelled'] as const)[i % 3],
       })
     }
     await db.insert(foodReservations).values(rows).onConflictDoNothing()
@@ -1998,18 +2035,15 @@ async function seedBulk() {
       let targetTitle: string
       let targetUrl: string
       if (type === 'skill_listed') {
-        const sIdx = (actorIdx * 3) % bulkSkillIds.length
-        targetId = bulkSkillIds[sIdx]
+        targetId = bulkSkillIds[actorIdx * 3]
         targetTitle = 'Community skill offer'
         targetUrl = `/skills/${targetId}`
       } else if (type === 'tool_listed') {
-        const tIdx = (actorIdx * 2) % bulkToolIds.length
-        targetId = bulkToolIds[tIdx]
+        targetId = bulkToolIds[actorIdx * 2]
         targetTitle = 'Tool available for loan'
         targetUrl = `/tools/${targetId}`
       } else {
-        const fIdx = actorIdx % bulkFoodIds.length
-        targetId = bulkFoodIds[fIdx]
+        targetId = bulkFoodIds[actorIdx]
         targetTitle = 'Food share available'
         targetUrl = `/food/${targetId}`
       }
