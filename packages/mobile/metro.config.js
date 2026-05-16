@@ -3,6 +3,12 @@ const path = require('path')
 
 const config = getDefaultConfig(__dirname)
 
+// Ensure web-shims are watched by Metro (needed for static rendering)
+config.watchFolders = [
+  ...(config.watchFolders || []),
+  path.resolve(__dirname, 'web-shims'),
+]
+
 const originalResolveRequest = config.resolver.resolveRequest
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web') {
