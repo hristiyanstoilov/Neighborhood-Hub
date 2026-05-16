@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next'
 import { db } from '@/db'
+
+export const dynamic = 'force-dynamic'
 import { skills } from '@/db/schema'
 import { eq, isNull, and } from 'drizzle-orm'
 
