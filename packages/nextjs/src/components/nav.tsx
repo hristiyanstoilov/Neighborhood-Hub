@@ -7,6 +7,7 @@ import { MessageSquare, Bot, User, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/contexts/auth'
 import Logo from '@/components/logo'
 import NotificationsBell from '@/components/notifications-bell'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 const DISCOVER_LINKS = [
   { href: '/feed', label: 'Feed' },
@@ -124,6 +125,8 @@ export default function Nav() {
 
         {/* Right: auth-dependent cluster */}
         <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <div className="w-px h-4 bg-gray-200 mx-1" aria-hidden="true" />
           {!loading && (
             <>
               {user ? (

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth'
-import { Footer } from '@/components/footer'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import PostHogProviderWrapper from '@/components/analytics/posthog-provider'
@@ -31,7 +30,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <CookieConsentBanner />
           </PostHogProviderWrapper>
         </NextIntlClientProvider>
-        <Footer />
       </body>
     </html>
   )
