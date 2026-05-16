@@ -1,10 +1,20 @@
 import { Resend } from 'resend'
 
-if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY env var is required')
-if (!process.env.RESEND_FROM) throw new Error('RESEND_FROM env var is required')
-if (!process.env.NEXT_PUBLIC_APP_URL) throw new Error('NEXT_PUBLIC_APP_URL env var is required')
+function getConfig() {
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.RESEND_FROM
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!apiKey) throw new Error('RESEND_API_KEY env var is required')
+  if (!from) throw new Error('RESEND_FROM env var is required')
+  if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL env var is required')
+  return { apiKey, from, appUrl }
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | undefined
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(getConfig().apiKey)
+  return _resend
+}
 
 function escapeHtml(str: string): string {
   return str
@@ -14,14 +24,13 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
-const FROM = process.env.RESEND_FROM
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL
 
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
-  const link = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`
+  const { from, appUrl } = getConfig()
+  const link = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`
 
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to,
     subject: 'Verify your Neighborhood Hub account',
     html: `
@@ -43,9 +52,10 @@ export async function sendContactEmail(params: {
   subject: string
   message: string
 }): Promise<void> {
-  const to = process.env.CONTACT_EMAIL ?? FROM
-  await resend.emails.send({
-    from: FROM,
+  const { from, appUrl: _appUrl } = getConfig()
+  const to = process.env.CONTACT_EMAIL ?? from
+  await getResend().emails.send({
+    from,
     to,
     replyTo: params.senderEmail,
     subject: `[Contact] ${params.subject}`,
@@ -60,10 +70,11 @@ export async function sendContactEmail(params: {
 }
 
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
-  const link = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`
+  const { from, appUrl } = getConfig()
+  const link = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`
 
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to,
     subject: 'Reset your Neighborhood Hub password',
     html: `
@@ -84,16 +95,17 @@ export async function sendSkillRequestAccepted(params: {
   skillTitle: string
   scheduledStart: Date
 }): Promise<void> {
+  const { from, appUrl } = getConfig()
   const safeTitle = escapeHtml(params.skillTitle)
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to: params.to,
     subject: `Your skill request for "${params.skillTitle}" was accepted`,
     html: `
       <h2>Request accepted!</h2>
       <p>Your request for <strong>${safeTitle}</strong> has been accepted.</p>
       <p>Scheduled: ${params.scheduledStart.toLocaleString('en-GB')}</p>
-      <a href="${APP_URL}/my-requests" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+      <a href="${appUrl}/my-requests" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
         View your requests
       </a>
     `,
@@ -105,16 +117,17 @@ export async function sendFoodReservationApproved(params: {
   foodTitle: string
   pickupAt: Date
 }): Promise<void> {
+  const { from, appUrl } = getConfig()
   const safeTitle = escapeHtml(params.foodTitle)
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to: params.to,
     subject: `Your food reservation for "${params.foodTitle}" was approved`,
     html: `
       <h2>Reservation approved!</h2>
       <p>Your reservation for <strong>${safeTitle}</strong> has been approved.</p>
       <p>Pickup time: ${params.pickupAt.toLocaleString('en-GB')}</p>
-      <a href="${APP_URL}/food/reservations" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+      <a href="${appUrl}/food/reservations" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
         View your reservations
       </a>
     `,
@@ -125,9 +138,10 @@ export async function sendFoodPickedUp(params: {
   to: string
   foodTitle: string
 }): Promise<void> {
+  const { from } = getConfig()
   const safeTitle = escapeHtml(params.foodTitle)
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to: params.to,
     subject: `Food pickup confirmed — "${params.foodTitle}"`,
     html: `
