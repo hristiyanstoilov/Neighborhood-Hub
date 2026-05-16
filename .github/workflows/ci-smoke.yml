@@ -95,12 +95,28 @@ jobs:
             kill "$(cat /tmp/next-start.pid)" || true
           fi
 
+  check-auth-secrets:
+    runs-on: ubuntu-latest
+    needs: quality-and-smoke
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - id: check
+        env:
+          HAS_EMAIL: ${{ secrets.SMOKE_AUTH_EMAIL }}
+          HAS_PASS: ${{ secrets.SMOKE_AUTH_PASSWORD }}
+        run: |
+          if [ -n "$HAS_EMAIL" ] && [ -n "$HAS_PASS" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
   authenticated-smoke:
-    # Run only when smoke auth secrets are provided in repository secrets
-    if: ${{ secrets.SMOKE_AUTH_EMAIL != '' && secrets.SMOKE_AUTH_PASSWORD != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: quality-and-smoke
+    needs: [quality-and-smoke, check-auth-secrets]
+    if: needs.check-auth-secrets.outputs.available == 'true'
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
@@ -185,11 +201,10 @@ jobs:
           fi
 
   authenticated-browser-smoke:
-    # Run only when smoke auth secrets are provided in repository secrets
-    if: ${{ secrets.SMOKE_AUTH_EMAIL != '' && secrets.SMOKE_AUTH_PASSWORD != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: authenticated-smoke
+    needs: [authenticated-smoke, check-auth-secrets]
+    if: needs.check-auth-secrets.outputs.available == 'true'
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       DATABASE_URL: postgresql://ci:ci@localhost:5432/neighborhood_hub
