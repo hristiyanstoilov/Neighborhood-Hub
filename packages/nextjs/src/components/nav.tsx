@@ -126,9 +126,9 @@ export default function Nav() {
         {/* Right: auth-dependent cluster */}
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
-          <div className="w-px h-4 bg-gray-200 mx-1" aria-hidden="true" />
           {!loading && (
             <>
+              <div className="w-px h-4 bg-gray-200 mx-1" aria-hidden="true" />
               {user ? (
                 <>
                   {user.role === 'admin' && (

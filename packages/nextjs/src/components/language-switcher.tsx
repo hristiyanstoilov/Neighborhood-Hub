@@ -1,6 +1,5 @@
 'use client'
 
-import { useTransition } from 'react'
 import { useLocale } from 'next-intl'
 import { routing, type Locale } from '@/i18n/routing'
 
@@ -8,13 +7,10 @@ const LABELS: Record<Locale, string> = { en: 'EN', bg: 'БГ' }
 
 export function LanguageSwitcher() {
   const locale = useLocale() as Locale
-  const [isPending, startTransition] = useTransition()
 
   function switchLocale(next: Locale) {
-    startTransition(() => {
-      document.cookie = `locale=${next}; path=/; max-age=31536000; SameSite=Lax`
-      window.location.reload()
-    })
+    document.cookie = `locale=${next}; path=/; max-age=31536000; SameSite=Lax; Secure`
+    window.location.reload()
   }
 
   return (
@@ -22,7 +18,7 @@ export function LanguageSwitcher() {
       {routing.locales.map((loc) => (
         <button
           key={loc}
-          disabled={isPending || loc === locale}
+          disabled={loc === locale}
           onClick={() => switchLocale(loc)}
           className={`text-xs px-1.5 py-0.5 rounded font-medium transition-colors ${
             loc === locale
