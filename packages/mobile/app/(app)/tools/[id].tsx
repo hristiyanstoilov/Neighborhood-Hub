@@ -82,8 +82,7 @@ export default function ToolDetailScreen() {
       setStartDate(todayMidnight())
       setEndDate(daysFromNow(7))
       setReserveNotes('')
-      queryClient.invalidateQueries({ queryKey: ['tools'] })
-      queryClient.invalidateQueries({ queryKey: ['my-reservations'] })
+      queryClient.invalidateQueries({ queryKey: toolsKeys.all })
       showAlert('Reservation sent!', 'Your request has been sent to the owner.', [
         { text: 'OK', onPress: () => router.back() },
       ])
@@ -109,8 +108,8 @@ export default function ToolDetailScreen() {
   }
 
   function handleSubmitReservation() {
-    if (endDate < startDate) {
-      showAlert('Invalid dates', 'End date must be on or after the start date.')
+    if (endDate <= startDate) {
+      showAlert('Invalid dates', 'End date must be after the start date.')
       return
     }
     const start = startDate.toISOString().slice(0, 10)
@@ -130,6 +129,7 @@ export default function ToolDetailScreen() {
       })
       return
     }
+    setShowEndPicker(false)
     setShowStartPicker((v) => !v)
   }
 
@@ -145,6 +145,7 @@ export default function ToolDetailScreen() {
       })
       return
     }
+    setShowStartPicker(false)
     setShowEndPicker((v) => !v)
   }
 
