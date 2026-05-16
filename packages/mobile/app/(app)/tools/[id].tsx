@@ -72,6 +72,8 @@ export default function ToolDetailScreen() {
           UNVERIFIED_EMAIL:        'Please verify your email first.',
           VALIDATION_ERROR:        'Invalid dates. Please check your input.',
           TOO_MANY_REQUESTS:       'Too many requests. Please wait.',
+          BLOCKED:                 'You cannot interact with this user.',
+          TOOL_NOT_FOUND:          'This tool no longer exists.',
         }
         throw new Error(ERROR_MESSAGES[json.error] ?? 'Something went wrong.')
       }
@@ -88,6 +90,7 @@ export default function ToolDetailScreen() {
       ])
     },
     onError: (err: Error) => {
+      if (err.message === 'This tool is no longer available.') toolQuery.refetch()
       showAlert('Could not reserve', err.message)
     },
   })

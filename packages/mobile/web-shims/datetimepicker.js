@@ -9,10 +9,17 @@ export const DateTimePickerAndroid = {
 
 export default function DateTimePicker({ value, onChange, minimumDate, maximumDate, mode = 'date' }) {
   function handleChange(e) {
-    if (onChange) {
-      const date = new Date(e.target.value)
-      onChange({}, date)
+    if (!onChange) return
+    let date
+    if (mode === 'time') {
+      const [h, m] = e.target.value.split(':').map(Number)
+      date = new Date(value instanceof Date ? value : Date.now())
+      date.setHours(h, m, 0, 0)
+    } else {
+      // Parse as local midnight to avoid UTC-offset date shifts
+      date = new Date(e.target.value + 'T00:00:00')
     }
+    onChange({}, date)
   }
 
   const inputType = mode === 'time' ? 'time' : mode === 'date' ? 'date' : 'datetime-local'
