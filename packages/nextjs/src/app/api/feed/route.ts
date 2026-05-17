@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { count, desc, eq } from 'drizzle-orm'
+import { count, desc, eq, innerJoin } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { limit, offset } = parsed.data
+    const { limit, page } = parsed.data
+    const offset = (page - 1) * limit
 
     const [items, [{ total }]] = await Promise.all([
       db
@@ -34,13 +35,18 @@ export async function GET(req: NextRequest) {
           createdAt: feedEvents.createdAt,
         })
         .from(feedEvents)
+        .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
+        .where(eq(profiles.isPublic, true))
         .orderBy(desc(feedEvents.createdAt))
         .limit(limit)
         .offset(offset),
-      db.select({ total: count() }).from(feedEvents),
+      db.select({ total: count() })
+        .from(feedEvents)
+        .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
+        .where(eq(profiles.isPublic, true)),
     ])
 
-    return NextResponse.json({ data: { items, total } })
+    return NextResponse.json({ data: { items, total, page, limit } })
   } catch (err) {
     console.error('[GET /api/feed]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
