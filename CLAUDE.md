@@ -30,3 +30,7 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - Bulk seed: use only terminal statuses (completed/rejected/returned/cancelled) — partial unique indexes reject intra-batch active duplicates.
 - `vitest.integration.config.ts` runs before vitest loads `.env.local` — add `dotenv.config({ path: '.env.local' })` at the top.
 - `refresh_tokens_expiry_check` requires `expires_at > created_at` — test expired tokens need explicit past `createdAt`.
+- Food reservation approval: use atomic WHERE-clause subquery + post-commit compensating rollback — not `db.transaction` (neon-http).
+- Bidirectional block check: `or(and(eq(blockerId,A), eq(blockedId,B)), and(eq(blockerId,B), eq(blockedId,A)))` — extract to `lib/queries/blocks.ts`, not inline.
+- All admin destructive routes need `apiRatelimit.limit(user.sub)` — `requireAdmin` middleware alone adds no rate limit.
+- Fire-and-forget catches: `.catch((e) => console.error('[side-effect]', e))`, never `.catch(() => {})` — silent swallows hide real notification/email failures.

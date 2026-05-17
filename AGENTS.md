@@ -318,6 +318,9 @@ Rules:
 - CORS: explicit allowed origins only – never `Access-Control-Allow-Origin: *` on authenticated endpoints
 - File uploads (Cloudflare R2): `POST /api/upload` — validate MIME type server-side (`image/jpeg`, `image/png`, `image/webp` only), generate UUID filename, max 5 MB, return `{ data: { url } }`. Use `@aws-sdk/client-s3` with `PutObjectCommand`. Never set `Content-Type: application/json` when sending `FormData` from the client — `apiFetch` handles this automatically.
 - AI routes: system prompt must contain explicit boundaries; never include sensitive DB fields in AI context; rate-limit per `user_id`
+- **Reusable query helpers**: cross-route logic (e.g. block checks, permission lookups) must live in `src/lib/queries/` and be imported — never inline the same 6-line DB query in multiple route files.
+- **Admin destructive routes**: every `POST/DELETE/PATCH /api/admin/*` handler must call `apiRatelimit.limit(user.sub)` before any DB mutation and return 429 on failure. `requireAdmin` alone is not sufficient.
+- **Fire-and-forget side effects**: `void createNotification(...).catch((e) => console.error('[side-effect]', e))` — never `.catch(() => {})` (swallows real errors). Applies to notifications, emails, and audit writes that must not block the response.
 
 ### Database (Drizzle + Neon)
 - Schema lives in `packages/nextjs/src/db/schema.ts`
