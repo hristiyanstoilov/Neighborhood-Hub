@@ -3,11 +3,15 @@ import { db } from '@/db'
 import { ratings, profiles } from '@/db/schema'
 import { eq, avg, count, notInArray } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/middleware'
+import { apiRatelimit } from '@/lib/ratelimit'
 
 // ─── POST /api/admin/recalc-ratings — recalculate rating stats ────────────────
 
-export const POST = requireAdmin(async (_req: NextRequest, { user }) => {
+export const POST = requireAdmin(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     // 1. Fetch recalculated stats grouped by ratedUserId
     const stats = await db
       .select({

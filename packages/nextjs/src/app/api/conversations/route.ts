@@ -1,10 +1,11 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages, profiles, users, userBlocks } from '@/db/schema'
+import { conversations, messages, profiles, users } from '@/db/schema'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { createConversationSchema } from '@/lib/schemas/dm'
+import { isBlocked } from '@/lib/queries/blocks'
 
 function normalizePair(a: string, b: string): { participantA: string; participantB: string } {
   return a < b ? { participantA: a, participantB: b } : { participantA: b, participantB: a }
@@ -109,17 +110,7 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) 
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
     }
 
-    // Reject if either party has blocked the other
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, otherUserId)),
-        and(eq(userBlocks.blockerId, otherUserId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-
-    if (blockRow) {
+    if (await isBlocked(user.sub, otherUserId)) {
       return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 

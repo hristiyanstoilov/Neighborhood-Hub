@@ -84,7 +84,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
         type: 'food_share_deleted',
         entityType: 'food_reservation',
         entityId: id,
-      }).catch(() => {})
+      }).catch((e) => console.error('[side-effect]', e))
     }
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'food_shares', entityId: id, ipAddress: ip })

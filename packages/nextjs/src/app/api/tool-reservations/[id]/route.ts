@@ -111,7 +111,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       type: notifTypeMap[action],
       entityType: 'tool_reservation',
       entityId: id,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     await writeAuditLog({
       userId:    user.sub,
