@@ -57,7 +57,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
     if (parsed.data.startsAt) updates.startsAt = new Date(parsed.data.startsAt)
     if (parsed.data.endsAt)   updates.endsAt   = new Date(parsed.data.endsAt)
 
-    const [updated] = await db.update(events).set(updates).where(eq(events.id, id)).returning()
+    const [updated] = await db.update(events).set(updates).where(and(eq(events.id, id), eq(events.organizerId, user.sub))).returning()
 
     // Notify attendees if organizer cancels the event
     if (parsed.data.status === 'cancelled') {

@@ -48,7 +48,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       updates.availableUntil = parsed.data.availableUntil ? new Date(parsed.data.availableUntil) : null
     }
 
-    const [updated] = await db.update(foodShares).set(updates).where(eq(foodShares.id, id)).returning()
+    const [updated] = await db.update(foodShares).set(updates).where(and(eq(foodShares.id, id), eq(foodShares.ownerId, user.sub))).returning()
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'update', entity: 'food_shares', entityId: id, ipAddress: ip })
 
@@ -76,7 +76,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
         inArray(foodReservations.status, ['pending', 'reserved']),
       ))
 
-    await db.update(foodShares).set({ deletedAt: new Date() }).where(eq(foodShares.id, id))
+    await db.update(foodShares).set({ deletedAt: new Date() }).where(and(eq(foodShares.id, id), eq(foodShares.ownerId, user.sub)))
 
     for (const r of activeReservations) {
       void createNotification({
