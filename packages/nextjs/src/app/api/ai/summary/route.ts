@@ -44,7 +44,7 @@ export const GET = requireAuth(async (_req: NextRequest, { user }) => {
       : sanitize(profile?.city) ?? 'your area'
 
     const skillList = recommendations
-      .map((r, i) => `${i + 1}. "${r.title}" by ${r.ownerName ?? 'a neighbor'}${r.locationNeighborhood ? ` in ${r.locationNeighborhood}` : ''} — ${r.reason}`)
+      .map((r, i) => `${i + 1}. "${sanitize(r.title)}" by ${sanitize(r.ownerName) ?? 'a neighbor'}${r.locationNeighborhood ? ` in ${sanitize(r.locationNeighborhood)}` : ''} — ${r.reason}`)
       .join('\n')
 
     const prompt = `You are a friendly assistant for Neighborhood Hub, a Bulgarian neighborhood sharing platform.
