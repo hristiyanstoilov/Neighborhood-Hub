@@ -1,23 +1,24 @@
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET env var must be at least 32 characters')
-}
-const ACCESS_SECRET = process.env.JWT_SECRET
-
 export interface JwtPayload {
   sub: string   // user id
   email: string
   role: 'user' | 'admin'
 }
 
+function getSecret(): string {
+  const s = process.env.JWT_SECRET
+  if (!s || s.length < 32) throw new Error('JWT_SECRET env var must be at least 32 characters')
+  return s
+}
+
 export function signAccessToken(payload: JwtPayload): string {
-  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: '15m' })
+  return jwt.sign(payload, getSecret(), { expiresIn: '15m' })
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
-  return jwt.verify(token, ACCESS_SECRET) as JwtPayload
+  return jwt.verify(token, getSecret()) as JwtPayload
 }
 
 export function generateSecureToken(): string {

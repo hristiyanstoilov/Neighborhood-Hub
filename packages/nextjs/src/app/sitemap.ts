@@ -1,7 +1,6 @@
 import { MetadataRoute } from 'next'
-import { db } from '@/db'
-import { skills } from '@/db/schema'
-import { eq, isNull, and } from 'drizzle-orm'
+
+export const dynamic = 'force-dynamic'
 
 const BASE_URL = 'https://neighborhoodhub.net'
 
@@ -106,10 +105,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]
 
-  // Dynamic skill routes
+  // Dynamic skill routes — loaded lazily to avoid build-time DB connection
   let dynamicRoutes: MetadataRoute.Sitemap = []
-
   try {
+    const { db } = await import('@/db')
+    const { skills } = await import('@/db/schema')
+    const { eq, isNull, and } = await import('drizzle-orm')
+
     const availableSkills = await db
       .select({ id: skills.id })
       .from(skills)
@@ -123,7 +125,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   } catch {
     // If DB query fails, return only static routes
-    // non-critical — graceful fallback
   }
 
   return [...staticRoutes, ...dynamicRoutes]
