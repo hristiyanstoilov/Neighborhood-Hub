@@ -16,7 +16,8 @@ export default function DateTimePicker({ value, onChange, minimumDate, maximumDa
       date = new Date(value instanceof Date ? value : Date.now())
       date.setHours(h, m, 0, 0)
     } else {
-      date = new Date(e.target.value)
+      // Parse as local midnight to avoid UTC-offset date shifts
+      date = new Date(e.target.value + 'T00:00:00')
     }
     onChange({}, date)
   }
