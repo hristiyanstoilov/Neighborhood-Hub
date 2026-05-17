@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { count, desc, eq } from 'drizzle-orm'
+import { count, desc, eq, innerJoin } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
@@ -35,10 +35,15 @@ export async function GET(req: NextRequest) {
           createdAt: feedEvents.createdAt,
         })
         .from(feedEvents)
+        .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
+        .where(eq(profiles.isPublic, true))
         .orderBy(desc(feedEvents.createdAt))
         .limit(limit)
         .offset(offset),
-      db.select({ total: count() }).from(feedEvents),
+      db.select({ total: count() })
+        .from(feedEvents)
+        .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
+        .where(eq(profiles.isPublic, true)),
     ])
 
     return NextResponse.json({ data: { items, total, page, limit } })
