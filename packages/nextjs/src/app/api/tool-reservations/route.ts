@@ -1,10 +1,11 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, tools, userBlocks } from '@/db/schema'
-import { eq, and, isNull, or } from 'drizzle-orm'
+import { toolReservations, tools } from '@/db/schema'
+import { eq, and, isNull } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
+import { isBlocked } from '@/lib/queries/blocks'
 import { z } from 'zod'
 import { createNotification } from '@/lib/create-notification'
 import { isUniqueViolation } from '@/lib/db-errors'
@@ -51,15 +52,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     if (tool.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_RESERVE_OWN_TOOL' }, { status: 422 })
     if (tool.status !== 'available') return NextResponse.json({ error: 'TOOL_NOT_AVAILABLE' }, { status: 422 })
 
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, tool.ownerId)),
-        and(eq(userBlocks.blockerId, tool.ownerId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
+    if (await isBlocked(user.sub, tool.ownerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const start = new Date(startDate)
     const end = new Date(endDate)
@@ -90,7 +83,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       type: 'reservation_new',
       entityType: 'tool_reservation',
       entityId: reservation.id,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

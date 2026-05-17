@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { and, desc, eq, inArray, isNull, lt, ne, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, ne } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages, userBlocks } from '@/db/schema'
+import { conversations, messages } from '@/db/schema'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { isBlocked } from '@/lib/queries/blocks'
 import { createMessageSchema, listMessagesSchema } from '@/lib/schemas/dm'
 
 function isParticipant(conversation: { participantA: string; participantB: string }, userId: string) {
@@ -99,16 +100,8 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, pa
     }
 
     const otherUserId = conversation.participantA === user.sub ? conversation.participantB : conversation.participantA
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, otherUserId)),
-        and(eq(userBlocks.blockerId, otherUserId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
 
-    if (blockRow) {
+    if (await isBlocked(user.sub, otherUserId)) {
       return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 

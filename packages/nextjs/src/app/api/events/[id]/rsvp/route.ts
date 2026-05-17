@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { events, eventAttendees, userBlocks } from '@/db/schema'
-import { and, eq, isNull, or, sql } from 'drizzle-orm'
+import { events, eventAttendees } from '@/db/schema'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
+import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
 
 // ─── POST /api/events/[id]/rsvp — attend ────────────────────────────────────
@@ -17,15 +18,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     if (event.organizerId === user.sub) return NextResponse.json({ error: 'CANNOT_RSVP_OWN_EVENT' }, { status: 422 })
     if (event.status !== 'published') return NextResponse.json({ error: 'EVENT_NOT_OPEN' }, { status: 422 })
 
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, event.organizerId)),
-        and(eq(userBlocks.blockerId, event.organizerId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
+    if (await isBlocked(user.sub, event.organizerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     // Idempotent — if already attending return 200
     const existing = await queryUserRsvp(eventId, user.sub)
@@ -72,7 +65,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       type: 'event_new_rsvp',
       entityType: 'event',
       entityId: eventId,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: attendee }, { status: 201 })
   } catch (err) {
@@ -108,7 +101,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
         type: 'event_rsvp_cancelled',
         entityType: 'event_rsvp',
         entityId: eventId,
-      }).catch(() => {})
+      }).catch((e) => console.error('[side-effect]', e))
     }
 
     await writeAuditLog({

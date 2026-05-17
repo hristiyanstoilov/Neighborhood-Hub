@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { foodShares, foodReservations, userBlocks } from '@/db/schema'
-import { and, eq, isNull, or, sql } from 'drizzle-orm'
+import { foodShares, foodReservations } from '@/db/schema'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservations } from '@/lib/queries/food'
+import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
 import { isUniqueViolation } from '@/lib/db-errors'
 
@@ -34,15 +35,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
     if (foodShare.ownerId === user.sub) return NextResponse.json({ error: 'CANNOT_RESERVE_OWN_FOOD' }, { status: 422 })
 
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, foodShare.ownerId)),
-        and(eq(userBlocks.blockerId, foodShare.ownerId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
+    if (await isBlocked(user.sub, foodShare.ownerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
@@ -78,7 +71,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       type: 'food_reservation_new',
       entityType: 'food_reservation',
       entityId: reservation.id,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

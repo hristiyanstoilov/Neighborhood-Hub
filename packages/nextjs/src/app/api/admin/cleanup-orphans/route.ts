@@ -4,6 +4,7 @@ import { notifications, skillRequests, toolReservations, foodReservations, event
 import { and, eq, isNotNull, notInArray } from 'drizzle-orm'
 import { requireAdmin, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { apiRatelimit } from '@/lib/ratelimit'
 
 const ENTITY_TABLE_MAP = {
   skill_request:    () => db.select({ id: skillRequests.id }).from(skillRequests),
@@ -19,6 +20,8 @@ type EntityType = keyof typeof ENTITY_TABLE_MAP
 export const POST = requireAdmin(async (req: NextRequest, { user }) => {
   try {
     const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
 
     const typesResult = await db
       .selectDistinct({ entityType: notifications.entityType })

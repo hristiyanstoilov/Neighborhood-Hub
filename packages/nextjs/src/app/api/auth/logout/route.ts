@@ -38,7 +38,7 @@ export const POST = requireAuth(async (req: NextRequest, { user }) => {
           lt(refreshTokens.expiresAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
         )
       )
-      .catch(() => {})
+      .catch((e) => console.error('[side-effect]', e))
 
     await writeAuditLog({
       userId: user.sub,
