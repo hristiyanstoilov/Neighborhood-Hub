@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAccessToken, JwtPayload } from './auth'
 import { db } from '@/db'
 import { users } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from './ratelimit'
 
 const DEMO_USER_EMAIL = 'demo@neighborhoodhub.bg'
@@ -46,10 +46,16 @@ export function requireVerifiedAuth(
 ) {
   return requireAuth(async (req, context) => {
     const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, context.user.sub),
-      columns: { emailVerifiedAt: true },
+      where: and(eq(users.id, context.user.sub), isNull(users.deletedAt)),
+      columns: { emailVerifiedAt: true, lockedUntil: true },
     })
-    if (!dbUser?.emailVerifiedAt) {
+    if (!dbUser) {
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+    }
+    if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) {
+      return NextResponse.json({ error: 'ACCOUNT_LOCKED' }, { status: 403 })
+    }
+    if (!dbUser.emailVerifiedAt) {
       return NextResponse.json({ error: 'UNVERIFIED_EMAIL' }, { status: 403 })
     }
     return handler(req, context)
