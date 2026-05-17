@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-15 (full triage: priority rebalance + effort / risk / complexity columns)
+> Last updated: 2026-05-17 (P1 closed, new architect findings added to P2/P3)
 
 ---
 
@@ -65,9 +65,9 @@ All 5 core modules complete and deployed.
 
 | Item | Type | Difficulty | Risk | Effort | Copilot | Description |
 |------|------|-----------|------|--------|---------|-------------|
-| DB schema drift: defaultLocationId | Bug | Easy | Low | S | ✅ | `profiles` table in Drizzle has `defaultLocationId` but the migration never ran. Blocks the entire E2E test suite and can fail registration. Fix: `cd packages/nextjs && npx drizzle-kit generate && npx drizzle-kit migrate`. |
-| Feed privacy GDPR fix | Security | Medium | High | M | — | `GET /api/feed` does not filter private profiles — if a user posts then sets their profile to private, their feed events remain visible to everyone. Add JOIN to `profiles` + `WHERE profiles.is_public = true`. Active GDPR violation. ~20 lines. |
-| Cookie consent actually blocks PostHog | Legal | Medium | High | M | — | Privacy Policy states PostHog is off by default until consent is given. Verify declining cookies actually prevents PostHog from loading — use conditional `<Script>` based on consent state. If PostHog loads unconditionally, this is an active GDPR violation against the stated policy. |
+| DB schema drift: defaultLocationId | Bug | Easy | Low | S | ✅ | ✅ Done — Migration 0026 ran against production 2026-05-17. `profiles.defaultLocationId` column now live. |
+| Feed privacy GDPR fix | Security | Medium | High | M | — | ✅ Done — `GET /api/feed` now inner-joins `profiles` and filters `isPublic = true`. Private profile events no longer visible. Fixed 2026-05-17. |
+| Cookie consent actually blocks PostHog | Legal | Medium | High | M | — | ✅ Done — PostHog provider uses `opt_out_capturing_by_default: true`. No data sent until user explicitly calls `opt_in_capturing()` via consent banner. |
 | File upload MIME type validation | Security | Medium | High | M | — | ✅ Done — MIME allowlist + magic byte validation for JPEG/PNG/WebP + 5 MB cap implemented in `/api/upload/route.ts`. |
 | Age verification checkbox | Legal | Easy | Low | S | ✅ | ✅ Done — Required `ageConfirmed` checkbox added to web register form (`register/page.tsx`). Blocks form submit if unchecked. Mobile pending. |
 | Privacy Policy URL for App Store | Legal | Easy | Low | S | ✅ | Apple + Google reject apps without a live Privacy Policy URL. Blocker for both store submissions. Add once domain is confirmed and page is publicly hosted. |
@@ -79,7 +79,9 @@ All 5 core modules complete and deployed.
 
 | Item | Type | Difficulty | Risk | Effort | Copilot | Description |
 |------|------|-----------|------|--------|---------|-------------|
-| CI/CD pipeline (GitHub Actions) | Infra | Medium | Low | L | ✅ | No `.github/workflows/*.yml` exists. All builds, tests, and deployments are fully manual. Add: typecheck → unit tests → integration tests → Playwright E2E → deploy to Netlify on merge to master. |
+| CI/CD pipeline (GitHub Actions) | Infra | Medium | Low | L | ✅ | ✅ Done — `.github/workflows/ci-smoke.yml` runs typecheck + unit + integration + Playwright. Netlify auto-deploys from master via GitHub integration. |
+| Cross-module search UX | UX/Feature | Medium | Low | M | — | `GET /api/search` exists but results are siloed per module. Searching "ladder" should return tools + skills + food in one ranked view. First thing any evaluator will try — no result across modules signals a feature gap. |
+| Tool date-overlap enforcement | Bug | Easy | High | S | ✅ | Two users can book the same tool for overlapping dates — no server-side overlap check exists in `POST /api/tool-reservations`. Add exclusion query before insert. First real-world dispute trigger. |
 | Data retention automation | Legal/Infra | Medium | Med | L | — | Privacy Policy commits to: accounts hard-purged 30 days after soft-delete, AI messages deleted after 12 months, audit log after 24 months. No scheduled job enforces any of this. Add nightly cleanup endpoint or n8n workflow. |
 | Push notifications (mobile) | Feature | Hard | Med | XL | — | `push_tokens` table exists and Expo tokens are collected, but no push is ever sent. Users install the app, grant notification permission, and receive nothing. Integrate `expo-server-sdk` and trigger on: new DM, reservation approved/rejected, skill request accepted. |
 | Gamification balance | Feature | Medium | Low | L | — | Points awarded only on `skill_request` completion — tools, food, events, drives award zero points. Add: +5 pts on tool returned, +3 pts on food picked_up, +1 pt on event RSVP. New badges: `first_event`, `first_drive`, `good_neighbor` (5 food shares), `tool_master` (3 tool loans). |
@@ -109,7 +111,10 @@ All 5 core modules complete and deployed.
 | Mobile: Edit Event + Edit Drive screens | Feature | Medium | Low | L | — | `events/edit/[id].tsx` and `drives/edit/[id].tsx` do not exist on mobile. |
 | Mobile map: wire live API | Feature | Medium | Med | M | — | Mobile map tab uses static/demo markers. Wire to live `GET /api/map`. |
 | Mobile i18n full implementation | Feature | Medium | Low | L | ✅ | Replace `packages/mobile/lib/i18n.ts` stub with `i18next` + `expo-localization`. EN/BG message files. Read locale from `Localization.locale`. |
-| New user onboarding flow | UX | Medium | Low | L | ✅ | After registration + email verify, new user lands on an empty page. Add guided first-use: "Complete your profile", "Browse skills near you", "Post your first skill" with illustrations + CTAs on all empty list pages. |
+| New user onboarding flow | UX | Medium | Low | L | ✅ | After registration + email verify, new user lands on an empty page. Add guided first-use: "Complete your profile", "Browse skills near you", "Post your first skill" with illustrations + CTAs on all empty list pages. Users who don't post within 48h churn at 3-5x (Nextdoor internal data). |
+| `users.lastActiveAt` signal | UX/Schema | Easy | Low | S | ✅ | No recency signal on profiles or listings. Users can't tell if a skill/tool offer is from an active neighbor or a dormant account — main reason they won't initiate contact. Add `lastActiveAt` column updated on token refresh, display "Active X days ago" on profile + listing cards. |
+| `drive_pledges.amount` schema fix | Schema/Bug | Easy | Low | S | ✅ | `community_drives.currentAmount` is manually maintained with no source of truth in pledges. Progress bar is untrustworthy for real charity drives. Add `amount integer nullable` to `drive_pledges`, compute `currentAmount` via aggregate on read. |
+| Community health stats on homepage | UX/Feature | Easy | Low | S | ✅ | Landing page has no activity signal. One aggregate query (total skills + tools + food + events in user's city) displayed in the hero converts skeptics into signups by demonstrating platform vitality. |
 | Organizer dashboard | Feature | Medium | Low | L | — | Event and drive organizers have no way to see attendance stats, pledge counts, or engagement for their own content. Add a "My Events" / "My Drives" stats view visible to organizers. |
 | Pending request auto-expire | Feature/Infra | Medium | Med | L | — | `pending` skill requests, tool reservations, and food reservations have no timeout — they stay pending forever. Add nightly job: auto-cancel items older than 7 days, notify both parties. |
 | Weekly digest email | Feature | Medium | Low | L | — | Resend is integrated but sends only transactional emails. Add a weekly Sunday digest: "This week in your neighborhood" — new skills nearby, upcoming events, top contributor. Proven D30 retention mechanic for community apps. |
