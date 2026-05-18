@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { reports, users, profiles, skills, tools, foodShares, events, communityDrives, messages } from '@/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { reports, users, profiles, skills, tools, foodShares, events, eventAttendees, communityDrives, drivePledges, messages } from '@/db/schema'
+import { and, desc, eq } from 'drizzle-orm'
 import { requireAdmin, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { apiRatelimit } from '@/lib/ratelimit'
+import { createNotification } from '@/lib/create-notification'
 import { z } from 'zod'
 
 const filterSchema = z.object({
@@ -111,12 +112,38 @@ export const PATCH = requireAdmin(async (req: NextRequest, { user }) => {
       case 'food':
         await db.update(foodShares).set({ deletedAt: now, updatedAt: now }).where(eq(foodShares.id, targetId))
         break
-      case 'event':
+      case 'event': {
         await db.update(events).set({ status: 'cancelled', updatedAt: now }).where(eq(events.id, targetId))
+        const attendees = await db
+          .select({ userId: eventAttendees.userId })
+          .from(eventAttendees)
+          .where(and(eq(eventAttendees.eventId, targetId), eq(eventAttendees.status, 'attending')))
+        for (const attendee of attendees) {
+          void createNotification({
+            userId: attendee.userId,
+            type: 'event_cancelled',
+            entityType: 'event',
+            entityId: targetId,
+          }).catch((e) => console.error('[side-effect]', e))
+        }
         break
-      case 'drive':
+      }
+      case 'drive': {
         await db.update(communityDrives).set({ status: 'cancelled', updatedAt: now }).where(eq(communityDrives.id, targetId))
+        const pledgers = await db
+          .select({ userId: drivePledges.userId })
+          .from(drivePledges)
+          .where(and(eq(drivePledges.driveId, targetId), eq(drivePledges.status, 'pledged')))
+        for (const pledger of pledgers) {
+          void createNotification({
+            userId: pledger.userId,
+            type: 'drive_cancelled',
+            entityType: 'community_drive',
+            entityId: targetId,
+          }).catch((e) => console.error('[side-effect]', e))
+        }
         break
+      }
       case 'user':
         // Effective ban — lock until far future
         await db.update(users).set({ lockedUntil: new Date('2099-01-01') }).where(eq(users.id, targetId))

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { userStats, users } from '@/db/schema'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { badges, userStats, users } from '@/db/schema'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
 
 export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   try {
-    const [statsRow, rankRow, countRow] = await Promise.all([
+    const [statsRow, rankRow, countRow, userBadges] = await Promise.all([
       db
         .select({ totalPoints: userStats.totalPoints, level: userStats.level })
         .from(userStats)
@@ -25,13 +25,18 @@ export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) 
         .select({ total: sql<number>`count(*)::int` })
         .from(userStats)
         .innerJoin(users, and(eq(users.id, userStats.userId), isNull(users.deletedAt))),
+      db
+        .select({ type: badges.type, awardedAt: badges.awardedAt })
+        .from(badges)
+        .where(eq(badges.userId, user.sub))
+        .orderBy(desc(badges.awardedAt)),
     ])
 
     const stats = statsRow[0]
     const totalUsers = countRow[0]?.total ?? 0
 
     if (!stats) {
-      return NextResponse.json({ data: { totalPoints: 0, level: 1, rank: null, totalUsers } })
+      return NextResponse.json({ data: { totalPoints: 0, level: 1, rank: null, totalUsers, badges: [] } })
     }
 
     return NextResponse.json({
@@ -40,6 +45,7 @@ export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) 
         level: stats.level,
         rank: rankRow[0]?.rank ?? null,
         totalUsers,
+        badges: userBadges,
       },
     })
   } catch (err) {

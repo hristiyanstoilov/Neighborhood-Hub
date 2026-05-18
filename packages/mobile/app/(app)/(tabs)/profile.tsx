@@ -132,6 +132,7 @@ export default function ProfileScreen() {
       <ProfileVisibilitySection isPublic={profile.isPublic} />
       <ProfileActions
         onEditProfile={() => router.push('/(app)/profile/edit')}
+        onAchievements={() => router.push('/(app)/profile/achievements')}
         onMySkills={() => router.push('/(app)/my-skills')}
         onOfferSkill={() => router.push('/(app)/skills/new')}
         onMyRequests={() => router.push('/(app)/(tabs)/my-requests')}

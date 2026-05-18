@@ -79,6 +79,7 @@ export function ProfileVisibilitySection(props: { isPublic: boolean }) {
 
 export function ProfileActions(props: {
   onEditProfile: () => void
+  onAchievements: () => void
   onMySkills: () => void
   onOfferSkill: () => void
   onMyRequests: () => void
@@ -92,6 +93,10 @@ export function ProfileActions(props: {
     <View style={styles.actions}>
       <TouchableOpacity style={styles.primaryBtn} onPress={props.onEditProfile}>
         <Text style={styles.primaryBtnText}>Edit profile</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.achievementsBtn} onPress={props.onAchievements}>
+        <Text style={styles.achievementsBtnText}>🏅 Achievements & Points</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.secondaryBtn} onPress={props.onMySkills}>
@@ -277,6 +282,19 @@ const styles = StyleSheet.create({
   dangerBtnText: {
     color: '#dc2626',
     fontWeight: '500',
+    fontSize: 14,
+  },
+  achievementsBtn: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  achievementsBtnText: {
+    color: '#15803d',
+    fontWeight: '600',
     fontSize: 14,
   },
 })
