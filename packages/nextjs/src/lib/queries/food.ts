@@ -124,7 +124,7 @@ export async function queryUserFoodReservation(foodShareId: string, userId: stri
 }
 
 export async function queryFoodReservations(foodShareId: string, opts: { limit?: number; offset?: number } = {}) {
-  const { limit = 100, offset = 0 } = opts
+  const { limit = 50, offset = 0 } = opts
   return db
     .select({
       id: foodReservations.id,

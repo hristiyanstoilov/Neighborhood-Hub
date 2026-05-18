@@ -118,7 +118,7 @@ export async function queryUserPledges(userId: string) {
 }
 
 export async function queryDrivePledges(driveId: string, opts: { limit?: number; offset?: number } = {}) {
-  const { limit = 100, offset = 0 } = opts
+  const { limit = 50, offset = 0 } = opts
   return db
     .select({
       id:                drivePledges.id,
