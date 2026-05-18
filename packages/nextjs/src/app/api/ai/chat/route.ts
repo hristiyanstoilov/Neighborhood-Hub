@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { db } from '@/db'
 import { aiConversations, aiMessages, profiles, locations, skills, users } from '@/db/schema'
-import { eq, and, isNull, asc, count } from 'drizzle-orm'
+import { eq, and, isNull, asc, desc, count } from 'drizzle-orm'
 import { requireVerifiedAuth } from '@/lib/middleware'
 import { aiRatelimit } from '@/lib/ratelimit'
 
@@ -129,13 +129,15 @@ export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
       convId = newConv.id
     }
 
-    // Load history for context (last 20 messages)
-    const history = await db
+    // Load the most recent 20 messages as context, then put them back in
+    // chronological order. DESC+limit gives newest; reverse restores order.
+    const historyRaw = await db
       .select({ role: aiMessages.role, content: aiMessages.content })
       .from(aiMessages)
       .where(eq(aiMessages.conversationId, convId))
-      .orderBy(asc(aiMessages.createdAt))
+      .orderBy(desc(aiMessages.createdAt))
       .limit(20)
+    const history = historyRaw.reverse()
 
     // Persist user message before calling Anthropic so it appears in history
     const [persistedUserMsg] = await db

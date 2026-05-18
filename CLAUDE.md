@@ -63,3 +63,6 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - Admin unpublish switch: set `updatedAt: now` on ALL target types — skill case was missing it, all other cases (tool, food, event, drive) had it.
 - Mobile `auth.tsx` `register()`: pass `ageConfirmed` as a parameter — never hardcode `true`; the server requires `z.literal(true)`, UI checkbox must drive the value.
 - CAS guard on state machine approve/complete: add `AND status = 'pending'` to WHERE clause — prevents double notification + double email on concurrent approve calls.
+- AI chat history: use `orderBy(desc).limit(N).reverse()` — `orderBy(asc).limit(N)` fetches the OLDEST N messages, not the newest; long conversations lose all recent context.
+- Feed actor filter: always join `users WHERE deletedAt IS NULL` alongside `profiles WHERE isPublic = true` — soft-deleted users' feed events remain visible without the users join.
+- N+1 in GET routes: collapse sequential conditional queries into a `Promise.all` with a LEFT JOIN — profile location is the canonical example.

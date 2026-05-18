@@ -1,6 +1,6 @@
 # Neighborhood Hub – Roadmap
 
-> Last updated: 2026-05-18 (milestone review #2: 3 new bugs fixed — admin skill unpublish missing updatedAt, tool reservation approve missing CAS guard, mobile auth.tsx ageConfirmed hardcoded)
+> Last updated: 2026-05-18 (milestone review #3: 3 new bugs fixed — AI chat history fetched oldest-first, GET /api/profile N+1 query, soft-deleted users visible in feed)
 
 ---
 
@@ -73,6 +73,9 @@ All 5 core modules complete and deployed.
 | Skill request concurrent `complete` → double points | Bug | Easy | High | S | — | ✅ Fixed 2026-05-18 — Two concurrent `complete` calls could both read `status=accepted`, both pass the state check, and both award `SKILL_COMPLETE_POINTS` to both parties (double points). Added CAS WHERE guard: UPDATE only if `status = 'accepted'`. Returns 422 if 0 rows updated (concurrent winner already completed). |
 | `first_drive` badge never awarded | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — `POST /api/drives/[id]/pledges` never called `checkAndAwardBadges`. The `first_drive` badge had no trigger path. Added fire-and-forget call after pledge creation. |
 | `five_star_giver` badge never awarded | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — `POST /api/ratings` never called `checkAndAwardBadges`. The `five_star_giver` badge had no trigger path. Added fire-and-forget call after rating insert. |
+| AI chat history fetches oldest-first instead of newest | Bug | Easy | Med | S | ✅ | ✅ Fixed 2026-05-18 — `orderBy(asc).limit(20)` returned the first 20 messages ever sent. After message 21, the AI lost all recent context. Fixed: `orderBy(desc).limit(20)` then `.reverse()` to restore chronological order. |
+| `GET /api/profile` N+1 sequential location query | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — Location was fetched in a third sequential DB round-trip after user+profile. Collapsed into a single `Promise.all` with a LEFT JOIN on locations in the profile query. |
+| Soft-deleted users still appear in public feed | Security | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — `GET /api/feed` joined profiles (isPublic=true) but not users. Soft-deleted users' feed events remained visible. Added `INNER JOIN users WHERE deletedAt IS NULL` to both the items query and the count query. |
 | `admin/reports` skill unpublish missing `updatedAt` | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — `case 'skill'` in unpublish switch set `status: 'retired'` and `deletedAt: now` but not `updatedAt: now`. All other cases (tool, food, event, drive) already set `updatedAt`. Cache invalidation and audit trails were unreliable for admin-unpublished skills. |
 | Mobile `auth.tsx` `register()` hardcodes `ageConfirmed: true` | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-18 — `register(name, email, password)` always sent `ageConfirmed: true` regardless of actual user consent. UI checkbox prevented submit in normal flow but any programmatic call bypassed age verification. Added `ageConfirmed: boolean` as 4th parameter; call site in `register.tsx` passes actual state. |
 | `GET /api/profile` missing try/catch | Bug | Easy | Low | S | ✅ | ✅ Fixed 2026-05-17 — DB errors in the GET handler propagated through `requireAuth`'s catch block, returning a 401 INVALID_TOKEN instead of 500. Wrapped handler body in try/catch. |

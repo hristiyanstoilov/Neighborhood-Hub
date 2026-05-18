@@ -10,36 +10,43 @@ import { writeAuditLog } from '@/lib/audit'
 
 export const GET = requireAuthWithRateLimit(async (_req: NextRequest, { user }) => {
   try {
-    const [dbUser, profile] = await Promise.all([
+    const [dbUser, rows] = await Promise.all([
       db.query.users.findFirst({ where: eq(users.id, user.sub) }),
-      db.query.profiles.findFirst({ where: eq(profiles.userId, user.sub) }),
+      db
+        .select({
+          name:              profiles.name,
+          bio:               profiles.bio,
+          avatarUrl:         profiles.avatarUrl,
+          isPublic:          profiles.isPublic,
+          locationId:        profiles.locationId,
+          defaultLocationId: profiles.defaultLocationId,
+          locationCity:      locations.city,
+          locationNeighborhood: locations.neighborhood,
+        })
+        .from(profiles)
+        .leftJoin(locations, eq(locations.id, profiles.locationId))
+        .where(eq(profiles.userId, user.sub))
+        .limit(1),
     ])
 
     if (!dbUser) {
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 404 })
     }
 
-    let locationCity: string | null = null
-    let locationNeighborhood: string | null = null
-
-    if (profile?.locationId) {
-      const loc = await db.query.locations.findFirst({ where: eq(locations.id, profile.locationId) })
-      locationCity = loc?.city ?? null
-      locationNeighborhood = loc?.neighborhood ?? null
-    }
+    const profile = rows[0] ?? null
 
     return NextResponse.json({
       data: {
-        email: dbUser.email,
-        emailVerifiedAt: dbUser.emailVerifiedAt,
-        name: profile?.name ?? null,
-        bio: profile?.bio ?? null,
-        avatarUrl: profile?.avatarUrl ?? null,
-        isPublic: profile?.isPublic ?? true,
-        locationId: profile?.locationId ?? null,
+        email:             dbUser.email,
+        emailVerifiedAt:   dbUser.emailVerifiedAt,
+        name:              profile?.name ?? null,
+        bio:               profile?.bio ?? null,
+        avatarUrl:         profile?.avatarUrl ?? null,
+        isPublic:          profile?.isPublic ?? true,
+        locationId:        profile?.locationId ?? null,
         defaultLocationId: profile?.defaultLocationId ?? null,
-        locationCity,
-        locationNeighborhood,
+        locationCity:      profile?.locationCity ?? null,
+        locationNeighborhood: profile?.locationNeighborhood ?? null,
       },
     })
   } catch (err) {
