@@ -60,3 +60,6 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - `syncFoodShareStatus`: check `pickedUpCount >= quantity` FIRST, then `(activeCount + pickedUpCount) >= quantity` for `reserved` — mixing picked_up + active counts otherwise falls through to `available`.
 - State machine updates that award points need a CAS WHERE guard (`AND status = 'expected_status'`) — without it, concurrent calls both pass the read-time check and award points twice.
 - Every gamification trigger (pledge, rating, RSVP, food pickup, tool return, skill complete) needs `checkAndAwardBadges` — missing the call means the badge is never awarded for that user action.
+- Admin unpublish switch: set `updatedAt: now` on ALL target types — skill case was missing it, all other cases (tool, food, event, drive) had it.
+- Mobile `auth.tsx` `register()`: pass `ageConfirmed` as a parameter — never hardcode `true`; the server requires `z.literal(true)`, UI checkbox must drive the value.
+- CAS guard on state machine approve/complete: add `AND status = 'pending'` to WHERE clause — prevents double notification + double email on concurrent approve calls.

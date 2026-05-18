@@ -20,7 +20,7 @@ interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
   login: (email: string, password: string) => Promise<{ error?: string }>
-  register: (name: string, email: string, password: string) => Promise<{ error?: string }>
+  register: (name: string, email: string, password: string, ageConfirmed: boolean) => Promise<{ error?: string }>
   logout: () => Promise<void>
 }
 
@@ -71,10 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {}
   }
 
-  async function register(name: string, email: string, password: string): Promise<{ error?: string }> {
+  async function register(name: string, email: string, password: string, ageConfirmed: boolean): Promise<{ error?: string }> {
     const res = await apiFetch('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, ageConfirmed: true }),
+      body: JSON.stringify({ name, email, password, ageConfirmed }),
     })
 
     const json = await res.json()

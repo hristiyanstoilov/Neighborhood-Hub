@@ -47,7 +47,7 @@ export default function RegisterScreen() {
     setError(null)
     setLoading(true)
 
-    const result = await register(name.trim(), email.trim().toLowerCase(), password)
+    const result = await register(name.trim(), email.trim().toLowerCase(), password, ageConfirmed)
 
     setLoading(false)
     if (result.error) {

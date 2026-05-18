@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { toolReservations, tools, users } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { ToolReservationStatus } from '@/lib/constants/statuses'
@@ -101,11 +101,22 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       }),
     }
 
+    // CAS guard on approve: prevents two concurrent approve calls from both
+    // firing createNotification + email when one is already in-flight.
+    const updateWhere =
+      action === 'approve'
+        ? and(eq(toolReservations.id, id), eq(toolReservations.status, ToolReservationStatus.PENDING))
+        : eq(toolReservations.id, id)
+
     const [updated] = await db
       .update(toolReservations)
       .set(updates)
-      .where(eq(toolReservations.id, id))
+      .where(updateWhere)
       .returning()
+
+    if (!updated) {
+      return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
+    }
 
     // Notify the other party
     const recipient = isOwner ? existing.borrowerId : existing.ownerId

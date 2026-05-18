@@ -104,7 +104,7 @@ export const PATCH = requireAdmin(async (req: NextRequest, { user }) => {
 
     switch (targetType) {
       case 'skill':
-        await db.update(skills).set({ status: 'retired', deletedAt: now }).where(eq(skills.id, targetId))
+        await db.update(skills).set({ status: 'retired', deletedAt: now, updatedAt: now }).where(eq(skills.id, targetId))
         break
       case 'tool':
         await db.update(tools).set({ deletedAt: now, updatedAt: now }).where(eq(tools.id, targetId))
