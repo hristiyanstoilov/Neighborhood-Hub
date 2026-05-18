@@ -4,11 +4,13 @@ import { communityDrives, drivePledges } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
 import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
 import { isUniqueViolation } from '@/lib/db-errors'
+import { checkAndAwardBadges } from '@/lib/badges'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -66,7 +68,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       // Re-pledging after cancelling — update description + status
       const [updated] = await db
         .update(drivePledges)
-        .set({ status: 'pledged', pledgeDescription: parsed.data.pledgeDescription })
+        .set({ status: 'pledged', pledgeDescription: parsed.data.pledgeDescription, updatedAt: new Date() })
         .where(eq(drivePledges.id, existing.id))
         .returning()
       return NextResponse.json({ data: updated })
@@ -96,6 +98,19 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       entityType: 'community_drive',
       entityId: driveId,
     }).catch((e) => console.error('[side-effect]', e))
+
+    // Check for first_drive badge
+    void checkAndAwardBadges(user.sub).catch((e) => console.error('[side-effect]', e))
+
+    const ip = getClientIp(req)
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'create',
+      entity:    'drive_pledges',
+      entityId:  pledge.id,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: pledge }, { status: 201 })
   } catch (err) {

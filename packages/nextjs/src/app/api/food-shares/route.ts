@@ -69,7 +69,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'food_shares', entityId: foodShare.id, ipAddress: ip })
 
-    void checkAndAwardBadges(user.sub).catch(() => undefined)
+    void checkAndAwardBadges(user.sub).catch((e) => console.error('[side-effect]', e))
 
     void createFeedEvent({
       actorId:    user.sub,
@@ -77,7 +77,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       targetId:   foodShare.id,
       targetTitle: foodShare.title,
       targetUrl:  `/food/${foodShare.id}`,
-    }).catch(() => undefined)
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: foodShare }, { status: 201 })
   } catch (err) {

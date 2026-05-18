@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { AppScreen } from '../../components/AppScreen'
 import { mobileTheme } from '../../lib/theme'
-import { fetchRadarLocations, radarKeys } from '../../lib/queries/radar'
+import { fetchMapMarkers, fetchRadarLocations, radarKeys, MapMarker } from '../../lib/queries/radar'
 
 const SOFIA_REGION: Region = {
   latitude: 42.6977,
@@ -20,7 +20,7 @@ const SOFIA_REGION: Region = {
   longitudeDelta: 0.18,
 }
 
-function markerColor(count: number): string {
+function circleColor(count: number): string {
   if (count === 0) return mobileTheme.colors.border
   if (count < 3)  return '#86efac'
   if (count < 8)  return '#22c55e'
@@ -34,11 +34,29 @@ function markerRadius(count: number): number {
   return 700
 }
 
+const PIN_COLOR: Record<MapMarker['type'], string> = {
+  skill:      '#22c55e',
+  tool:       '#3b82f6',
+  food_share: '#f97316',
+  event:      '#a855f7',
+}
+
+const TYPE_LABEL: Record<MapMarker['type'], string> = {
+  skill:      'Skill',
+  tool:       'Tool',
+  food_share: 'Food',
+  event:      'Event',
+}
+
 export default function RadarScreen() {
   const router = useRouter()
   const locationsQuery = useQuery({
     queryKey: radarKeys.locations(),
     queryFn: fetchRadarLocations,
+  })
+  const markersQuery = useQuery({
+    queryKey: radarKeys.markers(),
+    queryFn: fetchMapMarkers,
   })
 
   if (locationsQuery.isLoading) {
@@ -65,6 +83,7 @@ export default function RadarScreen() {
   }
 
   const locations = locationsQuery.data ?? []
+  const markers   = markersQuery.data ?? []
 
   const totalSkills = locations.reduce((sum, l) => sum + l.skillCount, 0)
   const activeCount = locations.filter((l) => l.skillCount > 0).length
@@ -75,7 +94,7 @@ export default function RadarScreen() {
       {/* Stats bar */}
       <View style={styles.statsBar}>
         <Text style={styles.statsText}>
-          <Text style={styles.statsNum}>{totalSkills}</Text> skills across{' '}
+          <Text style={styles.statsNum}>{markers.length > 0 ? markers.length : totalSkills}</Text> listings across{' '}
           <Text style={styles.statsNum}>{activeCount}</Text> neighborhoods
         </Text>
       </View>
@@ -95,8 +114,8 @@ export default function RadarScreen() {
               <Circle
                 center={{ latitude: lat, longitude: lng }}
                 radius={markerRadius(loc.skillCount)}
-                fillColor={markerColor(loc.skillCount) + 'cc'}
-                strokeColor={markerColor(loc.skillCount)}
+                fillColor={circleColor(loc.skillCount) + '33'}
+                strokeColor={circleColor(loc.skillCount)}
                 strokeWidth={1.5}
               />
               <Marker
@@ -126,15 +145,33 @@ export default function RadarScreen() {
             </React.Fragment>
           )
         })}
+
+        {markers.map((m) => (
+          <Marker
+            key={`${m.type}-${m.id}`}
+            coordinate={{ latitude: m.lat, longitude: m.lng }}
+            pinColor={PIN_COLOR[m.type]}
+          >
+            <Callout>
+              <View style={styles.callout}>
+                <Text style={styles.calloutNeighborhood}>{m.title}</Text>
+                <Text style={styles.calloutCity}>{m.neighborhood}</Text>
+                <Text style={[styles.calloutSkills, { color: PIN_COLOR[m.type] }]}>
+                  {TYPE_LABEL[m.type]}
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
+        ))}
       </MapView>
 
       {/* Legend */}
       <View style={styles.legend}>
         {[
-          { color: mobileTheme.colors.border, label: 'None' },
-          { color: '#86efac', label: '1–2' },
-          { color: '#22c55e', label: '3–7' },
-          { color: mobileTheme.colors.primary, label: '8+' },
+          { color: '#22c55e', label: 'Skill' },
+          { color: '#3b82f6', label: 'Tool' },
+          { color: '#f97316', label: 'Food' },
+          { color: '#a855f7', label: 'Event' },
         ].map(({ color, label }) => (
           <View key={label} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: color }]} />

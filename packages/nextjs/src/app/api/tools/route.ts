@@ -100,9 +100,9 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       targetId:   tool.id,
       targetTitle: tool.title,
       targetUrl:  `/tools/${tool.id}`,
-    }).catch(() => undefined)
+    }).catch((e) => console.error('[side-effect]', e))
 
-    void checkAndAwardBadges(user.sub).catch(() => undefined)
+    void checkAndAwardBadges(user.sub).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: tool }, { status: 201 })
   } catch (err) {

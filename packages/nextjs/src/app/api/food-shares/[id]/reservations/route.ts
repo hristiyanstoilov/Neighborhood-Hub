@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { foodShares, foodReservations } from '@/db/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
+import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit, getClientIp } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { createFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservations } from '@/lib/queries/food'
 import { isBlocked } from '@/lib/queries/blocks'
@@ -30,6 +31,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, par
 
 export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
+    const ip = getClientIp(req)
     const foodShareId = params.id
     const foodShare = await db.query.foodShares.findFirst({ where: and(eq(foodShares.id, foodShareId), isNull(foodShares.deletedAt)) })
     if (!foodShare) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
@@ -72,6 +74,15 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       entityType: 'food_reservation',
       entityId: reservation.id,
     }).catch((e) => console.error('[side-effect]', e))
+
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'create',
+      entity:    'food_reservations',
+      entityId:  reservation.id,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

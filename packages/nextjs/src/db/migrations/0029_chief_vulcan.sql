@@ -1,0 +1,2 @@
+ALTER TABLE "badges" DROP CONSTRAINT "badges_type_check";--> statement-breakpoint
+ALTER TABLE "badges" ADD CONSTRAINT "badges_type_check" CHECK ("badges"."type" IN ('first_skill', 'first_tool', 'first_food', 'ten_points', 'fifty_points', 'five_star_giver', 'community_hero', 'first_event', 'first_drive', 'good_neighbor', 'tool_master'));

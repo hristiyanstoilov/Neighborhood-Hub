@@ -25,7 +25,8 @@ export async function sendPushNotification(
       .select({ token: pushTokens.token })
       .from(pushTokens)
       .where(eq(pushTokens.userId, userId))
-  } catch {
+  } catch (err) {
+    console.error('[sendPushNotification] DB query failed', err)
     return
   }
 

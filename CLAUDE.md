@@ -34,3 +34,29 @@ When something fails repeatedly or a workaround is found, add a one-line bullet.
 - Bidirectional block check: `or(and(eq(blockerId,A), eq(blockedId,B)), and(eq(blockerId,B), eq(blockedId,A)))` — extract to `lib/queries/blocks.ts`, not inline.
 - All admin destructive routes need `apiRatelimit.limit(user.sub)` — `requireAdmin` middleware alone adds no rate limit.
 - Fire-and-forget catches: `.catch((e) => console.error('[side-effect]', e))`, never `.catch(() => {})` — silent swallows hide real notification/email failures.
+- Date-overlap check: `lt(existing.startDate, newEnd) AND gt(existing.endDate, newStart)` — touching boundaries do NOT conflict (correct half-open interval).
+- `react-native-maps` `pinColor` tints default pin on iOS only — Android ignores hex; use custom `<View>` child inside `<Marker>` for cross-platform colors.
+- Email sends: await the DB lookup for recipient email, then fire-and-forget only the `send()` call — consistent with food reservation pattern.
+- `expire-stale` must cover all 3 reservation types: skillRequests (30d), toolReservations (14d), foodReservations (7d) — food was the easy miss.
+- AI chat: persist user message first, then on Anthropic failure do `db.delete(aiMessages).where(eq(id, persistedMsg.id))` — prevents duplicate context on retry.
+- DM endpoints: POST conversations + POST messages need `requireVerifiedAuthWithRateLimit` — unverified accounts are a spam vector for DMs.
+- Register `ageConfirmed`: `z.literal(true, { message: '...' })` — `errorMap` key doesn't exist in this Zod version, use `message` directly.
+- Conversation blocked-user filter: query `userBlocks` once with `inArray` on all `otherUserIds`, build a `Set`, then `Array.filter` — avoids N `isBlocked` calls.
+- AI chat rate-limited routes: use `requireVerifiedAuth` (not `requireVerifiedAuthWithRateLimit`) when the route manages its own limiter (`aiRatelimit`) to avoid double rate-limiting.
+- Expire-stale skill requests: use `request_cancelled`, not `request_rejected` — timeout ≠ active owner decline.
+- Reservation expiry notifications: notify both borrower AND owner — both parties need to know the pending slot freed up.
+- Gamification points: only award on NEW RSVP (`isNewRsvp = !existing`), not re-attending after cancel — prevents double-earn.
+- Admin unpublish: use `z.discriminatedUnion('action', [...])` when PATCH has two distinct payloads — avoids leaking status field into unpublish branch.
+- `messages` table uses `body` column, not `content` — always check schema before writing to message fields.
+- Push notifications: `sendPushNotification()` in `lib/push.ts` calls Expo API directly — no SDK needed, just `fetch`. Silent DB catch was a bug, not intentional.
+- Search unified view: merge per-type arrays client-side after `Promise.all(jobs)`, sort by `rank` DESC — rank values from ts_rank are comparable across types.
+- `innerJoin` is NOT a named export from `drizzle-orm` — use `.innerJoin()` method chain on the query builder instead.
+- Token refresh (`/api/auth/refresh`) must check `lockedUntil` — login blocks banned users but refresh does not unless explicitly added.
+- Expire-stale skill requests: use `status: 'cancelled'`, not `status: 'rejected'` — timeout ≠ active owner decline (rejected = owner action).
+- Badge criteria must count completed transactions, not listings — `good_neighbor` uses `foodReservations WHERE status='picked_up'`, not `foodShares` count.
+- `data-retention` must clean up parent rows after child deletion — delete orphaned `aiConversations` (0 messages) with `notExists()` subquery after `aiMessages` bulk delete.
+- Every route handler body needs its own try/catch — `requireAuth`/`requireVerifiedAuth` outer catch only wraps token verification, not the handler.
+- `requireAdmin` must check `lockedUntil` — it chains into `requireAuth` (JWT only), not `requireVerifiedAuth`, so banned admins bypass the lock check.
+- `syncFoodShareStatus`: check `pickedUpCount >= quantity` FIRST, then `(activeCount + pickedUpCount) >= quantity` for `reserved` — mixing picked_up + active counts otherwise falls through to `available`.
+- State machine updates that award points need a CAS WHERE guard (`AND status = 'expected_status'`) — without it, concurrent calls both pass the read-time check and award points twice.
+- Every gamification trigger (pledge, rating, RSVP, food pickup, tool return, skill complete) needs `checkAndAwardBadges` — missing the call means the badge is never awarded for that user action.

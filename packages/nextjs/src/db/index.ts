@@ -13,7 +13,7 @@ export const db: DB = new Proxy({} as DB, {
     if (!_instance) {
       _instance = drizzle(neon(process.env.DATABASE_URL!), { schema })
     }
-    const val = (_instance as any)[key]
-    return typeof val === 'function' ? val.bind(_instance) : val
+    const val = Reflect.get(_instance, key, _instance)
+    return typeof val === 'function' ? (val as (...a: unknown[]) => unknown).bind(_instance) : val
   },
 })

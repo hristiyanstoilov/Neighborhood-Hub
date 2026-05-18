@@ -1,8 +1,8 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { and, count, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages, profiles, users } from '@/db/schema'
-import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { conversations, messages, profiles, userBlocks, users } from '@/db/schema'
+import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { createConversationSchema } from '@/lib/schemas/dm'
 import { isBlocked } from '@/lib/queries/blocks'
@@ -28,8 +28,31 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
       return NextResponse.json({ data: [] })
     }
 
-    const conversationIds = rows.map((row) => row.id)
-    const otherUserIds = rows.map((row) => (row.participantA === user.sub ? row.participantB : row.participantA))
+    const allOtherUserIds = rows.map((row) => (row.participantA === user.sub ? row.participantB : row.participantA))
+
+    const blockedEntries = await db
+      .select({ blockerId: userBlocks.blockerId, blockedId: userBlocks.blockedId })
+      .from(userBlocks)
+      .where(or(
+        and(eq(userBlocks.blockerId, user.sub), inArray(userBlocks.blockedId, allOtherUserIds)),
+        and(eq(userBlocks.blockedId, user.sub), inArray(userBlocks.blockerId, allOtherUserIds)),
+      ))
+
+    const blockedUserSet = new Set(
+      blockedEntries.map((b) => (b.blockerId === user.sub ? b.blockedId : b.blockerId))
+    )
+
+    const visibleRows = rows.filter((row) => {
+      const otherId = row.participantA === user.sub ? row.participantB : row.participantA
+      return !blockedUserSet.has(otherId)
+    })
+
+    if (visibleRows.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
+
+    const conversationIds = visibleRows.map((row) => row.id)
+    const otherUserIds = visibleRows.map((row) => (row.participantA === user.sub ? row.participantB : row.participantA))
 
     const [otherProfiles, unreadRows] = await Promise.all([
       db
@@ -72,7 +95,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
     )
     const unreadByConversation = new Map(unreadRows.map((row) => [row.conversationId, Number(row.unreadCount)]))
 
-    const data = rows.map((row) => {
+    const data = visibleRows.map((row) => {
       const otherUserId = row.participantA === user.sub ? row.participantB : row.participantA
       return {
         id: row.id,
@@ -90,7 +113,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user }) =
   }
 })
 
-export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })

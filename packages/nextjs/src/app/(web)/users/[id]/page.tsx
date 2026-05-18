@@ -145,23 +145,31 @@ export default async function PublicProfilePage({ params }: Props) {
     : row.city ?? null
 
   const badgeLabels: Record<BadgeType, string> = {
-    first_skill: t('achievement_first_skill'),
-    first_tool: t('achievement_first_tool'),
-    first_food: t('achievement_first_food'),
-    ten_points: t('achievement_ten_points'),
-    fifty_points: t('achievement_fifty_points'),
-    five_star_giver: t('achievement_five_star_giver'),
+    first_skill:    t('achievement_first_skill'),
+    first_tool:     t('achievement_first_tool'),
+    first_food:     t('achievement_first_food'),
+    ten_points:     t('achievement_ten_points'),
+    fifty_points:   t('achievement_fifty_points'),
+    five_star_giver:t('achievement_five_star_giver'),
     community_hero: t('achievement_community_hero'),
+    first_event:    t('achievement_first_event'),
+    first_drive:    t('achievement_first_drive'),
+    good_neighbor:  t('achievement_good_neighbor'),
+    tool_master:    t('achievement_tool_master'),
   }
 
   const badgeCriteria: Record<BadgeType, string> = {
-    first_skill: t('criteria_first_skill'),
-    first_tool: t('criteria_first_tool'),
-    first_food: t('criteria_first_food'),
-    ten_points: t('criteria_ten_points'),
-    fifty_points: t('criteria_fifty_points'),
-    five_star_giver: t('criteria_five_star_giver'),
+    first_skill:    t('criteria_first_skill'),
+    first_tool:     t('criteria_first_tool'),
+    first_food:     t('criteria_first_food'),
+    ten_points:     t('criteria_ten_points'),
+    fifty_points:   t('criteria_fifty_points'),
+    five_star_giver:t('criteria_five_star_giver'),
     community_hero: t('criteria_community_hero'),
+    first_event:    t('criteria_first_event'),
+    first_drive:    t('criteria_first_drive'),
+    good_neighbor:  t('criteria_good_neighbor'),
+    tool_master:    t('criteria_tool_master'),
   }
 
   return (

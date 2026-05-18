@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { toolReservations, users } from '@/db/schema'
+import { toolReservations, tools, users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
@@ -8,6 +8,9 @@ import { ToolReservationStatus } from '@/lib/constants/statuses'
 import { patchToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { uuidSchema } from '@/lib/schemas/skill'
 import { createNotification } from '@/lib/create-notification'
+import { sendToolReservationApproved, sendToolReservationRejected } from '@/lib/email'
+import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
+import { TOOL_RETURN_POINTS } from '@/lib/constants'
 
 const TERMINAL: readonly string[] = [
   ToolReservationStatus.REJECTED,
@@ -112,6 +115,36 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       entityType: 'tool_reservation',
       entityId: id,
     }).catch((e) => console.error('[side-effect]', e))
+
+    // Send transactional email for approve/reject
+    if (action === 'approve' || action === 'reject') {
+      const [borrowerUser, tool] = await Promise.all([
+        db.query.users.findFirst({ where: eq(users.id, existing.borrowerId), columns: { email: true } }),
+        db.query.tools.findFirst({ where: eq(tools.id, existing.toolId), columns: { title: true } }),
+      ])
+      if (borrowerUser && tool) {
+        if (action === 'approve') {
+          void sendToolReservationApproved({
+            to: borrowerUser.email,
+            toolTitle: tool.title,
+            startDate: existing.startDate,
+            endDate: existing.endDate,
+          }).catch((e) => console.error('[side-effect]', e))
+        } else {
+          void sendToolReservationRejected({
+            to: borrowerUser.email,
+            toolTitle: tool.title,
+          }).catch((e) => console.error('[side-effect]', e))
+        }
+      }
+    }
+
+    // Award points to the borrower when they return a tool
+    if (action === 'return') {
+      void awardPoints(existing.borrowerId, TOOL_RETURN_POINTS)
+        .then(() => checkAndAwardBadges(existing.borrowerId))
+        .catch((e) => console.error('[side-effect]', e))
+    }
 
     await writeAuditLog({
       userId:    user.sub,

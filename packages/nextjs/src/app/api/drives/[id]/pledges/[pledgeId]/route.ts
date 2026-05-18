@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges } from '@/db/schema'
+import { communityDrives, drivePledges, users } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updatePledgeSchema } from '@/lib/schemas/drive'
 import { createNotification } from '@/lib/create-notification'
+import { sendDrivePledgeFulfilled } from '@/lib/email'
 
 // ─── PATCH /api/drives/[id]/pledges/[pledgeId] ──────────────────────────────
 // Organizer: mark fulfilled
@@ -52,7 +53,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
 
     const [updated] = await db
       .update(drivePledges)
-      .set({ status })
+      .set({ status, updatedAt: new Date() })
       .where(eq(drivePledges.id, pledgeId))
       .returning()
 
@@ -63,6 +64,17 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         entityType: 'community_drive',
         entityId: driveId,
       }).catch((e) => console.error('[side-effect]', e))
+
+      const pledgerUser = await db.query.users.findFirst({
+        where: eq(users.id, pledge.userId),
+        columns: { email: true },
+      })
+      if (pledgerUser) {
+        void sendDrivePledgeFulfilled({
+          to: pledgerUser.email,
+          driveTitle: drive.title,
+        }).catch((e) => console.error('[side-effect]', e))
+      }
     }
 
     if (status === 'cancelled') {

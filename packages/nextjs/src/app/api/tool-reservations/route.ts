@@ -1,8 +1,9 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { toolReservations, tools } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, sql } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { createToolReservationSchema } from '@/lib/schemas/tool-reservation'
 import { queryToolReservationsForUser } from '@/lib/queries/tool-reservations'
 import { isBlocked } from '@/lib/queries/blocks'
@@ -55,26 +56,42 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     if (await isBlocked(user.sub, tool.ownerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const start = new Date(startDate)
-    const end = new Date(endDate)
-    if (end < start) return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })
+    const end   = new Date(endDate)
+    if (end <= start) return NextResponse.json({ error: 'VALIDATION_ERROR' }, { status: 400 })
 
-    let reservation
+    // Atomic INSERT: only inserts if no overlapping pending/approved reservation exists.
+    // A separate SELECT+INSERT would have a TOCTOU race under concurrent requests.
+    const newId = crypto.randomUUID()
+    let reservation: typeof toolReservations.$inferSelect | undefined
     try {
-      ;[reservation] = await db.insert(toolReservations).values({
-        toolId,
-        borrowerId: user.sub,
-        ownerId:    tool.ownerId,
-        startDate:  start,
-        endDate:    end,
-        notes:      notes ?? null,
-        returnBy:   returnBy ? new Date(returnBy) : null,
-      }).returning()
+      const result = await db.execute(sql`
+        INSERT INTO tool_reservations (id, tool_id, borrower_id, owner_id, start_date, end_date, notes, return_by)
+        SELECT ${newId}::uuid, ${toolId}::uuid, ${user.sub}::uuid, ${tool.ownerId}::uuid,
+               ${start}::timestamptz, ${end}::timestamptz, ${notes ?? null}::text, ${returnBy ? new Date(returnBy) : null}::timestamptz
+        WHERE NOT EXISTS (
+          SELECT 1 FROM tool_reservations
+          WHERE tool_id   = ${toolId}::uuid
+            AND status    IN ('pending', 'approved')
+            AND start_date < ${end}::timestamptz
+            AND end_date   > ${start}::timestamptz
+        )
+        RETURNING id
+      `)
+      if (result.rows.length === 0) {
+        return NextResponse.json({ error: 'DATE_CONFLICT' }, { status: 409 })
+      }
+      // Re-fetch via Drizzle to get the camelCase-mapped row that clients expect
+      ;[reservation] = await db.select().from(toolReservations).where(eq(toolReservations.id, newId))
     } catch (err: unknown) {
-      // Unique index: borrower already has an active (pending/approved) reservation for this tool
       if (isUniqueViolation(err, 'tool_reservations_active_idx')) {
         return NextResponse.json({ error: 'DUPLICATE_RESERVATION' }, { status: 409 })
       }
       throw err
+    }
+
+    if (!reservation) {
+      console.error('[POST /api/tool-reservations] re-fetch returned no row for id', newId)
+      return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
     }
 
     // Notify owner
@@ -84,6 +101,15 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       entityType: 'tool_reservation',
       entityId: reservation.id,
     }).catch((e) => console.error('[side-effect]', e))
+
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'create',
+      entity:    'tool_reservations',
+      entityId:  reservation.id,
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: reservation }, { status: 201 })
   } catch (err) {

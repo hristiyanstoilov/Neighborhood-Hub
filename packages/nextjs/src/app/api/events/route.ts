@@ -1,13 +1,12 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { events, eventAttendees } from '@/db/schema'
-import { and, count, isNull } from 'drizzle-orm'
+import { and, count, eq } from 'drizzle-orm'
 import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createEventSchema, listEventsSchema } from '@/lib/schemas/event'
-import { buildEventConditions, eventSelect, queryEvents } from '@/lib/queries/events'
-import { eq } from 'drizzle-orm'
+import { buildEventConditions, queryEvents } from '@/lib/queries/events'
 import { createFeedEvent } from '@/lib/create-feed-event'
 
 // ─── GET /api/events — public listing ───────────────────────────────────────
@@ -86,7 +85,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       targetId:   event.id,
       targetTitle: event.title,
       targetUrl:  `/events/${event.id}`,
-    }).catch(() => undefined)
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: event }, { status: 201 })
   } catch (err) {

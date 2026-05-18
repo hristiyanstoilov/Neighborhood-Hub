@@ -3,6 +3,7 @@ import { db } from '@/db'
 import { reports } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { createRatelimit } from '@/lib/ratelimit'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -14,6 +15,9 @@ const schema = z.object({
 
 export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) => {
   try {
+    const { success: createOk } = await createRatelimit.limit(user.sub)
+    if (!createOk) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)

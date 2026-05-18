@@ -8,6 +8,8 @@ import { updateFoodReservationSchema } from '@/lib/schemas/food'
 import { queryFoodReservationUsage } from '@/lib/queries/food'
 import { createNotification } from '@/lib/create-notification'
 import { sendFoodReservationApproved, sendFoodPickedUp } from '@/lib/email'
+import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
+import { FOOD_PICKUP_POINTS } from '@/lib/constants'
 
 type Ctx = { params: Promise<{ id: string; reservationId: string }> }
 
@@ -15,11 +17,11 @@ async function syncFoodShareStatus(foodShareId: string, quantity: number) {
   const { activeCount, pickedUpCount } = await queryFoodReservationUsage(foodShareId)
 
   const nextStatus =
-    activeCount === 0
-      ? 'available'
-      : pickedUpCount >= quantity
-        ? 'picked_up'
-        : activeCount >= quantity
+    pickedUpCount >= quantity
+      ? 'picked_up'
+      : activeCount === 0
+        ? 'available'
+        : (activeCount + pickedUpCount) >= quantity
           ? 'reserved'
           : 'available'
 
@@ -180,6 +182,13 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           foodTitle: foodShare.title,
         }).catch((e) => console.error('[side-effect]', e))
       }
+    }
+
+    // Award points to owner when food is picked up (successful share completed)
+    if (parsed.data.action === 'picked_up') {
+      void awardPoints(foodShare.ownerId, FOOD_PICKUP_POINTS)
+        .then(() => checkAndAwardBadges(foodShare.ownerId))
+        .catch((e) => console.error('[side-effect]', e))
     }
 
     await writeAuditLog({

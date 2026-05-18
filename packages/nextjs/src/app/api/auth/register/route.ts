@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { db } from '@/db'
-import { users, profiles, userStats } from '@/db/schema'
+import { users, profiles } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { generateSecureToken, verificationTokenExpiresAt } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email'
@@ -14,6 +14,7 @@ const schema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(72),
   name: z.string().min(2).max(100).optional(),
+  ageConfirmed: z.literal(true, { message: 'You must confirm you are 18 or older.' }),
 })
 
 export async function POST(req: NextRequest) {
@@ -25,7 +26,6 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => null)
-    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
@@ -58,11 +58,6 @@ export async function POST(req: NextRequest) {
       await db.insert(profiles).values({
         userId: user.id,
         name: name ?? null,
-      })
-      await db.insert(userStats).values({
-        userId: user.id,
-        totalPoints: 0,
-        level: 1,
       })
     } catch (profileErr) {
       await db.delete(users).where(eq(users.id, user.id))

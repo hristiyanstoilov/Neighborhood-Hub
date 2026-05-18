@@ -5,7 +5,9 @@ import { foodReservations, profiles, ratings, skillRequests, toolReservations } 
 import { searchPublicRatelimit } from '@/lib/ratelimit'
 import { createRatingSchema, listRatingsQuerySchema, type RatingContextType } from '@/lib/schemas/rating'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { isUniqueViolation } from '@/lib/db-errors'
+import { checkAndAwardBadges } from '@/lib/badges'
 
 type ContextParticipantInfo = {
   participantA: string
@@ -111,6 +113,20 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user }) 
         ratingCount: agg?.count ?? 0,
       })
       .where(eq(profiles.userId, payload.ratedUserId))
+
+    // Check for five_star_giver badge when rater submits a 5-star rating
+    void checkAndAwardBadges(user.sub).catch((e) => console.error('[side-effect]', e))
+
+    const ip = getClientIp(req)
+    await writeAuditLog({
+      userId:    user.sub,
+      userEmail: user.email,
+      action:    'create',
+      entity:    'ratings',
+      entityId:  inserted.id,
+      metadata:  { score: payload.score, contextType: payload.contextType },
+      ipAddress: ip,
+    })
 
     return NextResponse.json({ data: inserted }, { status: 201 })
   } catch (err) {

@@ -1,6 +1,6 @@
-import { and, count, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, count, eq, isNull, ne, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { badges, foodShares, ratings, skillRequests, skills, tools, userStats } from '@/db/schema'
+import { badges, drivePledges, eventAttendees, foodReservations, foodShares, ratings, skillRequests, skills, toolReservations, tools, userStats } from '@/db/schema'
 
 const LEVEL_THRESHOLDS = [0, 10, 30, 60, 100, 200]
 
@@ -45,6 +45,10 @@ export const BADGE_TYPES = [
   'fifty_points',
   'five_star_giver',
   'community_hero',
+  'first_event',
+  'first_drive',
+  'good_neighbor',
+  'tool_master',
 ] as const
 
 export type BadgeType = (typeof BADGE_TYPES)[number]
@@ -55,7 +59,18 @@ type BadgeCandidate = {
 }
 
 export async function checkAndAwardBadges(userId: string, database = db): Promise<void> {
-  const [skillCount, toolCount, foodCount, pointsRow, completedRequests, fiveStarRatings] = await Promise.all([
+  const [
+    skillCount,
+    toolCount,
+    foodCount,
+    pointsRow,
+    completedRequests,
+    fiveStarRatings,
+    eventCount,
+    driveCount,
+    returnedToolCount,
+    completedFoodGiveaways,
+  ] = await Promise.all([
     database.select({ total: count() }).from(skills).where(and(eq(skills.ownerId, userId), isNull(skills.deletedAt))),
     database.select({ total: count() }).from(tools).where(and(eq(tools.ownerId, userId), isNull(tools.deletedAt))),
     database.select({ total: count() }).from(foodShares).where(and(eq(foodShares.ownerId, userId), isNull(foodShares.deletedAt))),
@@ -70,6 +85,10 @@ export async function checkAndAwardBadges(userId: string, database = db): Promis
         )
       ),
     database.select({ total: count() }).from(ratings).where(and(eq(ratings.raterId, userId), eq(ratings.score, 5))),
+    database.select({ total: count() }).from(eventAttendees).where(and(eq(eventAttendees.userId, userId), eq(eventAttendees.status, 'attending'))),
+    database.select({ total: count() }).from(drivePledges).where(and(eq(drivePledges.userId, userId), ne(drivePledges.status, 'cancelled'))),
+    database.select({ total: count() }).from(toolReservations).where(and(eq(toolReservations.borrowerId, userId), eq(toolReservations.status, 'returned'))),
+    database.select({ total: count() }).from(foodReservations).where(and(eq(foodReservations.ownerId, userId), eq(foodReservations.status, 'picked_up'))),
   ])
 
   const totalPoints = pointsRow[0]?.totalPoints ?? 0
@@ -82,6 +101,10 @@ export async function checkAndAwardBadges(userId: string, database = db): Promis
   if (totalPoints >= 50) candidates.push({ userId, type: 'fifty_points' })
   if ((fiveStarRatings[0]?.total ?? 0) > 0) candidates.push({ userId, type: 'five_star_giver' })
   if ((completedRequests[0]?.total ?? 0) >= 3) candidates.push({ userId, type: 'community_hero' })
+  if ((eventCount[0]?.total ?? 0) > 0) candidates.push({ userId, type: 'first_event' })
+  if ((driveCount[0]?.total ?? 0) > 0) candidates.push({ userId, type: 'first_drive' })
+  if ((completedFoodGiveaways[0]?.total ?? 0) >= 5) candidates.push({ userId, type: 'good_neighbor' })
+  if ((returnedToolCount[0]?.total ?? 0) >= 3) candidates.push({ userId, type: 'tool_master' })
 
   if (candidates.length === 0) return
 

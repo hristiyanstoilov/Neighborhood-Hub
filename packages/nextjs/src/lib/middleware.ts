@@ -89,6 +89,16 @@ export function requireAdmin(
     if (user.role !== 'admin') {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
     }
+    const dbUser = await db.query.users.findFirst({
+      where: and(eq(users.id, user.sub), isNull(users.deletedAt)),
+      columns: { lockedUntil: true },
+    })
+    if (!dbUser) {
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+    }
+    if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) {
+      return NextResponse.json({ error: 'ACCOUNT_LOCKED' }, { status: 403 })
+    }
     return handler(req, { user, params })
   })
 }

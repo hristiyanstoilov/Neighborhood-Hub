@@ -151,3 +151,88 @@ export async function sendFoodPickedUp(params: {
     `,
   })
 }
+
+export async function sendToolReservationApproved(params: {
+  to: string
+  toolTitle: string
+  startDate: Date
+  endDate: Date
+}): Promise<void> {
+  const { from, appUrl } = getConfig()
+  const safeTitle = escapeHtml(params.toolTitle)
+  await getResend().emails.send({
+    from,
+    to: params.to,
+    subject: `Your tool reservation for "${params.toolTitle}" was approved`,
+    html: `
+      <h2>Reservation approved!</h2>
+      <p>Your reservation for <strong>${safeTitle}</strong> has been approved.</p>
+      <p>Period: ${params.startDate.toLocaleDateString('en-GB')} – ${params.endDate.toLocaleDateString('en-GB')}</p>
+      <a href="${appUrl}/tools/reservations" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        View your reservations
+      </a>
+    `,
+  })
+}
+
+export async function sendToolReservationRejected(params: {
+  to: string
+  toolTitle: string
+}): Promise<void> {
+  const { from, appUrl } = getConfig()
+  const safeTitle = escapeHtml(params.toolTitle)
+  await getResend().emails.send({
+    from,
+    to: params.to,
+    subject: `Your tool reservation for "${params.toolTitle}" was declined`,
+    html: `
+      <h2>Reservation declined</h2>
+      <p>Unfortunately, your reservation request for <strong>${safeTitle}</strong> was declined by the owner.</p>
+      <a href="${appUrl}/tools" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        Browse other tools
+      </a>
+    `,
+  })
+}
+
+export async function sendEventRsvpConfirmation(params: {
+  to: string
+  eventTitle: string
+  startsAt: Date
+}): Promise<void> {
+  const { from, appUrl } = getConfig()
+  const safeTitle = escapeHtml(params.eventTitle)
+  await getResend().emails.send({
+    from,
+    to: params.to,
+    subject: `You're going to "${params.eventTitle}"`,
+    html: `
+      <h2>RSVP confirmed!</h2>
+      <p>You're registered for <strong>${safeTitle}</strong>.</p>
+      <p>Starts: ${params.startsAt.toLocaleString('en-GB')}</p>
+      <a href="${appUrl}/events" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        View events
+      </a>
+    `,
+  })
+}
+
+export async function sendDrivePledgeFulfilled(params: {
+  to: string
+  driveTitle: string
+}): Promise<void> {
+  const { from, appUrl } = getConfig()
+  const safeTitle = escapeHtml(params.driveTitle)
+  await getResend().emails.send({
+    from,
+    to: params.to,
+    subject: `Your pledge for "${params.driveTitle}" has been marked fulfilled`,
+    html: `
+      <h2>Pledge fulfilled!</h2>
+      <p>The organizer has marked your pledge for <strong>${safeTitle}</strong> as fulfilled. Thank you for contributing!</p>
+      <a href="${appUrl}/drives" style="display:inline-block;padding:12px 24px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;">
+        View community drives
+      </a>
+    `,
+  })
+}

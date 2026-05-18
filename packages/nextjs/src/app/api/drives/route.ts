@@ -1,13 +1,12 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { communityDrives } from '@/db/schema'
-import { and, count, isNull } from 'drizzle-orm'
+import { and, count, eq } from 'drizzle-orm'
 import { apiRatelimit, createRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createDriveSchema, listDrivesSchema } from '@/lib/schemas/drive'
 import { buildDriveConditions, queryDrives } from '@/lib/queries/drives'
-import { eq } from 'drizzle-orm'
 import { createFeedEvent } from '@/lib/create-feed-event'
 
 // ─── GET /api/drives — public listing ───────────────────────────────────────
@@ -77,7 +76,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       targetId:   drive.id,
       targetTitle: drive.title,
       targetUrl:  `/drives/${drive.id}`,
-    }).catch(() => undefined)
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: drive }, { status: 201 })
   } catch (err) {

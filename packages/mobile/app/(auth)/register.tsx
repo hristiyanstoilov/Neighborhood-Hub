@@ -26,6 +26,7 @@ export default function RegisterScreen() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -37,6 +38,10 @@ export default function RegisterScreen() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
+      return
+    }
+    if (!ageConfirmed) {
+      setError('You must confirm you are 18 or older.')
       return
     }
     setError(null)
@@ -122,9 +127,20 @@ export default function RegisterScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={styles.checkRow}
+            onPress={() => setAgeConfirmed((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, ageConfirmed && styles.checkboxChecked]}>
+              {ageConfirmed && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkLabel}>I confirm I am 18 years of age or older</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, (loading || !ageConfirmed) && styles.buttonDisabled]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || !ageConfirmed}
           >
             {loading
               ? <ActivityIndicator color="#fff" />
@@ -232,6 +248,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 15,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#15803d',
+    borderColor: '#15803d',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  checkLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: '#374151',
   },
   linkRow: {
     marginTop: 16,

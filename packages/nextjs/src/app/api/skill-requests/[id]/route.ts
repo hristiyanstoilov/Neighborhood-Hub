@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { skillRequests, users, skills } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
@@ -123,11 +123,23 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       notificationRecipient = isOwner ? existing.userFromId : existing.userToId
     }
 
+    // For 'complete': CAS guard — only update if status is still 'accepted'.
+    // Without this, two concurrent complete calls both read accepted, both pass
+    // the state check above, and both award SKILL_COMPLETE_POINTS (double points).
+    const updateWhere =
+      action === 'complete'
+        ? and(eq(skillRequests.id, id), eq(skillRequests.status, SkillRequestStatus.ACCEPTED))
+        : eq(skillRequests.id, id)
+
     const [updated] = await db
       .update(skillRequests)
       .set(updates)
-      .where(eq(skillRequests.id, id))
+      .where(updateWhere)
       .returning()
+
+    if (!updated) {
+      return NextResponse.json({ error: 'INVALID_TRANSITION' }, { status: 422 })
+    }
 
     // Notify the other party — fire and forget
     void createNotification({

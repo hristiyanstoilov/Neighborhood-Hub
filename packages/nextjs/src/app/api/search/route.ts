@@ -14,12 +14,14 @@ type SearchResponseData = {
   events: Array<Record<string, unknown>>
   drives: Array<Record<string, unknown>>
   food: Array<Record<string, unknown>>
+  unified: Array<Record<string, unknown>>
   totalByType: {
     skills: number
     tools: number
     events: number
     drives: number
     food: number
+    total: number
   }
 }
 
@@ -86,12 +88,14 @@ export async function GET(req: NextRequest) {
       events: [],
       drives: [],
       food: [],
+      unified: [],
       totalByType: {
         skills: 0,
         tools: 0,
         events: 0,
         drives: 0,
         food: 0,
+        total: 0,
       },
     }
 
@@ -99,7 +103,7 @@ export async function GET(req: NextRequest) {
 
     if (types.includes('skills')) {
       jobs.push((async () => {
-        const skillRankExpr = sql<number>`ts_rank("skills"."search_vector", plainto_tsquery('english', ${q}))`
+        const skillRankExpr = sql<number>`ts_rank("skills"."search_vector", plainto_tsquery('simple', ${q}))`
 
         const rows = await db
           .select({
@@ -119,7 +123,7 @@ export async function GET(req: NextRequest) {
           .leftJoin(profiles, eq(profiles.userId, skills.ownerId))
           .leftJoin(locations, eq(locations.id, skills.locationId))
           .where(and(
-            sql`"skills"."search_vector" @@ plainto_tsquery('english', ${q})`,
+            sql`"skills"."search_vector" @@ plainto_tsquery('simple', ${q})`,
             isNull(skills.deletedAt),
             locationId ? eq(skills.locationId, locationId) : undefined,
           ))
@@ -133,7 +137,7 @@ export async function GET(req: NextRequest) {
 
     if (types.includes('tools')) {
       jobs.push((async () => {
-        const toolRankExpr = sql<number>`ts_rank("tools"."search_vector", plainto_tsquery('english', ${q}))`
+        const toolRankExpr = sql<number>`ts_rank("tools"."search_vector", plainto_tsquery('simple', ${q}))`
 
         const rows = await db
           .select({
@@ -154,7 +158,7 @@ export async function GET(req: NextRequest) {
           .leftJoin(profiles, eq(profiles.userId, tools.ownerId))
           .leftJoin(locations, eq(locations.id, tools.locationId))
           .where(and(
-            sql`"tools"."search_vector" @@ plainto_tsquery('english', ${q})`,
+            sql`"tools"."search_vector" @@ plainto_tsquery('simple', ${q})`,
             isNull(tools.deletedAt),
             locationId ? eq(tools.locationId, locationId) : undefined,
           ))
@@ -168,7 +172,7 @@ export async function GET(req: NextRequest) {
 
     if (types.includes('events')) {
       jobs.push((async () => {
-        const eventRankExpr = sql<number>`ts_rank("events"."search_vector", plainto_tsquery('english', ${q}))`
+        const eventRankExpr = sql<number>`ts_rank("events"."search_vector", plainto_tsquery('simple', ${q}))`
 
         const rows = await db
           .select({
@@ -190,7 +194,7 @@ export async function GET(req: NextRequest) {
           .from(events)
           .leftJoin(locations, eq(locations.id, events.locationId))
           .where(and(
-            sql`"events"."search_vector" @@ plainto_tsquery('english', ${q})`,
+            sql`"events"."search_vector" @@ plainto_tsquery('simple', ${q})`,
             isNull(events.deletedAt),
             ne(events.status, 'cancelled'),
             locationId ? eq(events.locationId, locationId) : undefined,
@@ -205,7 +209,7 @@ export async function GET(req: NextRequest) {
 
     if (types.includes('drives')) {
       jobs.push((async () => {
-        const driveRankExpr = sql<number>`ts_rank("community_drives"."search_vector", plainto_tsquery('english', ${q}))`
+        const driveRankExpr = sql<number>`ts_rank("community_drives"."search_vector", plainto_tsquery('simple', ${q}))`
 
         const rows = await db
           .select({
@@ -222,7 +226,7 @@ export async function GET(req: NextRequest) {
           })
           .from(communityDrives)
           .where(and(
-            sql`"community_drives"."search_vector" @@ plainto_tsquery('english', ${q})`,
+            sql`"community_drives"."search_vector" @@ plainto_tsquery('simple', ${q})`,
             isNull(communityDrives.deletedAt),
             ne(communityDrives.status, 'cancelled'),
           ))
@@ -269,6 +273,23 @@ export async function GET(req: NextRequest) {
     }
 
     await Promise.all(jobs)
+
+    // Merge all per-type arrays into a single ranked list (each row already has a `type` field).
+    // Use Number() instead of `as number` — Postgres may return ts_rank as a string.
+    payload.unified = [
+      ...payload.skills,
+      ...payload.tools,
+      ...payload.events,
+      ...payload.drives,
+      ...payload.food,
+    ].sort((a, b) => Number(b.rank ?? 0) - Number(a.rank ?? 0))
+
+    payload.totalByType.total =
+      payload.totalByType.skills +
+      payload.totalByType.tools +
+      payload.totalByType.events +
+      payload.totalByType.drives +
+      payload.totalByType.food
 
     return NextResponse.json({ data: payload })
   } catch (err) {

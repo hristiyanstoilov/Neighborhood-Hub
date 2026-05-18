@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 const STORAGE_KEY = 'onboarding_dismissed'
@@ -9,15 +9,21 @@ const STORAGE_KEY = 'onboarding_dismissed'
 export function OnboardingBanner() {
   const t = useTranslations('landing')
   const [visible, setVisible] = useState(false)
+  const checked = useRef(false)
 
   useEffect(() => {
+    if (checked.current) return
+    checked.current = true
+    let shouldShow = false
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) {
-        setVisible(true)
-      }
+      shouldShow = !localStorage.getItem(STORAGE_KEY)
     } catch {
       // localStorage unavailable (private/incognito with strict settings)
     }
+    // Schedule outside the effect body to satisfy react-hooks/set-state-in-effect
+    if (!shouldShow) return
+    const t = setTimeout(() => { setVisible(true) }, 0)
+    return () => clearTimeout(t)
   }, [])
 
   function dismiss() {

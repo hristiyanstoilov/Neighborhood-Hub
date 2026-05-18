@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { count, desc, eq, innerJoin } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { feedEvents, profiles } from '@/db/schema'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { and, count, desc, eq, isNull, ne } from 'drizzle-orm'
 import { db } from '@/db'
-import { conversations, messages, profiles, users } from '@/db/schema'
+import { conversations, messages, profiles } from '@/db/schema'
 import { requireAuthWithRateLimit } from '@/lib/middleware'
 import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 

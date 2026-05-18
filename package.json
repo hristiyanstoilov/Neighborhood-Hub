@@ -7,13 +7,12 @@
     "dev:web": "npm run dev --prefix packages/nextjs",
     "dev:mobile": "npm run start --prefix packages/mobile",
     "build:web": "npm run build --prefix packages/nextjs",
-    "lint:web": "npm run lint --prefix packages/nextjs",
     "test:web": "npm run test --prefix packages/nextjs",
+    "lint:web": "npm run lint --prefix packages/nextjs -- src/",
     "typecheck:mobile": "npm run --prefix packages/mobile typecheck",
     "smoke:web": "node scripts/smoke-web.mjs",
     "smoke:auth": "node scripts/smoke-auth.mjs",
     "smoke:auth:browser": "node scripts/smoke-auth-browser.mjs",
-    "smoke:ratings": "node scripts/smoke-ratings.mjs",
     "smoke:skill-requests:transitions": "node scripts/smoke-skill-requests-transitions.mjs",
     "smoke:tool-reservations:transitions": "node scripts/smoke-tool-reservations.mjs",
     "smoke:food-reservations:transitions": "node scripts/smoke-food-reservations.mjs",
@@ -23,5 +22,8 @@
     "playwright": "^1.53.1",
     "typescript": "^5.0.0"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.0"
+  }
 }

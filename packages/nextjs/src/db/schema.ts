@@ -827,7 +827,7 @@ export const badges = pgTable(
     index('badges_user_id_idx').on(t.userId),
     check(
       'badges_type_check',
-      sql`${t.type} IN ('first_skill', 'first_tool', 'first_food', 'ten_points', 'fifty_points', 'five_star_giver', 'community_hero')`
+      sql`${t.type} IN ('first_skill', 'first_tool', 'first_food', 'ten_points', 'fifty_points', 'five_star_giver', 'community_hero', 'first_event', 'first_drive', 'good_neighbor', 'tool_master')`
     ),
   ]
 )

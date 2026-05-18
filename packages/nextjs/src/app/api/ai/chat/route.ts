@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { aiConversations, aiMessages, profiles, locations, skills, users } from '@/db/schema'
 import { eq, and, isNull, asc, count } from 'drizzle-orm'
-import { requireAuth } from '@/lib/middleware'
+import { requireVerifiedAuth } from '@/lib/middleware'
 import { aiRatelimit } from '@/lib/ratelimit'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -73,8 +73,8 @@ async function buildSystemPrompt(userId: string): Promise<string> {
     ]
 
     return BASE_SYSTEM_PROMPT + contextLines.join('\n')
-  } catch {
-    // Non-critical — fall back to base prompt if DB fails
+  } catch (e) {
+    console.error('[ai/chat] buildSystemPrompt DB fail, using base prompt', e)
     return BASE_SYSTEM_PROMPT
   }
 }
@@ -84,107 +84,113 @@ const bodySchema = z.object({
   conversationId: z.string().uuid().optional(),
 })
 
-export const POST = requireAuth(async (req: NextRequest, { user }) => {
-  // Rate limit per user
-  const { success } = await aiRatelimit.limit(user.sub)
-  if (!success) {
-    return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
-  }
-
-  const body = await req.json().catch(() => null)
-  if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
-  const parsed = bodySchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.flatten() }, { status: 400 })
-  }
-
-  const { message, conversationId } = parsed.data
-
-  // Resolve or create conversation
-  let convId = conversationId ?? null
-
-  if (convId) {
-    // Verify ownership
-    const [conv] = await db
-      .select({ id: aiConversations.id })
-      .from(aiConversations)
-      .where(and(
-        eq(aiConversations.id, convId),
-        eq(aiConversations.userId, user.sub),
-        isNull(aiConversations.deletedAt)
-      ))
-      .limit(1)
-
-    if (!conv) {
-      return NextResponse.json({ error: 'CONVERSATION_NOT_FOUND' }, { status: 404 })
-    }
-  } else {
-    // New conversation — derive title from first message (truncated)
-    const title = message.length > 80 ? message.slice(0, 77) + '…' : message
-    const [newConv] = await db
-      .insert(aiConversations)
-      .values({ userId: user.sub, title })
-      .returning({ id: aiConversations.id })
-    convId = newConv.id
-  }
-
-  // Load history for context (last 20 messages)
-  const history = await db
-    .select({ role: aiMessages.role, content: aiMessages.content })
-    .from(aiMessages)
-    .where(eq(aiMessages.conversationId, convId))
-    .orderBy(asc(aiMessages.createdAt))
-    .limit(20)
-
-  // Persist user message
-  await db.insert(aiMessages).values({
-    conversationId: convId,
-    role: 'user',
-    content: message,
-  })
-
-  // Build messages array for Anthropic
-  const contextMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
-    ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    { role: 'user', content: message },
-  ]
-
-  // Build personalised system prompt (includes user context from DB)
-  const systemPrompt = await buildSystemPrompt(user.sub)
-
-  // Call Anthropic — 9 s timeout keeps us under Netlify's 10 s serverless limit
-  let assistantContent: string
+export const POST = requireVerifiedAuth(async (req: NextRequest, { user }) => {
   try {
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: contextMessages,
-    }, { timeout: 9000 })
-    assistantContent = response.content[0].type === 'text' ? response.content[0].text : ''
-  } catch {
-    return NextResponse.json({ error: 'AI_UNAVAILABLE' }, { status: 503 })
-  }
+    // Rate limit per user
+    const { success } = await aiRatelimit.limit(user.sub)
+    if (!success) {
+      return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+    }
 
-  // Persist assistant message
-  const [assistantMsg] = await db
-    .insert(aiMessages)
-    .values({
-      conversationId: convId,
-      role: 'assistant',
-      content: assistantContent,
-    })
-    .returning({ id: aiMessages.id, createdAt: aiMessages.createdAt })
+    const body = await req.json().catch(() => null)
+    if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
+    const parsed = bodySchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.flatten() }, { status: 400 })
+    }
 
-  return NextResponse.json({
-    data: {
-      conversationId: convId,
-      message: {
-        id: assistantMsg.id,
+    const { message, conversationId } = parsed.data
+
+    // Resolve or create conversation
+    let convId = conversationId ?? null
+
+    if (convId) {
+      // Verify ownership
+      const [conv] = await db
+        .select({ id: aiConversations.id })
+        .from(aiConversations)
+        .where(and(
+          eq(aiConversations.id, convId),
+          eq(aiConversations.userId, user.sub),
+          isNull(aiConversations.deletedAt)
+        ))
+        .limit(1)
+
+      if (!conv) {
+        return NextResponse.json({ error: 'CONVERSATION_NOT_FOUND' }, { status: 404 })
+      }
+    } else {
+      // New conversation — derive title from first message (truncated)
+      const title = message.length > 80 ? message.slice(0, 77) + '…' : message
+      const [newConv] = await db
+        .insert(aiConversations)
+        .values({ userId: user.sub, title })
+        .returning({ id: aiConversations.id })
+      convId = newConv.id
+    }
+
+    // Load history for context (last 20 messages)
+    const history = await db
+      .select({ role: aiMessages.role, content: aiMessages.content })
+      .from(aiMessages)
+      .where(eq(aiMessages.conversationId, convId))
+      .orderBy(asc(aiMessages.createdAt))
+      .limit(20)
+
+    // Persist user message before calling Anthropic so it appears in history
+    const [persistedUserMsg] = await db
+      .insert(aiMessages)
+      .values({ conversationId: convId, role: 'user', content: message })
+      .returning({ id: aiMessages.id })
+
+    // Build messages array for Anthropic
+    const contextMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+      ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user', content: message },
+    ]
+
+    // Build personalised system prompt (includes user context from DB)
+    const systemPrompt = await buildSystemPrompt(user.sub)
+
+    // Call Anthropic — 9 s timeout keeps us under Netlify's 10 s serverless limit
+    let assistantContent: string
+    try {
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: contextMessages,
+      }, { timeout: 9000 })
+      assistantContent = response.content[0].type === 'text' ? response.content[0].text : ''
+    } catch {
+      // Compensating delete: remove the persisted user message so retry starts clean
+      await db.delete(aiMessages).where(eq(aiMessages.id, persistedUserMsg.id)).catch((e) => console.error('[ai/chat] compensating delete failed', e))
+      return NextResponse.json({ error: 'AI_UNAVAILABLE' }, { status: 503 })
+    }
+
+    // Persist assistant message
+    const [assistantMsg] = await db
+      .insert(aiMessages)
+      .values({
+        conversationId: convId,
         role: 'assistant',
         content: assistantContent,
-        createdAt: assistantMsg.createdAt,
+      })
+      .returning({ id: aiMessages.id, createdAt: aiMessages.createdAt })
+
+    return NextResponse.json({
+      data: {
+        conversationId: convId,
+        message: {
+          id: assistantMsg.id,
+          role: 'assistant',
+          content: assistantContent,
+          createdAt: assistantMsg.createdAt,
+        },
       },
-    },
-  })
+    })
+  } catch (err) {
+    console.error('[POST /api/ai/chat]', err)
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
+  }
 })

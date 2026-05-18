@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { userBlocks, users } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
-import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { requireAuthWithRateLimit, getClientIp } from '@/lib/middleware'
+import { writeAuditLog } from '@/lib/audit'
 import { uuidSchema } from '@/lib/schemas/skill'
 
 export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
@@ -34,6 +35,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, par
 
 export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
+    const ip = getClientIp(req)
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
@@ -55,7 +57,9 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, pa
       .values({ blockerId: user.sub, blockedId: targetId })
       .onConflictDoNothing()
 
-    return NextResponse.json({ ok: true }, { status: 201 })
+    await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'create', entity: 'user_blocks', entityId: targetId, ipAddress: ip })
+
+    return NextResponse.json({ data: { blocked: true } }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/users/[id]/block]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
@@ -64,6 +68,7 @@ export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, pa
 
 export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
+    const ip = getClientIp(req)
     const targetId = params.id
     if (!uuidSchema.safeParse(targetId).success) {
       return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
@@ -73,7 +78,9 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
       .delete(userBlocks)
       .where(and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, targetId)))
 
-    return NextResponse.json({ ok: true })
+    await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'user_blocks', entityId: targetId, ipAddress: ip })
+
+    return NextResponse.json({ data: { blocked: false } })
   } catch (err) {
     console.error('[DELETE /api/users/[id]/block]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })

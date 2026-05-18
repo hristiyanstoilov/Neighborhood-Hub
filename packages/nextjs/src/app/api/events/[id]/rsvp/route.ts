@@ -7,6 +7,9 @@ import { writeAuditLog } from '@/lib/audit'
 import { queryUserRsvp } from '@/lib/queries/events'
 import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
+import { sendEventRsvpConfirmation } from '@/lib/email'
+import { awardPoints, checkAndAwardBadges } from '@/lib/badges'
+import { EVENT_RSVP_POINTS } from '@/lib/constants'
 
 // ─── POST /api/events/[id]/rsvp — attend ────────────────────────────────────
 
@@ -20,11 +23,12 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
 
     if (await isBlocked(user.sub, event.organizerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
-    // Idempotent — if already attending return 200
+    // Idempotent — if already attending return 200 (no points awarded on re-RSVP)
     const existing = await queryUserRsvp(eventId, user.sub)
     if (existing?.status === 'attending') {
       return NextResponse.json({ data: { status: 'attending' } })
     }
+    const isNewRsvp = !existing
 
     // Capacity guard is folded into the write so the check+write is atomic.
     // If maxCapacity is null the subquery evaluates to TRUE (no limit).
@@ -66,6 +70,20 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       entityType: 'event',
       entityId: eventId,
     }).catch((e) => console.error('[side-effect]', e))
+
+    // Confirm RSVP to the attendee
+    void sendEventRsvpConfirmation({
+      to: user.email,
+      eventTitle: event.title,
+      startsAt: event.startsAt,
+    }).catch((e) => console.error('[side-effect]', e))
+
+    // Award points only on first RSVP (not re-attending after cancel)
+    if (isNewRsvp) {
+      void awardPoints(user.sub, EVENT_RSVP_POINTS)
+        .then(() => checkAndAwardBadges(user.sub))
+        .catch((e) => console.error('[side-effect]', e))
+    }
 
     return NextResponse.json({ data: attendee }, { status: 201 })
   } catch (err) {

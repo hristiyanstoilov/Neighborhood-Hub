@@ -15,23 +15,31 @@ type AchievementBadgesProps = {
 }
 
 const BADGE_STYLES: Record<BadgeType, string> = {
-  first_skill: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  first_tool: 'border-sky-200 bg-sky-50 text-sky-800',
-  first_food: 'border-orange-200 bg-orange-50 text-orange-800',
-  ten_points: 'border-violet-200 bg-violet-50 text-violet-800',
-  fifty_points: 'border-amber-200 bg-amber-50 text-amber-900',
-  five_star_giver: 'border-rose-200 bg-rose-50 text-rose-800',
+  first_skill:    'border-emerald-200 bg-emerald-50 text-emerald-800',
+  first_tool:     'border-sky-200 bg-sky-50 text-sky-800',
+  first_food:     'border-orange-200 bg-orange-50 text-orange-800',
+  ten_points:     'border-violet-200 bg-violet-50 text-violet-800',
+  fifty_points:   'border-amber-200 bg-amber-50 text-amber-900',
+  five_star_giver:'border-rose-200 bg-rose-50 text-rose-800',
   community_hero: 'border-teal-200 bg-teal-50 text-teal-800',
+  first_event:    'border-indigo-200 bg-indigo-50 text-indigo-800',
+  first_drive:    'border-cyan-200 bg-cyan-50 text-cyan-800',
+  good_neighbor:  'border-lime-200 bg-lime-50 text-lime-800',
+  tool_master:    'border-yellow-200 bg-yellow-50 text-yellow-800',
 }
 
 const BADGE_DOTS: Record<BadgeType, string> = {
-  first_skill: 'bg-emerald-500',
-  first_tool: 'bg-sky-500',
-  first_food: 'bg-orange-500',
-  ten_points: 'bg-violet-500',
-  fifty_points: 'bg-amber-500',
-  five_star_giver: 'bg-rose-500',
+  first_skill:    'bg-emerald-500',
+  first_tool:     'bg-sky-500',
+  first_food:     'bg-orange-500',
+  ten_points:     'bg-violet-500',
+  fifty_points:   'bg-amber-500',
+  five_star_giver:'bg-rose-500',
   community_hero: 'bg-teal-500',
+  first_event:    'bg-indigo-500',
+  first_drive:    'bg-cyan-500',
+  good_neighbor:  'bg-lime-500',
+  tool_master:    'bg-yellow-500',
 }
 
 export function AchievementBadges({ badges, labels, criteria, title, emptyLabel, caption }: AchievementBadgesProps) {

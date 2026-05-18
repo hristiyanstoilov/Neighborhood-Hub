@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function register(name: string, email: string, password: string): Promise<{ error?: string }> {
     const res = await apiFetch('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, ageConfirmed: true }),
     })
 
     const json = await res.json()

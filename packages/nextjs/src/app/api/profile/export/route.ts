@@ -55,7 +55,7 @@ export const GET = requireVerifiedAuth(async (_req: NextRequest, { user }) => {
       db.select().from(ratings).where(eq(ratings.raterId, uid)),
       db.select().from(badges).where(eq(badges.userId, uid)),
       db.select().from(userStats).where(eq(userStats.userId, uid)).limit(1),
-      db.select().from(messages).where(eq(messages.senderId, uid)).limit(5000),
+      db.select().from(messages).where(eq(messages.senderId, uid)).limit(50000),
       db.select().from(userConsents).where(eq(userConsents.userId, uid)),
     ])
 

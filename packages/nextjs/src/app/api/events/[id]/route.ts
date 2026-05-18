@@ -47,6 +47,11 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
+    // Cancelled is a terminal status — no further transitions allowed
+    if (event.status === 'cancelled') {
+      return NextResponse.json({ error: 'EVENT_ALREADY_CANCELLED' }, { status: 422 })
+    }
+
     // Validate endsAt > startsAt when either is being updated
     const effectiveStartsAt = parsed.data.startsAt ? new Date(parsed.data.startsAt) : event.startsAt
     if (parsed.data.endsAt && new Date(parsed.data.endsAt) <= effectiveStartsAt) {
@@ -59,7 +64,8 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
 
     const [updated] = await db.update(events).set(updates).where(and(eq(events.id, id), eq(events.organizerId, user.sub))).returning()
 
-    // Notify attendees if organizer cancels the event
+    // Notify attendees if organizer cancels the event — fire-and-forget to avoid
+    // blocking the response when an event has many attendees
     if (parsed.data.status === 'cancelled') {
       const attendees = await db
         .select({ userId: eventAttendees.userId })
@@ -67,7 +73,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
 
       for (const attendee of attendees) {
-        await createNotification({
+        void createNotification({
           userId: attendee.userId,
           type: 'event_cancelled',
           entityType: 'event',
@@ -102,7 +108,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
       .where(and(eq(eventAttendees.eventId, id), eq(eventAttendees.status, 'attending')))
 
     for (const attendee of attendees) {
-      await createNotification({
+      void createNotification({
         userId: attendee.userId,
         type: 'event_cancelled',
         entityType: 'event',
@@ -110,7 +116,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
       }).catch((e) => console.error('[createNotification event_deleted]', e))
     }
 
-    await db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, id))
+    await db.update(events).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(events.id, id))
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'events', entityId: id, ipAddress: ip })
 
     return NextResponse.json({ data: { success: true } })

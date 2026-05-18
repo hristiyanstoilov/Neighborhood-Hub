@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, desc, eq, inArray, isNull, lt, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { conversations, messages } from '@/db/schema'
-import { requireAuthWithRateLimit } from '@/lib/middleware'
+import { requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { isBlocked } from '@/lib/queries/blocks'
 import { createMessageSchema, listMessagesSchema } from '@/lib/schemas/dm'
 
@@ -79,7 +79,7 @@ export const GET = requireAuthWithRateLimit(async (req: NextRequest, { user, par
   }
 })
 
-export const POST = requireAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
+export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { user, params }) => {
   try {
     const conversationId = params.id
 

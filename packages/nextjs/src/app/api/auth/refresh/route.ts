@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
     if (!user || user.deletedAt) {
       return NextResponse.json({ error: 'USER_NOT_FOUND' }, { status: 401 })
     }
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      return NextResponse.json({ error: 'ACCOUNT_LOCKED' }, { status: 403 })
+    }
 
     // Best-effort token hygiene for the current user.
     await cleanupRefreshTokensForUser(user.id).catch((err) => {

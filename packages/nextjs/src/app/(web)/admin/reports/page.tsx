@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 
 type Report = {
@@ -22,6 +22,15 @@ const STATUS_STYLES: Record<string, string> = {
   dismissed: 'bg-gray-100 text-gray-500',
 }
 
+const CONTENT_LINKS: Record<string, (id: string) => string> = {
+  skill:  (id) => `/skills/${id}`,
+  tool:   (id) => `/tools/${id}`,
+  event:  (id) => `/events/${id}`,
+  food:   (id) => `/food/${id}`,
+  drive:  (id) => `/drives/${id}`,
+  user:   (id) => `/profile/${id}`,
+}
+
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
   const [filter, setFilter] = useState<'pending' | 'reviewed' | 'dismissed' | 'all'>('pending')
@@ -29,7 +38,7 @@ export default function AdminReportsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  async function load(status: typeof filter) {
+  const load = useCallback(async (status: typeof filter) => {
     setLoading(true)
     try {
       const params = status !== 'all' ? `?status=${status}` : ''
@@ -42,23 +51,47 @@ export default function AdminReportsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { void load(filter) }, [filter])
+  useEffect(() => { void load(filter) }, [filter, load])
 
-  async function handleAction(id: string, status: 'reviewed' | 'dismissed') {
-    setActionLoading(id)
+  async function handleSetStatus(id: string, status: 'reviewed' | 'dismissed') {
+    setActionLoading(id + status)
     setActionError(null)
     try {
       const res = await apiFetch('/api/admin/reports', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ action: 'set_status', id, status }),
       })
       if (!res.ok) throw new Error()
       void load(filter)
     } catch {
       setActionError('Action failed. Please try again.')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleUnpublish(id: string, targetType: string) {
+    const label = targetType === 'message' ? 'message' : targetType
+    const confirmed = window.confirm(
+      `Remove this ${label}? This will remove the content and cannot be easily undone.`
+    )
+    if (!confirmed) return
+
+    setActionLoading(id + 'unpublish')
+    setActionError(null)
+    try {
+      const res = await apiFetch('/api/admin/reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unpublish', id }),
+      })
+      if (!res.ok) throw new Error()
+      void load(filter)
+    } catch {
+      setActionError(`Failed to remove ${label}. Please try again.`)
     } finally {
       setActionLoading(null)
     }
@@ -102,49 +135,72 @@ export default function AdminReportsPage() {
 
       {!loading && reports.length > 0 && (
         <div className="space-y-3">
-          {reports.map((r) => (
-            <div key={r.id} className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] ?? STATUS_STYLES.dismissed}`}>
-                    {r.status}
-                  </span>
-                  <span className="text-xs text-gray-500 font-medium uppercase">{r.targetType}</span>
-                  <span className="text-xs text-gray-400 font-mono truncate max-w-[140px]">{r.targetId}</span>
+          {reports.map((r) => {
+            const contentLink = CONTENT_LINKS[r.targetType]?.(r.targetId)
+            const isActing = actionLoading !== null && actionLoading.startsWith(r.id)
+            return (
+              <div key={r.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] ?? STATUS_STYLES.dismissed}`}>
+                      {r.status}
+                    </span>
+                    <span className="text-xs text-gray-500 font-medium uppercase">{r.targetType}</span>
+                    {contentLink ? (
+                      <a
+                        href={contentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline font-mono truncate max-w-[140px]"
+                      >
+                        {r.targetId.slice(0, 8)}…
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-400 font-mono truncate max-w-[140px]">{r.targetId}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
                 </div>
-                <span className="text-xs text-gray-400 shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
+
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Reason:</span> {r.reason}
+                  {r.details && <span className="text-gray-500"> — {r.details}</span>}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Reported by: {r.reporterName ?? 'Unknown'} ({r.reporterEmail ?? '—'})
+                </p>
+
+                {r.status === 'pending' && (
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      disabled={isActing}
+                      onClick={() => void handleSetStatus(r.id, 'reviewed')}
+                      className="text-xs px-3 py-1.5 rounded-md bg-green-700 text-white hover:bg-green-800 transition-colors disabled:opacity-60"
+                    >
+                      Mark reviewed
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isActing}
+                      onClick={() => void handleSetStatus(r.id, 'dismissed')}
+                      className="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-60"
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isActing}
+                      onClick={() => void handleUnpublish(r.id, r.targetType)}
+                      className="text-xs px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+                    >
+                      {r.targetType === 'message' ? 'Remove message' : 'Unpublish'}
+                    </button>
+                  </div>
+                )}
               </div>
-
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">Reason:</span> {r.reason}
-                {r.details && <span className="text-gray-500"> — {r.details}</span>}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Reported by: {r.reporterName ?? 'Unknown'} ({r.reporterEmail ?? '—'})
-              </p>
-
-              {r.status === 'pending' && (
-                <div className="flex gap-2 mt-3">
-                  <button
-                    type="button"
-                    disabled={actionLoading === r.id}
-                    onClick={() => void handleAction(r.id, 'reviewed')}
-                    className="text-xs px-3 py-1.5 rounded-md bg-green-700 text-white hover:bg-green-800 transition-colors disabled:opacity-60"
-                  >
-                    Mark reviewed
-                  </button>
-                  <button
-                    type="button"
-                    disabled={actionLoading === r.id}
-                    onClick={() => void handleAction(r.id, 'dismissed')}
-                    className="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-60"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

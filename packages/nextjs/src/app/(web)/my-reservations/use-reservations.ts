@@ -43,7 +43,7 @@ const ACTION_ERROR_MESSAGES: Record<string, string> = {
   TOO_MANY_REQUESTS: 'Too many requests. Please wait a moment.',
 }
 
-export function useReservationAction(viewerId: string) {
+export function useReservationAction(_viewerId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

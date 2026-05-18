@@ -148,6 +148,48 @@ Rules:
 - Multiple parallel `accepted` requests per skill are allowed (no collision detection in MVP)
 - Invalid transitions must return `400 INVALID_STATUS_TRANSITION`
 
+### Gamification System
+
+Points and badges are implemented in `src/lib/badges.ts`. Point constants live in `src/lib/constants.ts`.
+
+**Point awards** (fire-and-forget — never block the response):
+
+| Trigger | Recipient | Points | Route |
+|---------|-----------|--------|-------|
+| Skill exchange completed (`status → completed`) | Both `userFromId` and `userToId` | 10 each | `skill-requests/[id]` |
+| Tool returned (`status → returned`) | Borrower | 5 | `tool-reservations/[id]` |
+| Food picked up (`status → picked_up`) | Food share owner | 3 | `food-shares/[id]/reservations/[id]` |
+| New event RSVP (first-time only, not re-attending) | Attendee | 1 | `events/[id]/rsvp` |
+
+**Level thresholds** (stored in `user_stats.level`): 1=0 pts, 2=10 pts, 3=30 pts, 4=60 pts, 5=100 pts, 6=200 pts.
+
+**`awardPoints(userId, points)`** — atomic UPSERT into `user_stats` with inline CASE expression for level recalculation. Must only be called when points > 0.
+
+**`checkAndAwardBadges(userId)`** — runs 10 parallel DB queries, inserts earned badges with `onConflictDoNothing`. Must always be chained after `awardPoints` (`.then(() => checkAndAwardBadges(...))`). Also call standalone after resource creation (first skill, tool, food share).
+
+**Badge criteria** (all checked in `checkAndAwardBadges`):
+
+| Badge | Criterion |
+|-------|-----------|
+| `first_skill` | ≥1 active skill listing (non-deleted) |
+| `first_tool` | ≥1 active tool listing (non-deleted) |
+| `first_food` | ≥1 active food share (non-deleted) |
+| `ten_points` | `total_points ≥ 10` |
+| `fifty_points` | `total_points ≥ 50` |
+| `five_star_giver` | ≥1 rating given with score=5 |
+| `community_hero` | ≥3 completed skill exchanges (as either party) |
+| `first_event` | ≥1 event attended (status='attending') |
+| `first_drive` | ≥1 non-cancelled drive pledge |
+| `good_neighbor` | ≥5 food giveaways completed (`foodReservations WHERE ownerId=userId AND status='picked_up'`) |
+| `tool_master` | ≥3 tool reservations returned as borrower |
+
+**Fire-and-forget pattern** (required — never await in request path):
+```typescript
+void awardPoints(userId, POINTS_CONSTANT)
+  .then(() => checkAndAwardBadges(userId))
+  .catch((e) => console.error('[side-effect]', e))
+```
+
 ---
 
 ## 6. Authentication & Authorization
