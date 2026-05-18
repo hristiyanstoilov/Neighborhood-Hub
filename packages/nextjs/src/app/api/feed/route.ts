@@ -21,8 +21,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.issues }, { status: 400 })
     }
 
-    const { limit, page } = parsed.data
-    const offset = (page - 1) * limit
+    const { limit, offset } = parsed.data
 
     const feedCondition = and(eq(profiles.isPublic, true), isNull(users.deletedAt))
 
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest) {
         .where(feedCondition),
     ])
 
-    return NextResponse.json({ data: { items, total, page, limit } })
+    return NextResponse.json({ data: { items, total, offset, limit } })
   } catch (err) {
     console.error('[GET /api/feed]', err)
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 })
