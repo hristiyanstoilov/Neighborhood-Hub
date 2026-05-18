@@ -12,9 +12,9 @@ export function OnboardingBanner() {
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) {
-        setVisible(true)
-      }
+      const dismissed = localStorage.getItem(STORAGE_KEY)
+      // eslint-disable-next-line react-compiler/react-compiler
+      if (!dismissed) setVisible(true)
     } catch {
       // localStorage unavailable (private/incognito with strict settings)
     }

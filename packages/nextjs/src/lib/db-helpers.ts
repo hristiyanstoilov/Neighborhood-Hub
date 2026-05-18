@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
  * Returns an error object if the FK doesn't exist, or null if it's valid or not provided.
  */
 export async function validateForeignKey(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: any,
   id: string | null | undefined,
   errorCode: string,
