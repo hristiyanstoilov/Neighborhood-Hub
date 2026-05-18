@@ -1,24 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 const STORAGE_KEY = 'onboarding_dismissed'
 
+function getSnapshot() {
+  try {
+    return !localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return false
+  }
+}
+
 export function OnboardingBanner() {
   const t = useTranslations('landing')
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(STORAGE_KEY)
-      // eslint-disable-next-line react-compiler/react-compiler
-      if (!dismissed) setVisible(true)
-    } catch {
-      // localStorage unavailable (private/incognito with strict settings)
-    }
-  }, [])
+  const notDismissedInStorage = useSyncExternalStore(() => () => {}, getSnapshot, () => false)
+  const [dismissedInSession, setDismissedInSession] = useState(false)
+  const visible = notDismissedInStorage && !dismissedInSession
 
   function dismiss() {
     try {
@@ -26,7 +26,7 @@ export function OnboardingBanner() {
     } catch {
       // ignore
     }
-    setVisible(false)
+    setDismissedInSession(true)
   }
 
   if (!visible) return null
