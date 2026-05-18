@@ -135,7 +135,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       type: notificationType,
       entityType: 'skill_request',
       entityId: id,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     // Send email notifications for key transitions
     if (updates.status === SkillRequestStatus.ACCEPTED) {
@@ -154,7 +154,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           to: requesterUser.email,
           skillTitle: skill.title ?? 'skill',
           scheduledStart: existing.scheduledStart,
-        }).catch(() => {})
+        }).catch((e) => console.error('[side-effect]', e))
       }
     }
 

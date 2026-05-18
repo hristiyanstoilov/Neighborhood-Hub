@@ -152,7 +152,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
       type: typeMap[parsed.data.action],
       entityType: 'food_reservation',
       entityId: reservationId,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     // Send email notifications for key transitions
     if (parsed.data.action === 'approve') {
@@ -165,7 +165,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           to: requesterUser.email,
           foodTitle: foodShare.title,
           pickupAt: reservation.pickupAt,
-        }).catch(() => {})
+        }).catch((e) => console.error('[side-effect]', e))
       }
     }
 
@@ -178,7 +178,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         void sendFoodPickedUp({
           to: requesterUser.email,
           foodTitle: foodShare.title,
-        }).catch(() => {})
+        }).catch((e) => console.error('[side-effect]', e))
       }
     }
 

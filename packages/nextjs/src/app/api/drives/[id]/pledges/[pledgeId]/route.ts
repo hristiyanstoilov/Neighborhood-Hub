@@ -62,7 +62,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         type: 'drive_pledge_fulfilled',
         entityType: 'community_drive',
         entityId: driveId,
-      }).catch(() => {})
+      }).catch((e) => console.error('[side-effect]', e))
     }
 
     if (status === 'cancelled') {
@@ -71,7 +71,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
         type: 'drive_pledge_cancelled',
         entityType: 'community_drive',
         entityId: driveId,
-      }).catch(() => {})
+      }).catch((e) => console.error('[side-effect]', e))
     }
 
     await writeAuditLog({

@@ -4,6 +4,7 @@ import { users } from '@/db/schema'
 import { and, isNotNull, lt } from 'drizzle-orm'
 import { requireAdmin, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { apiRatelimit } from '@/lib/ratelimit'
 
 const PURGE_AFTER_DAYS = 30
 
@@ -12,6 +13,9 @@ const PURGE_AFTER_DAYS = 30
 // All FK cascades handle related data — no manual child cleanup needed.
 export const POST = requireAdmin(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - PURGE_AFTER_DAYS)
 

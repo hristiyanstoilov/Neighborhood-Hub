@@ -3,13 +3,17 @@ import { db } from '@/db'
 import { notifications } from '@/db/schema'
 import { and, eq, lt } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/middleware'
+import { apiRatelimit } from '@/lib/ratelimit'
 
 const RETENTION_DAYS = 90
 
 // ─── POST /api/admin/cleanup — purge old read notifications ─────────────────
 
-export const POST = requireAdmin(async (_req: NextRequest, { user }) => {
+export const POST = requireAdmin(async (req: NextRequest, { user }) => {
   try {
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - RETENTION_DAYS)
 

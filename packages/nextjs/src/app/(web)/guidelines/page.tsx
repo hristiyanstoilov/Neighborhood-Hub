@@ -47,7 +47,7 @@ export default function GuidelinesPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-3">Последствия при нарушения</h2>
           <ul className="list-disc list-inside space-y-1 text-gray-600">
             <li>Нарушенията могат да доведат до предупреждение или премахване на профила.</li>
-            <li>Сигнализирайте за нарушения чрез бутона "Докладвай".</li>
+            <li>Сигнализирайте за нарушения чрез бутона &quot;Докладвай&quot;.</li>
           </ul>
         </section>
       </div>

@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { notifications, skillRequests, toolReservations, foodReservations, events } from '@/db/schema'
-import { notInArray, isNotNull, inArray, sql } from 'drizzle-orm'
+import { notInArray, isNotNull, sql } from 'drizzle-orm'
 import { requireAdmin, getClientIp } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
+import { apiRatelimit } from '@/lib/ratelimit'
 
 // POST /api/admin/cleanup-orphans — delete notifications referencing missing entities
 export const POST = requireAdmin(async (req: NextRequest, { user }) => {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(user.sub)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     // 1. get distinct entity types that have a non-null entityId
     const rows = await db
       .select({ entityType: notifications.entityType })
@@ -83,7 +88,6 @@ export const POST = requireAdmin(async (req: NextRequest, { user }) => {
       totalDeleted += deleted.length
     }
 
-    const ip = getClientIp(req)
     await writeAuditLog({
       userId: user.sub,
       userEmail: user.email,

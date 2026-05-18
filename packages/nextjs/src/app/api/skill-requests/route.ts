@@ -1,11 +1,12 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { skillRequests, skills, userBlocks } from '@/db/schema'
-import { eq, and, inArray, or } from 'drizzle-orm'
+import { skillRequests, skills } from '@/db/schema'
+import { eq, and, inArray } from 'drizzle-orm'
 import { getClientIp, requireAuthWithRateLimit, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { createSkillRequestSchema, listSkillRequestsSchema } from '@/lib/schemas/skill-request'
 import { querySkillRequestsByUser, countSkillRequestsByUser } from '@/lib/queries/skill-requests'
+import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
 
 // ─── GET /api/skill-requests — list requests visible to the current user ─────
@@ -56,16 +57,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       return NextResponse.json({ error: 'CANNOT_REQUEST_OWN_SKILL' }, { status: 422 })
     }
 
-    // Block check — reject if either party has blocked the other
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, skill.ownerId)),
-        and(eq(userBlocks.blockerId, skill.ownerId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-    if (blockRow) {
+    if (await isBlocked(user.sub, skill.ownerId)) {
       return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
     }
 
@@ -101,7 +93,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       type: 'new_request',
       entityType: 'skill_request',
       entityId: newRequest.id,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     await writeAuditLog({
       userId: user.sub,

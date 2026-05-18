@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { communityDrives, drivePledges, userBlocks } from '@/db/schema'
-import { and, eq, isNull, or } from 'drizzle-orm'
+import { communityDrives, drivePledges } from '@/db/schema'
+import { and, eq, isNull } from 'drizzle-orm'
 import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireVerifiedAuthWithRateLimit } from '@/lib/middleware'
 import { createPledgeSchema } from '@/lib/schemas/drive'
 import { queryDrivePledges, queryUserPledge } from '@/lib/queries/drives'
+import { isBlocked } from '@/lib/queries/blocks'
 import { createNotification } from '@/lib/create-notification'
 import { isUniqueViolation } from '@/lib/db-errors'
 
@@ -46,15 +47,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
     if (drive.status !== 'open') return NextResponse.json({ error: 'DRIVE_NOT_OPEN' }, { status: 422 })
     if (drive.organizerId === user.sub) return NextResponse.json({ error: 'CANNOT_PLEDGE_OWN_DRIVE' }, { status: 422 })
 
-    const [blockRow] = await db
-      .select({ id: userBlocks.id })
-      .from(userBlocks)
-      .where(or(
-        and(eq(userBlocks.blockerId, user.sub), eq(userBlocks.blockedId, drive.organizerId)),
-        and(eq(userBlocks.blockerId, drive.organizerId), eq(userBlocks.blockedId, user.sub)),
-      ))
-      .limit(1)
-    if (blockRow) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
+    if (await isBlocked(user.sub, drive.organizerId)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 })
 
     const body = await req.json().catch(() => null)
     if (body === null) return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
@@ -102,7 +95,7 @@ export const POST = requireVerifiedAuthWithRateLimit(async (req: NextRequest, { 
       type: 'drive_new_pledge',
       entityType: 'community_drive',
       entityId: driveId,
-    }).catch(() => {})
+    }).catch((e) => console.error('[side-effect]', e))
 
     return NextResponse.json({ data: pledge }, { status: 201 })
   } catch (err) {

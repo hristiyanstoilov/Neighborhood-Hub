@@ -68,7 +68,7 @@ export const PATCH = requireAuthWithRateLimit(async (req: NextRequest, { user, p
           type: notifType,
           entityType: 'community_drive',
           entityId: id,
-        }).catch(() => {})
+        }).catch((e) => console.error('[side-effect]', e))
       }
     }
 
@@ -107,7 +107,7 @@ export const DELETE = requireAuthWithRateLimit(async (req: NextRequest, { user, 
         type: 'drive_deleted',
         entityType: 'community_drive',
         entityId: id,
-      }).catch(() => {})
+      }).catch((e) => console.error('[side-effect]', e))
     }
 
     await writeAuditLog({ userId: user.sub, userEmail: user.email, action: 'delete', entity: 'community_drives', entityId: id, ipAddress: ip })

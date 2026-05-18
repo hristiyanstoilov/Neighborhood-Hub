@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { tools, categories, locations } from '@/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
+import { apiRatelimit } from '@/lib/ratelimit'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { writeAuditLog } from '@/lib/audit'
 import { updateToolSchema } from '@/lib/schemas/tool'
@@ -12,6 +13,10 @@ import { queryToolById } from '@/lib/queries/tools'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const ip = getClientIp(req)
+    const { success } = await apiRatelimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'TOO_MANY_REQUESTS' }, { status: 429 })
+
     const { id } = await params
     if (!uuidSchema.safeParse(id).success) {
       return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 })
