@@ -1,7 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import { count, desc, eq, innerJoin } from 'drizzle-orm'
+import { and, count, desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { feedEvents, profiles } from '@/db/schema'
+import { feedEvents, profiles, users } from '@/db/schema'
 import { getClientIp, requireAuthWithRateLimit } from '@/lib/middleware'
 import { DEFAULT_PROFILE_NAME } from '@/lib/constants'
 import { feedPublicRatelimit } from '@/lib/ratelimit'
@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
     const { limit, page } = parsed.data
     const offset = (page - 1) * limit
 
+    const feedCondition = and(eq(profiles.isPublic, true), isNull(users.deletedAt))
+
     const [items, [{ total }]] = await Promise.all([
       db
         .select({
@@ -36,14 +38,16 @@ export async function GET(req: NextRequest) {
         })
         .from(feedEvents)
         .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
-        .where(eq(profiles.isPublic, true))
+        .innerJoin(users, eq(users.id, feedEvents.actorId))
+        .where(feedCondition)
         .orderBy(desc(feedEvents.createdAt))
         .limit(limit)
         .offset(offset),
       db.select({ total: count() })
         .from(feedEvents)
         .innerJoin(profiles, eq(profiles.userId, feedEvents.actorId))
-        .where(eq(profiles.isPublic, true)),
+        .innerJoin(users, eq(users.id, feedEvents.actorId))
+        .where(feedCondition),
     ])
 
     return NextResponse.json({ data: { items, total, page, limit } })
